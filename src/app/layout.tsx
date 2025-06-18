@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import Provider from "@/components/common/Provider";
+import Navbar from "@/components/common/Navbar";
+import Image from "next/image";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -24,11 +27,23 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
-      </body>
+      <Provider>
+        <body
+          className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#050C19] relative`}
+        >
+          <div className="fixed left-0 top-0 w-screen h-screen -z-10">
+            <Image
+              src="/assets/ellipse-home.png"
+              alt="Ellipse background"
+              fill
+              style={{ objectFit: "cover" }}
+              priority
+            />
+          </div>
+          <Navbar />
+          {children}
+        </body>
+      </Provider>
     </html>
   );
 }

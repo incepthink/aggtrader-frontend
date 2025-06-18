@@ -9,16 +9,32 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@aave/contract-helpers": "^1.35.0",
+    "@aave/math-utils": "^1.35.0",
+    "@apollo/client": "^3.13.8",
+    "@balancer/sdk": "^4.2.0",
+    "@bgd-labs/aave-address-book": "^4.22.3",
+    "@dydxprotocol/v4-client-js": "^2.1.1",
+    "@rainbow-me/rainbowkit": "^2.2.7",
+    "@tanstack/react-query": "^5.80.7",
+    "axios": "1.6.7",
+    "ethers": "^5.8.0",
+    "graphql": "^16.11.0",
+    "next": "15.3.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "next": "15.3.3"
+    "react-minimal-pie-chart": "^9.1.0",
+    "recharts": "^2.15.3",
+    "viem": "^2.31.3",
+    "wagmi": "^2.15.6",
+    "zustand": "^5.0.5"
   },
   "devDependencies": {
-    "typescript": "^5",
+    "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@tailwindcss/postcss": "^4",
-    "tailwindcss": "^4"
+    "tailwindcss": "^4",
+    "typescript": "^5"
   }
 }
