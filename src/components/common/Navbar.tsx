@@ -7,8 +7,9 @@ import { ConnectButton } from "@rainbow-me/rainbowkit";
 
 const navItems = [
   { href: "/spot", label: "Spot" },
-  { href: "/lending", label: "Lend/Borrow" },
-  { href: "/perp", label: "Perps" },
+  { href: "https://lending.aggtrade.xyz/", label: "Lend/Borrow" },
+  { href: "https://perp.aggtrade.xyz/", label: "Perps" },
+  { href: "https://yield.aggtrade.xyz/", label: "Yeild Farming" },
   { href: "/profile", label: "Account" },
 ];
 

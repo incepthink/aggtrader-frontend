@@ -18,6 +18,7 @@ export default function NavLink({ href, children }: NavLinkProps) {
         isActive && "after:h-[2px]"
       }`}
       aria-current={isActive ? "page" : undefined}
+      target={href === "/profile" ? "" : "_blank"}
     >
       {children}
     </Link>
