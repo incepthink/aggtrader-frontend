@@ -6,7 +6,7 @@ import NavLink from "./Navlink";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 
 const navItems = [
-  { href: "/spot", label: "Spot" },
+  { href: "https://spot.aggtrade.xyz/", label: "Spot" },
   { href: "https://lending.aggtrade.xyz/", label: "Lend/Borrow" },
   { href: "https://perp.aggtrade.xyz/", label: "Perps" },
   { href: "https://yield.aggtrade.xyz/", label: "Yeild Farming" },
