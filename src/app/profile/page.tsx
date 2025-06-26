@@ -21,6 +21,9 @@ import {
 import { useAccount, useBalance } from "wagmi";
 import axios from "axios";
 import { PieChartComp } from "@/components/profile/PieChartComp";
+import EstimatedBalanceCard from "@/components/profile/EstimatedBalanceCard";
+import EquityTrendChart from "@/components/profile/EquityTrendChart";
+import RecentTransactionCard from "@/components/profile/RecentTransactionCard";
 
 const client = new ApolloClient({
   uri: "https://api-v3.balancer.fi",
@@ -53,25 +56,33 @@ const page = () => {
 
   async function getSpotBalance(address: string) {
     try {
-      // zerion needs to verify api_key
-      // const authToken = Buffer.from(
-      //   `${process.env.NEXT_PUBLIC_ZERION_API}:`
-      // ).toString("base64");
+      const apiKey = process.env.NEXT_PUBLIC_COVALENT_KEY;
+      if (!apiKey) {
+        console.error("Covalent API key missing");
+        setSpot(0);
+        return { total: 0 };
+      }
 
-      // const response = await axios.get(
-      //   `https://api.zerion.io/v1/wallets/${address}/positions/?filter[chain_ids]=ethereum`,
-      //   {
-      //     headers: {
-      //       Authorization: `Basic ${authToken}`,
-      //     },
-      //   }
-      // );
+      // ---- call balances_v3 (faster, no NFTs) ------------------
+      const url = `https://api.covalenthq.com/v1/1/address/${address}/balances_v3/?no-nft-fetch=true&key=${apiKey}`;
 
-      // console.log("SPOT::", response.data);
-      setSpot(48.35);
-      return { total: 48.45 };
-    } catch (error) {
-      console.error("Error fetching Zerion positions:", error);
+      const { data } = await axios.get(url);
+      const items = data?.data?.items || [];
+      console.log("ITEMS::", items);
+
+      let totalUsd = 0;
+      items.forEach((item: any) => {
+        // item.quote is already the token balance * price in USD
+        if (item.quote !== null) totalUsd += item.quote;
+      });
+      console.log("SPOT::", Number(totalUsd.toFixed(2)));
+
+      setSpot(Number(totalUsd.toFixed(2)));
+      return { total: totalUsd };
+    } catch (err) {
+      console.error("Error fetching Covalent balances:", err);
+      setSpot(0);
+      return { total: 0 };
     }
   }
 
@@ -195,14 +206,29 @@ const page = () => {
 
   return (
     <div>
-      <div className="flex justify-center w-full py-10">
+      <div className="flex justify-center w-full py-10 px-9">
         {isConnected ? (
-          <PieChartComp
-            spot={spot}
-            perp={dydx}
-            lending={aave}
-            balancer={balancer}
-          />
+          <div className="w-full">
+            <div className="mb-8">
+              <EstimatedBalanceCard />
+            </div>
+            <div className="flex gap-8 mb-8">
+              <div className=" w-2/3">
+                <EquityTrendChart />
+              </div>
+              <div className="w-1/3">
+                <RecentTransactionCard />
+              </div>
+            </div>
+            <div className="neon-panel">
+              <PieChartComp
+                spot={spot}
+                perp={dydx}
+                lending={aave}
+                balancer={balancer}
+              />
+            </div>
+          </div>
         ) : (
           <p className="text-4xl font-semibold">Connect You Wallet</p>
         )}

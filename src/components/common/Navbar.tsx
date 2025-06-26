@@ -44,7 +44,7 @@ function GradientConnectButton() {
 
 export default function Navbar() {
   return (
-    <nav className="sticky top-0 bg-transparent shadow flex justify-between items-center p-4 px-10">
+    <nav className="sticky top-0 bg-transparent shadow flex justify-between items-center p-4 px-10 z-10 backdrop-blur-2xl">
       <h2 className=" font-semibold text-2xl">AggTrade</h2>
       <ul className="flex space-x-4 p-4">
         {navItems.map(({ href, label }) => (

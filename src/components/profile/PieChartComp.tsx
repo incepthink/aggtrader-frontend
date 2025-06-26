@@ -45,7 +45,7 @@ export function PieChartComp({ spot, perp, lending, balancer }: PropType) {
   );
 
   return (
-    <div className="flex items-stretch max-w-3xl w-full gap-5">
+    <div className="flex items-stretch w-full gap-5">
       <div className="relative inline-block">
         <ResponsiveContainer width={400} height={400}>
           <PieChart>
