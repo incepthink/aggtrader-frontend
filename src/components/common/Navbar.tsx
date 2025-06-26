@@ -6,7 +6,10 @@ import NavLink from "./Navlink";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 
 const navItems = [
-  { href: "https://spot.aggtrade.xyz/", label: "Spot" },
+  {
+    href: "https://uniswap-interface-web-git-swap-complete-hashcase.vercel.app/#/swap",
+    label: "Spot",
+  },
   { href: "https://lending.aggtrade.xyz/", label: "Lend/Borrow" },
   { href: "https://perp.aggtrade.xyz/", label: "Perps" },
   { href: "https://yield.aggtrade.xyz/", label: "Yeild Farming" },
