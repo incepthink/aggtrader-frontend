@@ -265,7 +265,7 @@ const page = () => {
                     />
                   </div>
                   <p>
-                    Connect Wallet on{" "}
+                    Connect Ethereum Wallet on{" "}
                     <a
                       href="https://perp.aggtrade.xyz/"
                       className="underline text-blue-600"
