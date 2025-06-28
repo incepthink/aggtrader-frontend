@@ -47,8 +47,15 @@ function GradientConnectButton() {
 
 export default function Navbar() {
   return (
-    <nav className="sticky top-0 bg-transparent shadow flex justify-between items-center p-4 px-10 z-10 backdrop-blur-2xl">
-      <a className=" font-semibold text-2xl" href="/">
+    <nav className="sticky top-0 bg-transparent shadow flex justify-between items-center p-2 px-10 z-10 backdrop-blur-2xl">
+      <a className=" font-semibold text-2xl flex items-center gap-2" href="/">
+        <div className="w-10">
+          <img
+            src="/assets/aggtrade.png"
+            alt=""
+            className="w-full object-cover"
+          />
+        </div>
         AggTrade
       </a>
       <ul className="flex space-x-4 p-4">

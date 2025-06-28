@@ -1,6 +1,6 @@
 import React from "react";
 
-export default function EstimatedBalanceCard() {
+export default function EstimatedBalanceCard({ bal }: any) {
   return (
     <div className="neon-panel">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
@@ -8,10 +8,10 @@ export default function EstimatedBalanceCard() {
         <div>
           <p className="text-sm text-white/60">Estimated Balance</p>
           <div className="flex items-baseline gap-2 mt-1">
-            <span className="text-4xl font-semibold text-white">4,589.50</span>
+            <span className="text-4xl font-semibold text-white">{bal}</span>
             <span className="text-lg text-white/60">USDT</span>
           </div>
-          <p className="text-sm text-white/40 mt-1">~4,589.50 USD</p>
+          <p className="text-sm text-white/40 mt-1">~{bal} USD</p>
         </div>
 
         {/* Buttons */}

@@ -204,13 +204,17 @@ const page = () => {
     }
   }, [isConnected]);
 
+  function getBal() {
+    return spot + aave + balancer;
+  }
+
   return (
     <div>
       <div className="flex justify-center w-full py-10 px-9">
         {isConnected ? (
           <div className="w-full">
             <div className="mb-8">
-              <EstimatedBalanceCard />
+              <EstimatedBalanceCard bal={getBal()} />
             </div>
             <div className="flex gap-8 mb-8">
               <div className=" w-2/3">

@@ -2,15 +2,7 @@ import Image from "next/image";
 
 export default function Home() {
   return (
-    <div
-      className="relative min-h-screen w-full flex items-center justify-center bg-black text-white"
-      style={{
-        backgroundImage: 'url("/assets/home_main.png")',
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
-      }}
-    >
+    <div className="absolute top-0 h-screen w-full flex items-center justify-center bg-transparent text-white">
       <div className="text-center px-4 sm:px-8 max-w-3xl z-10">
         <h1 className="text-4xl sm:text-6xl font-semibold leading-tight">
           The Platform to Power <br />

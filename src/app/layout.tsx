@@ -1,15 +1,15 @@
+// app/layout.tsx  (RootLayout)
+
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Provider from "@/components/common/Provider";
 import Navbar from "@/components/common/Navbar";
-import Image from "next/image";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
 });
-
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
@@ -22,24 +22,29 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="en">
       <Provider>
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#050C19] relative`}
         >
-          <div className="fixed left-0 top-0 w-screen h-screen -z-10">
-            <Image
-              src="/assets/ellipse-home.png"
-              alt="Ellipse background"
-              fill
-              style={{ objectFit: "cover" }}
-              priority
+          {/* ───── background ───── */}
+          <div className="fixed inset-0 -z-10 overflow-hidden">
+            <video
+              className="w-full h-full object-cover"
+              src="/assets/home.mp4"
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="auto"
             />
           </div>
+
+          {/* ───── main UI ───── */}
           <Navbar />
           {children}
         </body>
