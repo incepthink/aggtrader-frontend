@@ -18,6 +18,7 @@ type PropType = {
 export function PieChartComp({ spot, perp, lending, balancer }: PropType) {
   const data = [
     { name: "Spot", value: spot, color: "#0088FE" },
+    { name: "Perp", value: perp, color: "#00C49F" },
     { name: "Lending", value: lending, color: "#FFBB28" },
     { name: "Yeild", value: balancer, color: "#FF8042" },
   ];

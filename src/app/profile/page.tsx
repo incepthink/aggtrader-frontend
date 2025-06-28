@@ -39,9 +39,10 @@ const page = () => {
   const { address, isConnected } = useAccount();
 
   const [spot, setSpot] = useState(0);
-  const [dydx, setDydx] = useState(0);
+  const [dydx, setDydx] = useState<number | string>(0);
   const [balancer, setBalancer] = useState(0);
   const [aave, setAave] = useState(0);
+  const [isDydxFetched, setIsDydxFetched] = useState(false);
 
   async function getHoldings() {
     try {
@@ -140,24 +141,50 @@ const page = () => {
     console.log("AAVE::", userSummary);
   }
 
-  async function getDydxData(address: string) {
-    // use dydx address here
+  async function getDydxAddress(address: string) {
+    try {
+      const res = await axios.get(
+        "https://aggtrade-backend.onrender.com/api/address/" + address
+      );
+      console.log(res.data);
 
-    const client = new IndexerClient(Network.mainnet().indexerConfig);
+      if (!res.data.dydxAddress) {
+        return;
+      }
 
-    const positions = await client.account.getSubaccountAssetPositions(
-      "dydx1nd06hgk32htzpckl5exdyywquh64k9u57exp24",
-      0
-    );
-
-    const usdcPos = positions.positions.find((p: any) => p.symbol === "USDC");
-
-    if (usdcPos) {
-      const bal = parseFloat(usdcPos.size);
-
-      setDydx(Number(bal.toFixed(2)));
-      console.log("DYDX::", bal);
+      return res.data.dydxAddress;
+    } catch (error) {
+      setIsDydxFetched(false);
+      console.error("GETADDRESS::", error);
     }
+  }
+
+  async function getDydxData(address: string) {
+    const dydxAddress = await getDydxAddress(address);
+    console.log(dydxAddress);
+
+    if (dydxAddress) {
+      setIsDydxFetched(true);
+      const client = new IndexerClient(Network.mainnet().indexerConfig);
+
+      const positions = await client.account.getSubaccountAssetPositions(
+        dydxAddress,
+        0
+      );
+
+      const usdcPos = positions.positions.find((p: any) => p.symbol === "USDC");
+
+      if (usdcPos) {
+        const bal = parseFloat(usdcPos.size);
+
+        setDydx(Number(bal.toFixed(2)));
+        console.log("DYDX::", bal);
+        return;
+      }
+    }
+
+    setIsDydxFetched(false);
+    setDydx(0);
   }
 
   async function getBalancerData(address: string) {
@@ -205,6 +232,9 @@ const page = () => {
   }, [isConnected]);
 
   function getBal() {
+    if (typeof dydx === "number") {
+      return spot + aave + balancer + dydx;
+    }
     return spot + aave + balancer;
   }
 
@@ -224,10 +254,32 @@ const page = () => {
                 <RecentTransactionCard />
               </div>
             </div>
-            <div className="neon-panel">
+            <div className="neon-panel relative">
+              {!isDydxFetched && (
+                <div className="absolute top-0 right-0 flex items-center gap-2 neon-panel">
+                  <div className="w-5 rounded-full overflow-hidden">
+                    <img
+                      src="/assets/warning.png"
+                      alt=""
+                      className="w-full object-cover"
+                    />
+                  </div>
+                  <p>
+                    Connect Wallet on{" "}
+                    <a
+                      href="https://perp.aggtrade.xyz/"
+                      className="underline text-blue-600"
+                      target="_blank"
+                    >
+                      Perp
+                    </a>{" "}
+                    to get balance
+                  </p>
+                </div>
+              )}
               <PieChartComp
                 spot={spot}
-                perp={dydx}
+                perp={typeof dydx === "number" ? dydx : 0}
                 lending={aave}
                 balancer={balancer}
               />
