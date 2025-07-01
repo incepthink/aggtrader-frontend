@@ -7,7 +7,7 @@ import { ConnectButton } from "@rainbow-me/rainbowkit";
 
 const navItems = [
   {
-    href: "https://uniswap-interface-web-git-new-deploy-hashcase.vercel.app/#/swap",
+    href: "/spot",
     label: "Spot",
   },
   { href: "https://lending.aggtrade.xyz/", label: "Lend/Borrow" },

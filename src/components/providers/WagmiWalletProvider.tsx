@@ -14,7 +14,7 @@ const config = getDefaultConfig({
 });
 
 const queryClient = new QueryClient();
-const Provider = ({ children }: any) => {
+const WagmiWalletProvider = ({ children }: any) => {
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
@@ -24,4 +24,4 @@ const Provider = ({ children }: any) => {
   );
 };
 
-export default Provider;
+export default WagmiWalletProvider;

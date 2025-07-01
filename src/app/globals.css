@@ -43,3 +43,25 @@ body {
   position: relative;
   overflow: hidden;               /* clip pseudo-blur */
 }
+
+.neon-bg {
+  display: inline-block;
+
+  /* glass background  */
+  background: rgba(5, 5, 18, 0.65);   /* ≈ #050512 @ 65 % */
+  backdrop-filter: blur(40px);
+
+  /* inner rim + soft bloom  */
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 255, 233, 0.30),   /* crisp inner stroke */
+    inset 0 4px 34px rgba(0, 255, 233, 0.40);  /* blurred neon bloom */
+  
+  /* position context for ::before halo  */
+  position: relative;
+  overflow: hidden
+}
+
+.dotted-bg {
+  background-image: radial-gradient(circle, #ccc 1px, transparent 1px);
+  background-size: 30px 30px; /* distance between dots */
+}
