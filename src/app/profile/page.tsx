@@ -255,7 +255,7 @@ const page = () => {
               </div>
             </div>
             <div className="neon-panel relative">
-              {!isDydxFetched && (
+              {/* {!isDydxFetched && (
                 <div className="absolute top-0 right-0 flex items-center gap-2 neon-panel">
                   <div className="w-5 rounded-full overflow-hidden">
                     <img
@@ -276,8 +276,9 @@ const page = () => {
                     to get balance
                   </p>
                 </div>
-              )}
+              )} */}
               <PieChartComp
+                isDydxFetched={isDydxFetched}
                 spot={spot}
                 perp={typeof dydx === "number" ? dydx : 0}
                 lending={aave}

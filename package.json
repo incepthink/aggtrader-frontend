@@ -19,6 +19,8 @@
     "@dydxprotocol/v4-client-js": "^2.1.1",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
+    "@lingui/macro": "^5.3.2",
+    "@mui/icons-material": "^7.2.0",
     "@mui/material": "^7.2.0",
     "@noble/hashes": "^1.8.0",
     "@rainbow-me/rainbowkit": "^2.2.7",

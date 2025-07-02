@@ -16,7 +16,7 @@ const navItems = [
   { href: "/profile", label: "Account" },
 ];
 
-function GradientConnectButton() {
+export function GradientConnectButton() {
   return (
     <ConnectButton.Custom>
       {({
