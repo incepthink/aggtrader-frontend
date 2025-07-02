@@ -6,16 +6,30 @@ import {
   Tooltip,
   Sector,
 } from "recharts";
-import { useState } from "react";
+import React, { useState } from "react";
+import InfoIcon from "@mui/icons-material/Info";
+import {
+  Tooltip as MuiToolTip,
+  styled,
+  tooltipClasses,
+  TooltipProps,
+} from "@mui/material";
 
 type PropType = {
   spot: number;
   perp: number;
   lending: number;
   balancer: number;
+  isDydxFetched: boolean;
 };
 
-export function PieChartComp({ spot, perp, lending, balancer }: PropType) {
+export function PieChartComp({
+  spot,
+  perp,
+  lending,
+  balancer,
+  isDydxFetched,
+}: PropType) {
   const data = [
     { name: "Spot", value: spot, color: "#0088FE" },
     { name: "Perp", value: perp, color: "#00C49F" },
@@ -43,6 +57,17 @@ export function PieChartComp({ spot, perp, lending, balancer }: PropType) {
       <Sector {...props} stroke="#00FAFF" strokeWidth={2} />
     </g>
   );
+
+  const HtmlTooltip = styled(({ className, ...props }: TooltipProps) => (
+    <MuiToolTip {...props} classes={{ popper: className }} />
+  ))(({ theme }) => ({
+    [`& .${tooltipClasses.tooltip}`]: {
+      backgroundColor: "#05051299",
+      color: "#00F5E0",
+      fontSize: 14,
+      border: "1px solid #00F5E0",
+    },
+  }));
 
   return (
     <div className="flex items-stretch w-full gap-5">
@@ -117,6 +142,21 @@ export function PieChartComp({ spot, perp, lending, balancer }: PropType) {
                   className={`bg-[rgb(0,250,255)] h-1.5 w-1.5 rounded-full`}
                 ></div>
                 <p>{data.name}</p>
+                {data.name === "Perp" && !isDydxFetched && (
+                  <HtmlTooltip
+                    placement="right"
+                    title={
+                      <React.Fragment>
+                        <a href="https://perp.aggtrade.xyz/">
+                          Connect Wallet on Perp to show balance
+                        </a>
+                      </React.Fragment>
+                    }
+                    sx={{ marginLeft: 1 }}
+                  >
+                    <InfoIcon sx={{ color: "#00F5E0" }} />
+                  </HtmlTooltip>
+                )}
               </div>
               <p>{data.value} USD</p>
             </div>
