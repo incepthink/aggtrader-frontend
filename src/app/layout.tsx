@@ -28,11 +28,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <WagmiWalletProvider>
-        <MuiThemeProvider>
-          <body
-            className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#050C19] relative`}
-          >
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#050C19] relative`}
+      >
+        <WagmiWalletProvider>
+          <MuiThemeProvider>
             {/* ───── background ───── */}
             <div className="fixed inset-0 -z-10 overflow-hidden">
               {/* <video
@@ -54,9 +54,9 @@ export default function RootLayout({
             {/* ───── main UI ───── */}
             <Navbar />
             {children}
-          </body>
-        </MuiThemeProvider>
-      </WagmiWalletProvider>
+          </MuiThemeProvider>
+        </WagmiWalletProvider>
+      </body>
     </html>
   );
 }
