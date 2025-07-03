@@ -14,6 +14,33 @@ import {
   YAxis,
 } from "recharts";
 import { startOfMonth, addMonths, differenceInMonths } from "date-fns";
+import type { TooltipProps } from "recharts";
+
+const formatTooltipLabel = (ts: number) =>
+  new Date(ts).toLocaleString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+
+const CustomTooltip: React.FC<TooltipProps<number, string>> = ({
+  active,
+  payload,
+  label,
+}) => {
+  if (!active || !payload?.length) return null;
+
+  const price = payload[0]?.value as number;
+
+  return (
+    <div className="rounded-xl bg-[#0d1117]/90 backdrop-blur-md p-3 border border-[#30363d] shadow-xl">
+      <p className="text-xs text-[#58a6ff] mb-1">{formatTooltipLabel(label)}</p>
+      <p className="text-sm font-semibold text-[#f0f6fc]">
+        ${price.toLocaleString()}
+      </p>
+    </div>
+  );
+};
 
 function formatUSDCompact(value: number) {
   if (value === null || value === undefined || isNaN(value)) return "$0.00";
@@ -75,13 +102,6 @@ const ChartSpot = () => {
       setChartData([]);
     }
   }
-
-  const formatTooltipLabel = (ts: number) =>
-    new Date(ts).toLocaleString(undefined, {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
 
   useEffect(() => {
     if (tokenOne) {
@@ -145,13 +165,7 @@ const ChartSpot = () => {
             orientation="right"
             tickCount={5}
           />
-          <Tooltip
-            labelFormatter={formatTooltipLabel}
-            formatter={(value: number) => [
-              `$${value.toLocaleString()}`,
-              "Price",
-            ]}
-          />
+          <Tooltip content={<CustomTooltip />} />
           <Line
             type="monotone"
             dataKey="price"
