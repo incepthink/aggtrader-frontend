@@ -33,7 +33,9 @@ export function GradientConnectButton() {
         return (
           <button
             onClick={connected ? openAccountModal : openConnectModal}
-            className="bg-gradient-to-r from-[#00F5E0] to-[#00FAFF] text-black font-medium p-2 rounded-lg hover:opacity-90 transition-opacity"
+            className="bg-gradient-to-r from-[#00F5E0] to-[#00FAFF] text-black font-medium p-2 rounded-lg hover:opacity-90 
+    hover:shadow-[0_0_8px_rgba(0,245,224,0.6),0_0_16px_rgba(0,245,224,0.5),0_0_24px_rgba(0,245,224,0.4)]
+    transition-shadow"
           >
             {connected
               ? account.displayName // only displays address truncated

@@ -1,20 +1,27 @@
-import { TokenInfo, TOKENS } from "@/utils/spot/TokenList";
+import { Token, TOKENS } from "@/utils/spot/TokenList";
 import { create } from "zustand";
 
 type spotStore = {
-  tokenOne: TokenInfo;
-  tokenTwo: TokenInfo;
-  setTokenOne: (token: TokenInfo) => void;
-  setTokenTwo: (token: TokenInfo) => void;
+  tokenOne: Token;
+  tokenTwo: Token;
+  setTokenOne: (token: Token) => void;
+  setTokenTwo: (token: Token) => void;
+
+  modalOpen: boolean;
+  openModal: () => void;
+  closeModal: () => void;
 };
 
 export const useSpotStore = create<spotStore>((set) => ({
   tokenOne: TOKENS[0],
   tokenTwo: TOKENS[1],
-  setTokenOne: (token: TokenInfo) => {
+  setTokenOne: (token: Token) => {
     set(() => ({ tokenOne: token }));
   },
-  setTokenTwo: (token: TokenInfo) => {
+  setTokenTwo: (token: Token) => {
     set(() => ({ tokenTwo: token }));
   },
+  modalOpen: false,
+  openModal: () => set({ modalOpen: true }),
+  closeModal: () => set({ modalOpen: false }),
 }));

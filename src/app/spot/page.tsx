@@ -3,12 +3,14 @@ import ChartSpot from "@/components/spot/ChartSpot";
 import OneInchSwap from "@/components/spot/OneInchSwap";
 import TokenBalancesCard from "@/components/spot/TokenBalancesCard";
 import TokenSelect from "@/components/spot/TokenSelect";
+import { TokenSelectModal } from "@/components/spot/TokenSelectModal";
 import { Box, Container, Stack } from "@mui/material";
 import React from "react";
 
 const page = () => {
   return (
     <Container maxWidth="xl">
+      <TokenSelectModal />
       <Stack spacing={2}>
         <Box>
           <TokenSelect />

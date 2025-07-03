@@ -210,8 +210,8 @@
 }
 
 .switchButton:hover {
-  color: white;
   cursor: pointer;
+  transform: rotate(180deg);
 }
 
 .switch-container {
@@ -307,6 +307,13 @@
   margin-top: 8px;
 }
 
+.swapButton:not(:disabled):hover {      /* or :not([disabled]) */
+  box-shadow:
+    0 0 8px  rgba(0, 245, 224, 0.6),
+    0 0 16px rgba(0, 245, 224, 0.5),
+    0 0 24px rgba(0, 245, 224, 0.4);
+}
+
 .swapButton[disabled] {
   background-color: #00F5E0;
   opacity: 0.4;
@@ -320,7 +327,6 @@
 
 .swapButton:hover {
   cursor: pointer;
-  background-color: rgba(0, 245, 224, 0.7);
 }
 
 .tokenLogo {
@@ -405,6 +411,3 @@
   font-size: 16px;
 }
 
-.max-btn-container {
-  
-}

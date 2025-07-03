@@ -45,7 +45,6 @@ body {
 }
 
 .neon-bg {
-  display: inline-block;
 
   /* glass background  */
   background: rgba(5, 5, 18, 0.65);   /* ≈ #050512 @ 65 % */

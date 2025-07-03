@@ -31,7 +31,9 @@ export default function Home() {
           <div className="mt-8">
             <a
               href="/spot"
-              className="inline-block px-6 py-3 text-base font-medium text-black bg-cyan-400 rounded-md hover:bg-cyan-300 transition"
+              className="inline-block px-6 py-3 text-base font-medium text-black bg-gradient-to-r from-[#00F5E0] to-[#00FAFF] rounded-md hover:opacity-90 
+    hover:shadow-[0_0_8px_rgba(0,245,224,0.6),0_0_16px_rgba(0,245,224,0.5),0_0_24px_rgba(0,245,224,0.4)]
+    transition-shadow "
             >
               Trade Now
             </a>
