@@ -1,10 +1,7 @@
 "use client";
 
-import {
-  ArrowDownOutlined,
-  DownOutlined,
-  SettingOutlined,
-} from "@ant-design/icons";
+import { DownOutlined, SettingOutlined } from "@ant-design/icons";
+import SwapVertIcon from "@mui/icons-material/SwapVert";
 import { Input, Modal, Popover, Radio, message } from "antd";
 import axios from "axios";
 import React, { useEffect, useState } from "react";
@@ -19,6 +16,7 @@ import MaxButton from "./MaxButton";
 import "./index.css";
 import { BACKEND_URL } from "@/utils/constants";
 import { useSpotStore } from "@/store/spotStore";
+import { GradientConnectButton } from "../common/navbar/Navbar";
 
 /* ---------- local helpers ---------- */
 interface Token {
@@ -259,7 +257,7 @@ function OneInchSwap() {
           <div className="switch-container">
             <div className="line" />
             <div className="switchButton" onClick={switchTokens}>
-              <ArrowDownOutlined className="switchArrow" />
+              <SwapVertIcon sx={{ fontSize: 28 }} />
             </div>
             <div className="line" />
           </div>
@@ -298,22 +296,26 @@ function OneInchSwap() {
         </div>
 
         {/* swap button */}
-        <div
-          className={`swapButton ${isSwapDisabled ? "disabled" : ""}`}
-          onClick={isSwapDisabled ? undefined : fetchDexSwap}
-          style={{
-            opacity: isSwapDisabled ? 0.6 : 1,
-            cursor: isSwapDisabled ? "not-allowed" : "pointer",
-          }}
-        >
-          {isConnected
-            ? isSending
-              ? "Sending…"
-              : isConfirming
-              ? "Confirming…"
-              : "Swap"
-            : "Connect Wallet"}
-        </div>
+        {isConnected ? (
+          <div
+            className={`swapButton ${isSwapDisabled ? "disabled" : ""}`}
+            onClick={isSwapDisabled ? undefined : fetchDexSwap}
+            style={{
+              opacity: isSwapDisabled ? 0.6 : 1,
+              cursor: isSwapDisabled ? "not-allowed" : "pointer",
+            }}
+          >
+            {isConnected
+              ? isSending
+                ? "Sending…"
+                : isConfirming
+                ? "Confirming…"
+                : "Swap"
+              : "Connect Wallet"}
+          </div>
+        ) : (
+          <GradientConnectButton />
+        )}
       </div>
       <Modal
         open={isOpenTwo}
