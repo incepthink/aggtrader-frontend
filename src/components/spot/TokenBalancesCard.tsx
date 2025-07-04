@@ -182,15 +182,11 @@ export default function TokenBalancesCard() {
         <div className="tb-card">
           {/* header */}
           <div className="tb-header">
-            <div className="tb-title">
-              Token Balances
-              <button className="tb-btn-icon">+</button>
-              <button className="tb-btn">Filter</button>
-            </div>
+            <div className="tb-title">Token Balances</div>
 
             <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
               {/* simple toggle */}
-              <div
+              {/* <div
                 className="tb-toggle"
                 data-on={suspicious}
                 onClick={() => setSuspicious(!suspicious)}
@@ -198,7 +194,7 @@ export default function TokenBalancesCard() {
               <span style={{ fontSize: "0.75rem", color: "#00ffe9" }}>
                 Suspicious Filters
               </span>
-              <button className="tb-btn-icon">star</button>
+              <button className="tb-btn-icon">star</button> */}
             </div>
           </div>
 

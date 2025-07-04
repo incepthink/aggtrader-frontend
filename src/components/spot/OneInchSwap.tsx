@@ -194,10 +194,7 @@ function OneInchSwap() {
       setT2Amount("");
       setTxDetails({ to: null, data: null, value: null });
     } else if (sendErr || confirmErr) {
-      msgApi.error(
-        `Transaction failed: ${sendErr?.message || confirmErr?.message}`,
-        5
-      );
+      msgApi.error(`Transaction failed`, 5);
       setTxDetails({ to: null, data: null, value: null });
     }
   }, [isDone, sendErr, confirmErr, msgApi]);

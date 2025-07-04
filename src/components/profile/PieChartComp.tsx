@@ -139,7 +139,8 @@ export function PieChartComp({
             >
               <div className="flex items-center gap-2">
                 <div
-                  className={`bg-[rgb(0,250,255)] h-1.5 w-1.5 rounded-full`}
+                  style={{ backgroundColor: data.color }}
+                  className={`h-1.5 w-1.5 rounded-full`}
                 ></div>
                 <p>{data.name}</p>
                 {data.name === "Perp" && !isDydxFetched && (
