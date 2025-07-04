@@ -14,8 +14,8 @@ export default function NavLink({ href, children }: NavLinkProps) {
   return (
     <Link
       href={href}
-      className={`text-xl relative pb-3 px-2 after:absolute after:inset-x-0 after:bottom-0 hover:after:h-[2px] transition after:bg-gradient-to-r after:from-[#00FFE9] after:to-[#003B3C] ${
-        isActive && "after:h-[2px]"
+      className={`text-xl relative pb-3 px-2 after:absolute after:inset-x-0 after:bottom-0 hover:text-[#00ffe9] transition after:bg-gradient-to-r after:from-[#00FFE9] after:to-[#003B3C] ${
+        isActive && "text-[#00ffe9]"
       }`}
       aria-current={isActive ? "page" : undefined}
     >
