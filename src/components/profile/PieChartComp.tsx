@@ -96,7 +96,8 @@ export function PieChartComp({
               })}
             </Pie>
             <Tooltip
-              cursor={false}
+              cursor={true}
+              offset={-50}
               formatter={(value: number, name: string) => [`${value}`, name]}
               wrapperStyle={{
                 padding: "0px",
