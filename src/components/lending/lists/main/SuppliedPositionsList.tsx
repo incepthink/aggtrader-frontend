@@ -25,32 +25,24 @@ export type FormattedReservesAndIncentives = ReturnType<
   } & ReserveDataHumanized;
 
 const SuppliedPositionsList = () => {
-  //   const { userReserves, fetchUserData, isLoading, reserves } = useAaveStore();
-  //   const { address } = useAccount();
+  const { userReserves, fetchUserData, isLoading, reserves } = useAaveStore();
+  const { address } = useAccount();
 
-  //   let currentTimestamp = Math.floor(Date.now() / 1000)
+  const filteredReserves = userReserves?.filter((item) => {
+    return Number(item.scaledATokenBalance) > 0 && item;
+  });
 
-  //   const userSummary = formatUserSummary({
-  //   currentTimestamp,
-  //   marketReferencePriceInUsd: reserves?.baseCurrencyData.marketReferenceCurrencyPriceInUsd,
-  //   marketReferenceCurrencyDecimals:
-  //     reserves?.baseCurrencyData.marketReferenceCurrencyDecimals,
-  //   userReserves: userReserves,
-  //   formattedReserves,
-  //   userEmodeCategoryId: userReserves.userEmodeCategoryId,
-  // });
+  console.log("FILTERD", filteredReserves);
 
-  //   console.log("USERRESERVES:: ", userReserves);
+  useEffect(() => {
+    if (address) {
+      fetchUserData(address);
+    }
+  }, [address]);
 
-  //   useEffect(() => {
-  //     if (address) {
-  //       fetchUserData(address);
-  //     }
-  //   }, [address]);
-
-  //   if (isLoading) {
-  //     return <div>Loading...</div>;
-  //   }
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
 
   return <div>Hi</div>;
 };

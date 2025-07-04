@@ -10,7 +10,7 @@ const navItems = [
     href: "/spot",
     label: "Spot",
   },
-  { href: "https://lending.aggtrade.xyz/", label: "Lend/Borrow" },
+  { href: "/lending", label: "Lend/Borrow" },
   { href: "https://perp.aggtrade.xyz/", label: "Perps" },
   { href: "https://yield.aggtrade.xyz/", label: "Yeild Farming" },
   { href: "/profile", label: "Account" },
