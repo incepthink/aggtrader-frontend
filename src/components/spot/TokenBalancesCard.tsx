@@ -3,6 +3,8 @@
 import axios from "axios";
 import { useAccount } from "wagmi";
 import { useEffect, useState } from "react";
+import { CircularProgress } from "@mui/material";
+const { Alchemy, Network } = require("alchemy-sdk");
 
 const rows = [
   {
@@ -35,28 +37,160 @@ const rows = [
   },
 ];
 
+interface item {
+  name: string;
+  balance: string;
+  symbol: string;
+  logo: string;
+  contractAddress: string;
+  price: string;
+  usdValue: string;
+}
+
 export default function TokenBalancesCard() {
-  const [suspicious, setSuspicious] = useState(false);
-  const [items, setItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [items, setItems] = useState<item[]>([]);
   const { address } = useAccount();
+
+  const config = {
+    apiKey: process.env.NEXT_PUBLIC_ALCHEMY_API,
+    network: Network.ETH_MAINNET,
+  };
+
+  const alchemy = new Alchemy(config);
+
+  async function getBatchPricesFromAlchemy(
+    tokenAddresses: Array<{ network: string; address: string }>
+  ) {
+    try {
+      const response = await fetch(
+        `https://api.g.alchemy.com/prices/v1/${process.env.NEXT_PUBLIC_ALCHEMY_API}/tokens/by-address`,
+        {
+          method: "POST",
+          headers: {
+            accept: "application/json",
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({
+            addresses: tokenAddresses,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Alchemy Price API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log("data::", data);
+
+      // Convert to our format
+      const prices: { [key: string]: number } = {};
+      data.data.forEach((item: any) => {
+        if (item.prices && item.prices.length > 0) {
+          // Get USD price (prices array contains different currency pairs)
+          const usdPrice = item.prices.find((p: any) => p.currency === "usd");
+          if (usdPrice) {
+            prices[item.address.toLowerCase()] = Number(usdPrice.value);
+          }
+        }
+      });
+
+      return prices;
+    } catch (error) {
+      console.error("Error fetching prices from Alchemy:", error);
+      return {};
+    }
+  }
 
   async function getSpotBalance(address: string) {
     try {
-      const apiKey = process.env.NEXT_PUBLIC_COVALENT_KEY;
+      setLoading(true);
+      const ethBalance = await alchemy.core.getBalance(address);
+      console.log("ETHBALANCE::", ethBalance);
 
-      if (!apiKey) {
-        console.error("Covalent API key missing");
+      const balances = await alchemy.core.getTokenBalances(address);
+      console.log(balances);
+
+      const nonZeroBalances = balances.tokenBalances.filter((token: any) => {
+        return parseInt(token.tokenBalance, 16) !== 0;
+      });
+
+      // Extract all contract addresses for batch price fetching
+      const contractAddresses = nonZeroBalances.map((token: any) => ({
+        network: "eth-mainnet", // or your target network
+        address: token.contractAddress,
+      }));
+
+      contractAddresses.push({
+        network: "eth-mainnet",
+        address: "0x0000000000000000000000000000000000000000", // ETH placeholder
+      });
+
+      // Use Alchemy's Price API for batch price fetching
+      const prices = await getBatchPricesFromAlchemy(contractAddresses);
+
+      let items = [];
+
+      if (ethBalance && ethBalance.toString() !== "0") {
+        const ethBalanceBigInt = BigInt(ethBalance.toString());
+        const ethReadableBalance = Number(ethBalanceBigInt) / Math.pow(10, 18); // ETH has 18 decimals
+
+        // Get ETH price
+        const ethPrice =
+          prices["0x0000000000000000000000000000000000000000"] || 0;
+        const ethUsdValue = ethReadableBalance * ethPrice;
+
+        items.push({
+          name: "Ethereum",
+          balance: ethReadableBalance.toFixed(6),
+          symbol: "ETH",
+          logo: "/logos/eth-logo.png", // You can add ETH logo URL here
+          contractAddress: "0x0000000000000000000000000000000000000000",
+          price: ethPrice.toFixed(2),
+          usdValue: ethUsdValue.toFixed(6),
+        });
       }
 
-      const url = `https://api.covalenthq.com/v1/1/address/${address}/balances_v3/?no-nft-fetch=true&key=${apiKey}`;
+      for (let token of nonZeroBalances) {
+        const balanceDecimal = parseInt(token.tokenBalance, 16);
 
-      const { data } = await axios.get(url);
-      const items = data?.data?.items || [];
-      console.log("ITEMS::", items);
+        const metadata = await alchemy.core.getTokenMetadata(
+          token.contractAddress
+        );
+
+        // Convert balance to human readable format
+        const decimals = metadata.decimals || 18;
+        const readableBalance = balanceDecimal / Math.pow(10, decimals);
+        const formattedBalance = readableBalance;
+
+        // Get price for this token from Alchemy's response
+        const tokenPrice = prices[token.contractAddress.toLowerCase()] || 0;
+        const usdValue = readableBalance * tokenPrice;
+
+        console.log(
+          `${metadata.name}: ${formattedBalance} ${metadata.symbol} ($${usdValue})`
+        );
+
+        items.push({
+          name: metadata.name,
+          balance: formattedBalance.toFixed(6),
+          symbol: metadata.symbol,
+          logo: metadata.logo,
+          contractAddress: token.contractAddress,
+          price: tokenPrice.toFixed(2),
+          usdValue: usdValue.toFixed(6),
+        });
+      }
+
+      console.log("balances:", balances);
+      console.log("items with prices:", items);
       setItems(items);
+      setLoading(false);
     } catch (err) {
-      console.error("Error fetching Covalent balances:", err);
+      console.error("Error fetching balances:", err);
       setItems([]);
+      setLoading(false);
     }
   }
 
@@ -199,46 +333,45 @@ export default function TokenBalancesCard() {
           </div>
 
           {/* table */}
-          <div style={{ overflowX: "auto" }}>
-            <table className="tb-table">
-              <thead>
-                <tr>
-                  <th>Token</th>
-                  <th>Balance</th>
-                  <th>Price</th>
-                  <th>Value</th>
-                </tr>
-              </thead>
-              <tbody>
+          <div>
+            {loading ? (
+              <div className="w-full flex justify-center pb-2">
+                <CircularProgress sx={{ color: "primary.main" }} />
+              </div>
+            ) : (
+              <table className="tb-table">
+                <thead>
+                  <tr>
+                    <th>Token</th>
+                    <th>Balance</th>
+                    <th>Price</th>
+                    <th>Value</th>
+                  </tr>
+                </thead>
+
                 {items.length !== 0 ? (
-                  items.map((item, i) => {
-                    return (
-                      <tr key={i} className="tb-row">
-                        <td>
-                          <div className="tb-token">
-                            <img
-                              src={item.logo_url}
-                              alt={item.contract_ticker_symbol}
-                            />
-                            {item.contract_ticker_symbol}
-                          </div>
-                        </td>
-                        <td>
-                          {(
-                            Number(item.balance) *
-                            10 ** -item.contract_decimals
-                          ).toFixed(5)}
-                        </td>
-                        <td>{item.quote_rate}</td>
-                        <td>{item.pretty_quote}</td>
-                      </tr>
-                    );
-                  })
+                  <tbody>
+                    {items.map((item, i) => {
+                      return (
+                        <tr key={i} className="tb-row">
+                          <td>
+                            <div className="tb-token">
+                              <img src={item.logo} alt={item.symbol} />
+                              {item.symbol}
+                            </div>
+                          </td>
+                          <td>{item.balance}</td>
+                          <td>{item.price}</td>
+                          <td>{item.usdValue}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
                 ) : (
                   <div></div>
                 )}
-              </tbody>
-            </table>
+              </table>
+            )}
           </div>
         </div>
       </div>
