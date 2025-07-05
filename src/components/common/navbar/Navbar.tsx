@@ -12,7 +12,7 @@ const navItems = [
   },
   { href: "https://perp.aggtrade.xyz/", label: "Perps" },
   { href: "https://lending.aggtrade.xyz/", label: "Lend/Borrow" },
-  { href: "https://yield.aggtrade.xyz/", label: "Yeild Farming" },
+  { href: "https://yield.aggtrade.xyz/", label: "Yield Farming" },
   { href: "/profile", label: "Account" },
 ];
 

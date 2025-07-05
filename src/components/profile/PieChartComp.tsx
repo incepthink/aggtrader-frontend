@@ -34,7 +34,7 @@ export function PieChartComp({
     { name: "Spot", value: spot, color: "#0088FE" },
     { name: "Perp", value: perp, color: "#00C49F" },
     { name: "Lending", value: lending, color: "#FFBB28" },
-    { name: "Yeild", value: balancer, color: "#FF8042" },
+    { name: "Yield", value: balancer, color: "#FF8042" },
   ];
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
