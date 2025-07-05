@@ -35,7 +35,7 @@ export function GradientConnectButton() {
             onClick={connected ? openAccountModal : openConnectModal}
             className="bg-gradient-to-r from-[#00F5E0] to-[#00FAFF] text-black font-semibold p-2 px-3 rounded-sm hover:opacity-90 
     hover:shadow-[0_0_8px_rgba(0,245,224,0.6),0_0_16px_rgba(0,245,224,0.5),0_0_24px_rgba(0,245,224,0.4)]
-    transition-shadow flex gap-3 text-sm"
+    transition-shadow flex gap-3 text-sm justify-center cursor-pointer"
           >
             {connected ? (
               <>
@@ -50,7 +50,7 @@ export function GradientConnectButton() {
                 <span>{account.displayName}</span>
               </>
             ) : (
-              "Connect Wallet"
+              <p className="text-center">Connect Wallet</p>
             )}
           </button>
         );

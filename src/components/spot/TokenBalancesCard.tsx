@@ -200,6 +200,8 @@ export default function TokenBalancesCard() {
     }
   }, [address]);
 
+  const { isConnected } = useAccount();
+
   return (
     <>
       {/* ----------  LOCAL CSS  ---------- */}
@@ -334,43 +336,49 @@ export default function TokenBalancesCard() {
 
           {/* table */}
           <div>
-            {loading ? (
-              <div className="w-full flex justify-center pb-2">
-                <CircularProgress sx={{ color: "primary.main" }} />
-              </div>
-            ) : (
-              <table className="tb-table">
-                <thead>
-                  <tr>
-                    <th>Token</th>
-                    <th>Balance</th>
-                    <th>Price</th>
-                    <th>Value</th>
-                  </tr>
-                </thead>
+            {isConnected ? (
+              loading ? (
+                <div className="w-full flex justify-center pb-2">
+                  <CircularProgress sx={{ color: "primary.main" }} />
+                </div>
+              ) : (
+                <table className="tb-table">
+                  <thead>
+                    <tr>
+                      <th>Token</th>
+                      <th>Balance</th>
+                      <th>Price</th>
+                      <th>Value</th>
+                    </tr>
+                  </thead>
 
-                {items.length !== 0 ? (
-                  <tbody>
-                    {items.map((item, i) => {
-                      return (
-                        <tr key={i} className="tb-row">
-                          <td>
-                            <div className="tb-token">
-                              <img src={item.logo} alt={item.symbol} />
-                              {item.symbol}
-                            </div>
-                          </td>
-                          <td>{item.balance}</td>
-                          <td>{item.price}</td>
-                          <td>{item.usdValue}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                ) : (
-                  <div></div>
-                )}
-              </table>
+                  {items.length !== 0 ? (
+                    <tbody>
+                      {items.map((item, i) => {
+                        return (
+                          <tr key={i} className="tb-row">
+                            <td>
+                              <div className="tb-token">
+                                <img src={item.logo} alt={item.symbol} />
+                                {item.symbol}
+                              </div>
+                            </td>
+                            <td>{item.balance}</td>
+                            <td>{item.price}</td>
+                            <td>{item.usdValue}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  ) : (
+                    <div></div>
+                  )}
+                </table>
+              )
+            ) : (
+              <div className="w-full text-center">
+                <h2>Connect Your Wallet</h2>
+              </div>
             )}
           </div>
         </div>

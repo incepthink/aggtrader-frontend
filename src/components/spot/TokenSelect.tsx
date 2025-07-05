@@ -8,7 +8,7 @@ const TokenSelect = () => {
   return (
     <button
       onClick={openModal}
-      className="neon-bg px-6 py-3 rounded-md flex items-center gap-4 cursor-pointer"
+      className="neon-bg px-6 py-3 rounded-md flex items-center gap-4 cursor-pointer border-0"
     >
       <div className="w-8">
         <img
