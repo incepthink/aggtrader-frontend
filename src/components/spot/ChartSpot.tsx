@@ -15,6 +15,7 @@ import {
 } from "recharts";
 import { startOfMonth, addMonths, differenceInMonths } from "date-fns";
 import type { TooltipProps } from "recharts";
+import { CircularProgress } from "@mui/material";
 
 const formatTooltipLabel = (ts: number) =>
   new Date(ts).toLocaleString(undefined, {
@@ -111,8 +112,8 @@ const ChartSpot = () => {
 
   if (chartData.length === 0) {
     return (
-      <div>
-        <p>Loading...</p>
+      <div className="w-full h-full flex justify-center items-center">
+        <CircularProgress />
       </div>
     );
   }

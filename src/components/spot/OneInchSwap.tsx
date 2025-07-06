@@ -326,8 +326,10 @@ function OneInchSwap() {
               key={i}
               className="tokenChoice"
               onClick={() => {
-                setTokenTwo(token);
-                fetchPrices(tokenOne.address, token.address);
+                if (token !== tokenOne) {
+                  setTokenTwo(token);
+                  fetchPrices(tokenOne.address, token.address);
+                }
                 setIsOpenTwo(false);
               }}
             >

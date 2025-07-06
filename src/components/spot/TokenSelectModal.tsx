@@ -4,6 +4,7 @@ import { TOKENS } from "@/utils/spot/TokenList";
 import { useSpotStore } from "@/store/spotStore";
 
 export const TokenSelectModal = () => {
+  const tokenTwo = useSpotStore((s) => s.tokenTwo);
   const { modalOpen, closeModal, setTokenOne } = useSpotStore();
 
   return (
@@ -19,7 +20,9 @@ export const TokenSelectModal = () => {
             key={i}
             className="tokenChoice"
             onClick={() => {
-              setTokenOne(t);
+              if (tokenTwo !== t) {
+                setTokenOne(t);
+              }
               closeModal();
             }}
           >
