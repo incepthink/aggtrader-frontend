@@ -97,7 +97,6 @@ const ChartSpot = () => {
       setChartData(data.chart);
       setFdv(data.metadata.fdv);
       setVol(data.metadata.vol);
-      console.log("DATA", data.chart);
     } catch (error) {
       console.error("ERROR FETCHING OHLC:: ", error);
       setChartData([]);

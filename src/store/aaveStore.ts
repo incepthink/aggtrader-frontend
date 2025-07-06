@@ -29,6 +29,7 @@ export const useAaveStore = create<AaveState>()(
           set({ isLoading: true, error: null });
           try {
             const reserves = await aaveService.getReserves();
+            console.log("RSERVES::", reserves);
 
             set({ reserves, isLoading: false });
           } catch (error) {
@@ -46,6 +47,9 @@ export const useAaveStore = create<AaveState>()(
               aaveService.getUserReserves(account),
               aaveService.getUserIncentives(account),
             ]);
+
+            console.log("USERDATA::", userReserves);
+
             set({
               userReserves,
               userIncentives,

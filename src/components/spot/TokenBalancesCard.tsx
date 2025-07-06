@@ -344,7 +344,7 @@ export default function TokenBalancesCard() {
               ) : (
                 <table className="tb-table">
                   <thead>
-                    <tr>
+                    <tr className="text-lg font-semibold ">
                       <th>Token</th>
                       <th>Balance</th>
                       <th>Price</th>

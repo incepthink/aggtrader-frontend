@@ -33,9 +33,9 @@ export function GradientConnectButton() {
         return (
           <button
             onClick={connected ? openAccountModal : openConnectModal}
-            className="bg-gradient-to-r from-[#00F5E0] to-[#00FAFF] text-black font-semibold p-2 px-3 rounded-sm hover:opacity-90 
-    hover:shadow-[0_0_8px_rgba(0,245,224,0.6),0_0_16px_rgba(0,245,224,0.5),0_0_24px_rgba(0,245,224,0.4)]
-    transition-shadow flex gap-3 text-sm justify-center cursor-pointer"
+            className="bg-gradient-to-r from-[#00F5E0] to-[#00FAFF] text-black font-semibold p-2 px-3 rounded-sm hover:ring-2 hover:ring-[#00F5E0] hover:ring-offset-2 hover:ring-offset-gray-900
+   hover:shadow-[0_0_4px_rgba(0,245,224,0.8),0_0_8px_rgba(0,245,224,0.7),0_0_12px_rgba(0,245,224,0.6),0_0_18px_rgba(0,245,224,0.5),0_0_24px_rgba(0,245,224,0.4)]
+   transition-all duration-300 cursor-pointer flex gap-3 items-center text-sm justify-center"
           >
             {connected ? (
               <>
