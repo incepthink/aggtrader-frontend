@@ -149,21 +149,9 @@ export default function EquityTrendChart() {
   // Format timestamp to date string
   const formatDate = (timestamp: number): string => {
     const date = new Date(timestamp);
-    const months = [
-      "Jan",
-      "Feb",
-      "Mar",
-      "Apr",
-      "May",
-      "Jun",
-      "Jul",
-      "Aug",
-      "Sep",
-      "Oct",
-      "Nov",
-      "Dec",
-    ];
-    return `${date.getDate()} ${months[date.getMonth()]}`;
+    return `${String(date.getMonth() + 1).padStart(2, "0")}-${String(
+      date.getDate()
+    ).padStart(2, "0")}`;
   };
 
   // Main function to get portfolio equity trend
