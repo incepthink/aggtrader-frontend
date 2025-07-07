@@ -6,37 +6,6 @@ import { useEffect, useState } from "react";
 import { CircularProgress } from "@mui/material";
 const { Alchemy, Network } = require("alchemy-sdk");
 
-const rows = [
-  {
-    symbol: "WETH",
-    balance: "0.002",
-    price: "$2428",
-    value: "$18.452",
-    icon: "/images/logos/weth.png", // replace with real paths
-  },
-  {
-    symbol: "WBTC",
-    balance: "0.000002",
-    price: "$107222",
-    value: "$14.650",
-    icon: "/images/logos/wbtc.png",
-  },
-  {
-    symbol: "MATIC",
-    balance: "356.58",
-    price: "$0.0058",
-    value: "$3.54",
-    icon: "/images/logos/matic.png",
-  },
-  {
-    symbol: "rETH",
-    balance: "548.0",
-    price: "$0.0215",
-    value: "$0.452",
-    icon: "/images/logos/reth.png",
-  },
-];
-
 interface item {
   name: string;
   balance: string;
@@ -50,7 +19,7 @@ interface item {
 export default function TokenBalancesCard() {
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<item[]>([]);
-  const { address } = useAccount();
+  const { address, isConnected } = useAccount();
 
   const config = {
     apiKey: process.env.NEXT_PUBLIC_ALCHEMY_API,
@@ -84,11 +53,9 @@ export default function TokenBalancesCard() {
       const data = await response.json();
       console.log("data::", data);
 
-      // Convert to our format
       const prices: { [key: string]: number } = {};
       data.data.forEach((item: any) => {
         if (item.prices && item.prices.length > 0) {
-          // Get USD price (prices array contains different currency pairs)
           const usdPrice = item.prices.find((p: any) => p.currency === "usd");
           if (usdPrice) {
             prices[item.address.toLowerCase()] = Number(usdPrice.value);
@@ -116,27 +83,24 @@ export default function TokenBalancesCard() {
         return parseInt(token.tokenBalance, 16) !== 0;
       });
 
-      // Extract all contract addresses for batch price fetching
       const contractAddresses = nonZeroBalances.map((token: any) => ({
-        network: "eth-mainnet", // or your target network
+        network: "eth-mainnet",
         address: token.contractAddress,
       }));
 
       contractAddresses.push({
         network: "eth-mainnet",
-        address: "0x0000000000000000000000000000000000000000", // ETH placeholder
+        address: "0x0000000000000000000000000000000000000000",
       });
 
-      // Use Alchemy's Price API for batch price fetching
       const prices = await getBatchPricesFromAlchemy(contractAddresses);
 
       let items = [];
 
       if (ethBalance && ethBalance.toString() !== "0") {
         const ethBalanceBigInt = BigInt(ethBalance.toString());
-        const ethReadableBalance = Number(ethBalanceBigInt) / Math.pow(10, 18); // ETH has 18 decimals
+        const ethReadableBalance = Number(ethBalanceBigInt) / Math.pow(10, 18);
 
-        // Get ETH price
         const ethPrice =
           prices["0x0000000000000000000000000000000000000000"] || 0;
         const ethUsdValue = ethReadableBalance * ethPrice;
@@ -145,7 +109,7 @@ export default function TokenBalancesCard() {
           name: "Ethereum",
           balance: ethReadableBalance.toFixed(6),
           symbol: "ETH",
-          logo: "/logos/eth-logo.png", // You can add ETH logo URL here
+          logo: "/logos/eth-logo.png",
           contractAddress: "0x0000000000000000000000000000000000000000",
           price: ethPrice.toFixed(2),
           usdValue: ethUsdValue.toFixed(6),
@@ -159,12 +123,10 @@ export default function TokenBalancesCard() {
           token.contractAddress
         );
 
-        // Convert balance to human readable format
         const decimals = metadata.decimals || 18;
         const readableBalance = balanceDecimal / Math.pow(10, decimals);
         const formattedBalance = readableBalance;
 
-        // Get price for this token from Alchemy's response
         const tokenPrice = prices[token.contractAddress.toLowerCase()] || 0;
         const usdValue = readableBalance * tokenPrice;
 
@@ -200,189 +162,159 @@ export default function TokenBalancesCard() {
     }
   }, [address]);
 
-  const { isConnected } = useAccount();
-
   return (
-    <>
-      {/* ----------  LOCAL CSS  ---------- */}
-      <style>{`
-        /* --- wrapper & neon border --------------------------------------------------- */
-        .tb-wrapper {
-          position: relative;     /* tweak as needed */
-          margin: 0 auto;
-          border-radius: 12px;         /* same 12 px corner radius */
-        }
-
-        /* --- card body --------------------------------------------------------------- */
-        .tb-card {
-          position: relative;
-          padding: 32px;
-          border-radius: 16px;
-          color: #fff;
-          font-family: system-ui, sans-serif;
-        }
-
-        /* --- header: title + buttons ------------------------------------------------- */
-        .tb-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 24px;
-        }
-        .tb-title {
-          font-size: 1.125rem;
-          font-weight: 600;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-        .tb-btn, .tb-btn-icon {
-          background: transparent;
-          border: none;
-          color: #fff;
-          cursor: pointer;
-        }
-        .tb-btn-icon:hover,
-        .tb-btn:hover {
-          background: rgba(255,255,255,.1);
-        }
-        .tb-btn {
-          display: flex;
-          align-items: center;
-          gap: 4px;
-          font-size: .75rem;
-          padding: 2px 6px;
-          border-radius: 4px;
-        }
-        .tb-btn-icon {
-          width: 24px;
-          height: 24px;
-          border-radius: 4px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        /* --- toggle ------------------------------------------------------------------ */
-        .tb-toggle {
-          position: relative;
-          width: 40px;
-          height: 20px;
-          border-radius: 20px;
-          background: rgba(110,110,110,.5);
-          cursor: pointer;
-          transition: background .25s;
-        }
-        .tb-toggle[data-on="true"] { background: rgba(0,255,233,.6); }
-        .tb-toggle::after {
-          content: '';
-          position: absolute;
-          top: 2px;
-          left: 2px;
-          width: 16px;
-          height: 16px;
-          border-radius: 50%;
-          background: #fff;
-          transition: transform .25s;
-        }
-        .tb-toggle[data-on="true"]::after { transform: translateX(20px); }
-
-        /* --- table ------------------------------------------------------------------- */
-        .tb-table {
-          width: 100%;
-          border-collapse: collapse;
-          font-size: .875rem;
-        }
-        .tb-table th {
-          text-align: left;
-          font-weight: 500;
-          padding-bottom: 12px;
-          color: rgba(0,255,233,.8);
-        }
-        .tb-table td {
-          padding: 12px 0;
-          border-bottom: 1px solid rgba(255,255,255,.08);
-        }
-        .tb-table tr:last-child td { border-bottom: none; }
-        .tb-token {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-        .tb-token img { width: 16px; height: 16px; }
-        .tb-row:hover { background: rgba(255,255,255,.05); }
-      `}</style>
-
-      {/* ----------  COMPONENT MARKUP  ---------- */}
-      <div className="tb-wrapper">
-        <div className="tb-card">
-          {/* header */}
-          <div className="tb-header">
-            <div className="tb-title">Token Balances</div>
-
-            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-              {/* simple toggle */}
-              {/* <div
-                className="tb-toggle"
-                data-on={suspicious}
-                onClick={() => setSuspicious(!suspicious)}
-              />
-              <span style={{ fontSize: "0.75rem", color: "#00ffe9" }}>
-                Suspicious Filters
-              </span>
-              <button className="tb-btn-icon">star</button> */}
-            </div>
-          </div>
-
-          {/* table */}
-          <div>
-            {isConnected ? (
-              loading ? (
-                <div className="w-full flex justify-center pb-2">
-                  <CircularProgress sx={{ color: "primary.main" }} />
-                </div>
-              ) : (
-                <table className="tb-table">
-                  <thead>
-                    <tr className="text-lg font-semibold ">
-                      <th>Token</th>
-                      <th>Balance</th>
-                      <th>Price</th>
-                      <th>Value</th>
-                    </tr>
-                  </thead>
-
-                  {items.length !== 0 ? (
-                    <tbody>
-                      {items.map((item, i) => {
-                        return (
-                          <tr key={i} className="tb-row">
-                            <td>
-                              <div className="tb-token">
-                                <img src={item.logo} alt={item.symbol} />
-                                {item.symbol}
-                              </div>
-                            </td>
-                            <td>{item.balance}</td>
-                            <td>{item.price}</td>
-                            <td>{item.usdValue}</td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  ) : (
-                    <div></div>
-                  )}
-                </table>
-              )
-            ) : (
-              <div className="w-full text-center">
-                <h2>Connect Your Wallet</h2>
-              </div>
-            )}
+    <div className="relative mx-auto rounded-xl">
+      <div className="relative p-4 sm:p-6 md:p-8 rounded-2xl text-white font-sans">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-3 sm:gap-0">
+          <div className="text-lg sm:text-xl font-semibold flex items-center gap-2">
+            Token Balances
           </div>
         </div>
+
+        {/* Content */}
+        <div className="w-full">
+          {isConnected ? (
+            loading ? (
+              <div className="w-full flex justify-center pb-4">
+                <CircularProgress sx={{ color: "primary.main" }} />
+              </div>
+            ) : (
+              <>
+                {/* Desktop Table View */}
+                <div className="hidden md:block">
+                  <table className="w-full border-collapse text-sm">
+                    <thead>
+                      <tr className="text-base font-semibold">
+                        <th className="text-left font-medium pb-3 text-cyan-300">
+                          Token
+                        </th>
+                        <th className="text-left font-medium pb-3 text-cyan-300">
+                          Balance
+                        </th>
+                        <th className="text-left font-medium pb-3 text-cyan-300">
+                          Price
+                        </th>
+                        <th className="text-left font-medium pb-3 text-cyan-300">
+                          Value
+                        </th>
+                      </tr>
+                    </thead>
+                    {items.length !== 0 ? (
+                      <tbody>
+                        {items.map((item, i) => (
+                          <tr
+                            key={i}
+                            className="hover:bg-white/5 transition-colors duration-200"
+                          >
+                            <td className="py-3 border-b border-white/8 last:border-b-0">
+                              <div className="flex items-center gap-2">
+                                <img
+                                  src={item.logo}
+                                  alt={item.symbol}
+                                  className="w-4 h-4 rounded-full"
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).src =
+                                      "/logos/default-token.png";
+                                  }}
+                                />
+                                <span className="font-medium">
+                                  {item.symbol}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="py-3 border-b border-white/8 last:border-b-0">
+                              {parseFloat(item.balance).toFixed(6)}
+                            </td>
+                            <td className="py-3 border-b border-white/8 last:border-b-0">
+                              ${item.price}
+                            </td>
+                            <td className="py-3 border-b border-white/8 last:border-b-0">
+                              ${item.usdValue}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    ) : null}
+                  </table>
+                </div>
+
+                {/* Mobile Card View */}
+                <div className="block md:hidden space-y-3">
+                  {items.length !== 0
+                    ? items.map((item, i) => (
+                        <div
+                          key={i}
+                          className="bg-white/5 rounded-lg p-4 border border-white/10"
+                        >
+                          {/* Token Header - Icon and Name in one line */}
+                          <div className="flex items-center gap-2 mb-6">
+                            <img
+                              src={item.logo}
+                              alt={item.symbol}
+                              className="w-6 h-6 rounded-full"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src =
+                                  "/logos/default-token.png";
+                              }}
+                            />
+                            <span className="font-semibold text-base">
+                              {item.symbol}
+                            </span>
+                          </div>
+
+                          {/* Token Details - Balance, Price, Value in a row */}
+                          <div className="grid grid-cols-3 gap-3 text-sm">
+                            <div>
+                              <div className="text-cyan-300 text-xs mb-1">
+                                Balance
+                              </div>
+                              <div className="font-medium text-white">
+                                {parseFloat(item.balance).toFixed(6)}
+                              </div>
+                            </div>
+                            <div>
+                              <div className="text-cyan-300 text-xs mb-1">
+                                Price
+                              </div>
+                              <div className="font-medium text-white">
+                                ${item.price}
+                              </div>
+                            </div>
+                            <div>
+                              <div className="text-cyan-300 text-xs mb-1">
+                                Value
+                              </div>
+                              <div className="font-medium text-white">
+                                ${item.usdValue}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    : null}
+                </div>
+
+                {/* No Tokens Message */}
+                {items.length === 0 && !loading && (
+                  <div className="text-center py-8">
+                    <div className="text-gray-400 text-sm">
+                      No tokens found in your wallet
+                    </div>
+                  </div>
+                )}
+              </>
+            )
+          ) : (
+            <div className="w-full text-center py-8">
+              <h2 className="text-xl font-semibold">Connect Your Wallet</h2>
+              <p className="text-gray-400 text-sm mt-2">
+                Connect your wallet to view your token balances
+              </p>
+            </div>
+          )}
+        </div>
       </div>
-    </>
+    </div>
   );
 }

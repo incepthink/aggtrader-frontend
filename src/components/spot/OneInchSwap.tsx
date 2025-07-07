@@ -74,6 +74,18 @@ function OneInchSwap() {
   const handleSlippageChange = (e: any) => setSlippage(e.target.value);
 
   /* --------- amount change --------- */
+  const changeBuyAmount = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const v = e.target.value;
+    setT2Amount(v);
+    setT1Amount(v && prices ? (parseFloat(v) / prices.ratio).toFixed(6) : "");
+  };
+
+  const changeSellAmount = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const v = e.target.value;
+    setT1Amount(v);
+    setT2Amount(v && prices ? (parseFloat(v) * prices.ratio).toFixed(6) : "");
+  };
+
   const changeAmount = (e: React.ChangeEvent<HTMLInputElement>) => {
     const v = e.target.value;
     setT1Amount(v);
@@ -233,7 +245,7 @@ function OneInchSwap() {
             trigger="click"
             placement="bottomRight"
           >
-            <SettingOutlined className="text-white text-xl" />
+            <SettingOutlined className="text-white text-xl hover:rotate-90 transition duration-300 hover:text-[#00F5E0]" />
           </Popover>
         </div>
 
@@ -244,7 +256,7 @@ function OneInchSwap() {
             <Input
               placeholder="0"
               value={tokenOneAmount}
-              onChange={changeAmount}
+              onChange={changeSellAmount} // renamed for clarity
               disabled={!prices}
             />
             <span className="input-tag">Sell</span>
@@ -261,7 +273,12 @@ function OneInchSwap() {
 
           {/* buy */}
           <div className="input-container">
-            <Input placeholder="0" value={tokenTwoAmount} disabled />
+            <Input
+              placeholder="0"
+              value={tokenTwoAmount}
+              onChange={changeBuyAmount} // new handler
+              disabled={!prices} // same disabled condition as sell
+            />
             <span className="input-tag">Buy</span>
           </div>
 
@@ -273,7 +290,7 @@ function OneInchSwap() {
                 alt="assetOneLogo"
                 className="assetLogo"
               />
-              {tokenOne.ticker} <DownOutlined />
+              <p className="text-white">{tokenOne.ticker}</p> <DownOutlined />
             </div>
             <div className="max-btn-container">
               <MaxButton token={tokenOne.address} setToken={setMaxBal} />
@@ -287,7 +304,7 @@ function OneInchSwap() {
                 alt="assetTwoLogo"
                 className="assetLogo"
               />
-              {tokenTwo.ticker} <DownOutlined />
+              <p className="text-white">{tokenTwo.ticker}</p> <DownOutlined />
             </div>
           </div>
         </div>

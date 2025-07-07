@@ -1,6 +1,6 @@
 .ant-input {
   background-color: transparent !important;
-  color: #00FFE9 !important;
+  color: white !important;
   border-width: 0px !important;
   height: 96px !important;
   margin-bottom: 5px;
@@ -78,9 +78,7 @@
   transition: 0.3s;
 }
 
-.ant-modal-close-icon:hover {
-  color: white !important;
-}
+
 
 
 
@@ -212,6 +210,12 @@
 .switchButton:hover {
   cursor: pointer;
   transform: rotate(180deg);
+  box-shadow:               /* ring-2 ring-[#00F5E0] */
+    0 0 2px rgba(0, 245, 224, 0.8),
+    0 0 4px rgba(0, 245, 224, 0.7),
+    0 0 6px rgba(0, 245, 224, 0.6),
+    0 0 9px rgba(0, 245, 224, 0.5),
+    0 0 12px rgba(0, 245, 224, 0.4);
 }
 
 .switch-container {
@@ -241,25 +245,26 @@
   align-items: flex-end;
 }
 
+.assetTowContainer {
+   position: relative;
+}
+
 .assetOne {
-  
   min-width: 50px;
   height: 35px;
   background-color: #1E1E1E;
-  
   border-radius: 5px;
   display: flex;
   justify-content: flex-start;
   align-items: center;
-  gap: 5px;
+  gap: 10px;
   font-weight: bold;
   font-size: 17px;
   padding-right: 8px;
   padding: 3px;
-}
-
-.assetTowContainer {
-   position: relative;
+  cursor: pointer;
+  border: 0.5px solid transparent;
+  transition: all 0.25s ease-in-out;
 }
 
 .assetTwo {
@@ -269,24 +274,36 @@
   min-width: 50px;
   height: 35px;
   background-color: #1E1E1E;
- 
   border-radius: 5px;
   display: flex;
   justify-content: flex-start;
   align-items: center;
-  gap: 5px;
+  gap: 10px;
   font-weight: bold;
   font-size: 17px;
   padding-right: 8px;
   padding: 3px;
+  cursor: pointer;
+  border: 0.5px solid transparent;
+  transition: all 0.25s ease-in-out;
 }
 
-.assetOne:hover{
-  cursor: pointer;
+.assetOne:hover {
+  border: 0.5px solid #00F5E0;
+  color: #00F5E0;
+  background-color: rgba(0, 245, 224, 0.08);
+  box-shadow: 
+    0 0 8px rgba(0, 245, 224, 0.3),
+    inset 0 0 8px rgba(0, 245, 224, 0.1);
 }
 
-.assetTwo:hover{
-  cursor: pointer;
+.assetTwo:hover {
+  border: 0.5px solid #00F5E0;
+  color: #00F5E0;
+  background-color: rgba(0, 245, 224, 0.08);
+  box-shadow: 
+    0 0 8px rgba(0, 245, 224, 0.3),
+    inset 0 0 8px rgba(0, 245, 224, 0.1);
 }
 
 .assetLogo {
@@ -419,5 +436,6 @@
   left: 12px;
   font-weight: 500;
   font-size: 16px;
+  color: #00F5E0;
 }
 

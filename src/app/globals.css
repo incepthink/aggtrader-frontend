@@ -44,8 +44,8 @@ body {
   overflow: hidden;               /* clip pseudo-blur */
 }
 
-.neon-bg {
 
+.neon-bg {
   /* glass background  */
   background: rgba(5, 5, 18, 0.65);   /* ≈ #050512 @ 65 % */
   backdrop-filter: blur(40px);
@@ -57,8 +57,23 @@ body {
   
   /* position context for ::before halo  */
   position: relative;
-  overflow: hidden
+  overflow: hidden;
+  transition: all 0.25s ease-in-out;
 }
+
+.neon-bg:hover {
+  /* enhanced glass background */
+  background: rgba(5, 5, 18, 0.75);
+  backdrop-filter: blur(50px);
+
+  /* enhanced inner rim + outer glow */
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 255, 233, 0.50),      /* brighter inner stroke */
+    inset 0 4px 34px rgba(0, 255, 233, 0.60),     /* enhanced inner bloom */
+    0 0 10px rgba(0, 255, 233, 0.4),              /* outer glow */
+    0 0 40px rgba(0, 255, 233, 0.2);              /* extended outer glow */
+}
+
 
 .dotted-bg {
   background-image: radial-gradient(circle, #ccc 1px, transparent 1px);

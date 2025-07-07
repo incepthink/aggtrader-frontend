@@ -8,10 +8,12 @@ export default function EstimatedBalanceCard({ bal }: any) {
         <div>
           <p className="text-sm text-white/60">Estimated Balance</p>
           <div className="flex items-baseline gap-2 mt-1">
-            <span className="text-4xl font-semibold text-white">{bal}</span>
+            <span className="text-4xl font-semibold text-white">
+              {bal.toFixed(2)}
+            </span>
             <span className="text-lg text-white/60">USDT</span>
           </div>
-          <p className="text-sm text-white/40 mt-1">~{bal} USD</p>
+          <p className="text-sm text-white/40 mt-1">~{bal.toFixed(6)} USD</p>
         </div>
 
         {/* Buttons */}

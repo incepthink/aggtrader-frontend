@@ -30,41 +30,107 @@ const client = new ApolloClient({
   cache: new InMemoryCache(),
 });
 
-const page = () => {
-  // const setUserAddress = useUserStore((state) => state.setAddress);
-  // const setUserProvider = useUserStore((state) => state.setProvider);
-  // const userAddress = useUserStore((state) => state.address);
-  // const userProvider = useUserStore((state) => state.provider);
+interface TokenBalance {
+  symbol: string;
+  balance: number;
+  contractAddress?: string;
+  decimals?: number;
+}
 
+interface HoldingsData {
+  spot: number;
+  dydx: number;
+  balancer: number;
+  aave: number;
+  isDydxFetched: boolean;
+  spotTokens: TokenBalance[];
+}
+
+const page = () => {
   const { address, isConnected } = useAccount();
 
-  const [spot, setSpot] = useState(0);
-  const [dydx, setDydx] = useState<number | string>(0);
-  const [balancer, setBalancer] = useState(0);
-  const [aave, setAave] = useState(0);
-  const [isDydxFetched, setIsDydxFetched] = useState(false);
+  // Changed to single state object to batch updates
+  const [holdingsData, setHoldingsData] = useState<HoldingsData>({
+    spot: 0,
+    dydx: 0,
+    balancer: 0,
+    aave: 0,
+    isDydxFetched: false,
+    spotTokens: [],
+  });
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [dataReady, setDataReady] = useState(false);
 
   async function getHoldings() {
+    if (!address) return;
+
+    setIsLoading(true);
+    setDataReady(false);
+
     try {
-      getAaveHoldings(address!);
-      getDydxData(address!);
-      getBalancerData(address!);
-      getSpotBalance(address!);
+      // Execute all API calls in parallel
+      const [spotResult, aaveResult, dydxResult, balancerResult] =
+        await Promise.allSettled([
+          getSpotBalance(address),
+          getAaveHoldings(address),
+          getDydxData(address),
+          getBalancerData(address),
+        ]);
+
+      // Extract results with fallback values
+      const spotData =
+        spotResult.status === "fulfilled"
+          ? spotResult.value
+          : { total: 0, tokens: [] };
+      const aaveValue =
+        aaveResult.status === "fulfilled" ? aaveResult.value : 0;
+      const dydxData =
+        dydxResult.status === "fulfilled"
+          ? dydxResult.value
+          : { value: 0, isFetched: false };
+      const balancerValue =
+        balancerResult.status === "fulfilled" ? balancerResult.value : 0;
+
+      // Update all data at once
+      setHoldingsData({
+        spot: Number(spotData.total.toFixed(2)),
+        aave: Number(aaveValue.toFixed(2)),
+        dydx: Number(dydxData.value.toFixed(2)),
+        balancer: Number(balancerValue.toFixed(2)),
+        isDydxFetched: dydxData.isFetched,
+        spotTokens: spotData.tokens,
+      });
+
+      // Mark data as ready for smooth animation
+      setDataReady(true);
     } catch (error) {
       console.error("getHoldings", error);
+      // Set default values on error
+      setHoldingsData({
+        spot: 0,
+        dydx: 0,
+        balancer: 0,
+        aave: 0,
+        isDydxFetched: false,
+        spotTokens: [],
+      });
+      setDataReady(true);
+    } finally {
+      setIsLoading(false);
     }
   }
 
-  async function getSpotBalance(address: string) {
+  async function getSpotBalance(
+    address: string
+  ): Promise<{ total: number; tokens: TokenBalance[] }> {
     try {
       const apiKey = process.env.NEXT_PUBLIC_COVALENT_KEY;
       if (!apiKey) {
         console.error("Covalent API key missing");
-        setSpot(0);
-        return { total: 0 };
+        return { total: 0, tokens: [] };
       }
 
-      // ---- call balances_v3 (faster, no NFTs) ------------------
       const url = `https://api.covalenthq.com/v1/1/address/${address}/balances_v3/?no-nft-fetch=true&key=${apiKey}`;
 
       const { data } = await axios.get(url);
@@ -72,170 +138,200 @@ const page = () => {
       console.log("ITEMS::", items);
 
       let totalUsd = 0;
-      items.forEach((item: any) => {
-        // item.quote is already the token balance * price in USD
-        if (item.quote !== null) totalUsd += item.quote;
-      });
-      console.log("SPOT::", Number(totalUsd.toFixed(2)));
+      const tokens: TokenBalance[] = [];
 
-      setSpot(Number(totalUsd.toFixed(2)));
-      return { total: totalUsd };
+      items.forEach((item: any) => {
+        if (item.quote !== null && item.quote > 0) {
+          totalUsd += item.quote;
+
+          // Calculate token balance (convert from wei)
+          const balance =
+            parseFloat(item.balance) / Math.pow(10, item.contract_decimals);
+
+          // Only include tokens with meaningful balance (> $1 USD value)
+          if (item.quote > 1 && balance > 0) {
+            tokens.push({
+              symbol: item.contract_ticker_symbol || "UNKNOWN",
+              balance: balance,
+              contractAddress: item.contract_address,
+              decimals: item.contract_decimals,
+            });
+          }
+        }
+      });
+
+      console.log("SPOT::", Number(totalUsd.toFixed(2)));
+      console.log("TOKENS::", tokens);
+
+      return { total: totalUsd, tokens };
     } catch (err) {
       console.error("Error fetching Covalent balances:", err);
-      setSpot(0);
-      return { total: 0 };
+      return { total: 0, tokens: [] };
     }
   }
 
-  async function getAaveHoldings(address: string) {
-    const provider = new ethers.providers.JsonRpcProvider(
-      "https://eth-mainnet.public.blastapi.io"
-    );
+  async function getAaveHoldings(address: string): Promise<number> {
+    try {
+      const provider = new ethers.providers.JsonRpcProvider(
+        "https://eth-mainnet.public.blastapi.io"
+      );
 
-    const poolDataProviderContract = new UiPoolDataProvider({
-      uiPoolDataProviderAddress: markets.AaveV3Ethereum.UI_POOL_DATA_PROVIDER,
-      provider,
-      chainId: ChainId.mainnet,
-    });
-
-    const reserves = await poolDataProviderContract.getReservesHumanized({
-      lendingPoolAddressProvider:
-        markets.AaveV3Ethereum.POOL_ADDRESSES_PROVIDER,
-    });
-
-    const userReserves =
-      await poolDataProviderContract.getUserReservesHumanized({
-        lendingPoolAddressProvider:
-          markets.AaveV3Ethereum.POOL_ADDRESSES_PROVIDER,
-        user: address,
+      const poolDataProviderContract = new UiPoolDataProvider({
+        uiPoolDataProviderAddress: markets.AaveV3Ethereum.UI_POOL_DATA_PROVIDER,
+        provider,
+        chainId: ChainId.mainnet,
       });
 
-    const currentTimestamp = dayjs().unix();
-    const baseCurrencyData = reserves.baseCurrencyData;
+      const reserves = await poolDataProviderContract.getReservesHumanized({
+        lendingPoolAddressProvider:
+          markets.AaveV3Ethereum.POOL_ADDRESSES_PROVIDER,
+      });
 
-    const reservesArray = reserves.reservesData;
+      const userReserves =
+        await poolDataProviderContract.getUserReservesHumanized({
+          lendingPoolAddressProvider:
+            markets.AaveV3Ethereum.POOL_ADDRESSES_PROVIDER,
+          user: address,
+        });
 
-    const formattedReserves = formatReserves({
-      reserves: reservesArray,
-      currentTimestamp,
-      marketReferenceCurrencyDecimals:
-        baseCurrencyData.marketReferenceCurrencyDecimals,
-      marketReferencePriceInUsd:
-        baseCurrencyData.marketReferenceCurrencyPriceInUsd,
-    });
+      const currentTimestamp = dayjs().unix();
+      const baseCurrencyData = reserves.baseCurrencyData;
+      const reservesArray = reserves.reservesData;
 
-    const userReservesArray = userReserves.userReserves;
-    const userSummary = formatUserSummary({
-      currentTimestamp,
-      marketReferencePriceInUsd:
-        baseCurrencyData.marketReferenceCurrencyPriceInUsd,
-      marketReferenceCurrencyDecimals:
-        baseCurrencyData.marketReferenceCurrencyDecimals,
-      userReserves: userReservesArray,
-      formattedReserves,
-      userEmodeCategoryId: userReserves.userEmodeCategoryId,
-    });
+      const formattedReserves = formatReserves({
+        reserves: reservesArray,
+        currentTimestamp,
+        marketReferenceCurrencyDecimals:
+          baseCurrencyData.marketReferenceCurrencyDecimals,
+        marketReferencePriceInUsd:
+          baseCurrencyData.marketReferenceCurrencyPriceInUsd,
+      });
 
-    setAave(Number(Number(userSummary.totalLiquidityUSD).toFixed(2)));
+      const userReservesArray = userReserves.userReserves;
+      const userSummary = formatUserSummary({
+        currentTimestamp,
+        marketReferencePriceInUsd:
+          baseCurrencyData.marketReferenceCurrencyPriceInUsd,
+        marketReferenceCurrencyDecimals:
+          baseCurrencyData.marketReferenceCurrencyDecimals,
+        userReserves: userReservesArray,
+        formattedReserves,
+        userEmodeCategoryId: userReserves.userEmodeCategoryId,
+      });
 
-    console.log("AAVE::", userSummary);
+      console.log("AAVE::", userSummary);
+      return Number(userSummary.totalLiquidityUSD);
+    } catch (error) {
+      console.error("Error fetching Aave data:", error);
+      return 0;
+    }
   }
 
-  async function getDydxAddress(address: string) {
+  async function getDydxAddress(address: string): Promise<string | null> {
     try {
       const res = await axios.get(
         "https://aggtrade-backend.onrender.com/api/address/" + address
       );
       console.log(res.data);
 
-      if (!res.data.dydxAddress) {
-        return;
-      }
-
-      return res.data.dydxAddress;
+      return res.data.dydxAddress || null;
     } catch (error) {
-      setIsDydxFetched(false);
       console.error("GETADDRESS::", error);
+      return null;
     }
   }
 
-  async function getDydxData(address: string) {
-    const dydxAddress = await getDydxAddress(address);
-    console.log(dydxAddress);
+  async function getDydxData(
+    address: string
+  ): Promise<{ value: number; isFetched: boolean }> {
+    try {
+      const dydxAddress = await getDydxAddress(address);
+      console.log(dydxAddress);
 
-    if (dydxAddress) {
-      setIsDydxFetched(true);
-      const client = new IndexerClient(Network.mainnet().indexerConfig);
+      if (dydxAddress) {
+        const client = new IndexerClient(Network.mainnet().indexerConfig);
 
-      const positions = await client.account.getSubaccountAssetPositions(
-        dydxAddress,
-        0
-      );
+        const positions = await client.account.getSubaccountAssetPositions(
+          dydxAddress,
+          0
+        );
 
-      const usdcPos = positions.positions.find((p: any) => p.symbol === "USDC");
+        const usdcPos = positions.positions.find(
+          (p: any) => p.symbol === "USDC"
+        );
 
-      if (usdcPos) {
-        const bal = parseFloat(usdcPos.size);
-
-        setDydx(Number(bal.toFixed(2)));
-        console.log("DYDX::", bal);
-        return;
+        if (usdcPos) {
+          const bal = parseFloat(usdcPos.size);
+          console.log("DYDX::", bal);
+          return { value: bal, isFetched: true };
+        }
       }
-    }
 
-    setIsDydxFetched(false);
-    setDydx(0);
+      return { value: 0, isFetched: false };
+    } catch (error) {
+      console.error("Error fetching dYdX data:", error);
+      return { value: 0, isFetched: false };
+    }
   }
 
-  async function getBalancerData(address: string) {
-    client
-      .query({
+  async function getBalancerData(address: string): Promise<number> {
+    try {
+      const result = await client.query({
         query: gql`
-      {
-  poolGetPools(where:{chainIn:[MAINNET], userAddress:"${address}"}){
-    address
-    userBalance{
-      stakedBalances{
-        balance
-        balanceUsd
-        stakingType
-      }
-      walletBalance
-      walletBalanceUsd
-      totalBalance
-      totalBalanceUsd
+          {
+            poolGetPools(where:{chainIn:[MAINNET], userAddress:"${address}"}){
+              address
+              userBalance{
+                stakedBalances{
+                  balance
+                  balanceUsd
+                  stakingType
+                }
+                walletBalance
+                walletBalanceUsd
+                totalBalance
+                totalBalanceUsd
+              }
+            }
+          }
+        `,
+      });
+
+      let bal = 0;
+      result.data.poolGetPools.forEach((pool: any) => {
+        bal += pool.userBalance.walletBalanceUsd;
+      });
+
+      return bal;
+    } catch (error) {
+      console.error("Error fetching Balancer data:", error);
+      return 0;
     }
   }
-}
-    `,
-      })
-      .then((result) => {
-        let bal = 0;
-
-        result.data.poolGetPools.forEach((pool: any) => {
-          bal += pool.userBalance.walletBalanceUsd;
-        });
-
-        setBalancer(Number(bal.toFixed(2)));
-      });
-  }
-
-  // const { data, isLoading } = useBalance({
-  //   address: address! as `0x${string}`,
-  // });
-  // console.log("SPOT::", data, isLoading);
 
   useEffect(() => {
-    if (isConnected) {
+    if (isConnected && address) {
       getHoldings();
+    } else {
+      setDataReady(false);
+      setHoldingsData({
+        spot: 0,
+        dydx: 0,
+        balancer: 0,
+        aave: 0,
+        isDydxFetched: false,
+        spotTokens: [],
+      });
     }
-  }, [isConnected]);
+  }, [isConnected, address]);
 
   function getBal() {
-    if (typeof dydx === "number") {
-      return spot + aave + balancer + dydx;
-    }
-    return spot + aave + balancer;
+    return (
+      holdingsData.spot +
+      holdingsData.aave +
+      holdingsData.balancer +
+      holdingsData.dydx
+    );
   }
 
   return (
@@ -255,39 +351,18 @@ const page = () => {
               </div>
             </div>
             <div className="neon-panel relative">
-              {/* {!isDydxFetched && (
-                <div className="absolute top-0 right-0 flex items-center gap-2 neon-panel">
-                  <div className="w-5 rounded-full overflow-hidden">
-                    <img
-                      src="/assets/warning.png"
-                      alt=""
-                      className="w-full object-cover"
-                    />
-                  </div>
-                  <p>
-                    Connect Ethereum Wallet on{" "}
-                    <a
-                      href="https://perp.aggtrade.xyz/"
-                      className="underline text-blue-600"
-                      target="_blank"
-                    >
-                      Perp
-                    </a>{" "}
-                    to get balance
-                  </p>
-                </div>
-              )} */}
               <PieChartComp
-                isDydxFetched={isDydxFetched}
-                spot={spot}
-                perp={typeof dydx === "number" ? dydx : 0}
-                lending={aave}
-                balancer={balancer}
+                isDydxFetched={dataReady ? holdingsData.isDydxFetched : false}
+                spot={dataReady ? holdingsData.spot : 0}
+                perp={dataReady ? holdingsData.dydx : 0}
+                lending={dataReady ? holdingsData.aave : 0}
+                balancer={dataReady ? holdingsData.balancer : 0}
+                isLoading={isLoading}
               />
             </div>
           </div>
         ) : (
-          <p className="text-4xl font-semibold">Connect You Wallet</p>
+          <p className="text-4xl font-semibold">Connect Your Wallet</p>
         )}
       </div>
     </div>
