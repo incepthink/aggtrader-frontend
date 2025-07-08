@@ -335,21 +335,26 @@ const page = () => {
   }
 
   return (
-    <div>
-      <div className="flex justify-center w-full py-10 px-9">
+    <div className="min-h-screen bg-gray-900">
+      <div className="flex justify-center w-full py-4 sm:py-6 lg:py-10 px-4 sm:px-6 lg:px-9">
         {isConnected ? (
           <div className="w-full">
-            <div className="mb-8">
+            {/* Balance Card - Full width on mobile */}
+            <div className="mb-6 lg:mb-8">
               <EstimatedBalanceCard bal={getBal()} />
             </div>
-            <div className="flex gap-8 mb-8">
-              <div className=" w-2/3">
+
+            {/* Charts Section - Stack on mobile, side by side on desktop */}
+            <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 lg:gap-8 mb-6 lg:mb-8">
+              <div className="w-full lg:w-2/3">
                 <EquityTrendChart />
               </div>
-              <div className="w-1/3">
+              <div className="w-full lg:w-1/3">
                 <RecentTransactionCard />
               </div>
             </div>
+
+            {/* Pie Chart - Full width */}
             <div className="neon-panel relative">
               <PieChartComp
                 isDydxFetched={dataReady ? holdingsData.isDydxFetched : false}
@@ -362,7 +367,11 @@ const page = () => {
             </div>
           </div>
         ) : (
-          <p className="text-4xl font-semibold">Connect Your Wallet</p>
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <p className="text-2xl sm:text-3xl lg:text-4xl font-semibold text-center px-4">
+              Connect Your Wallet
+            </p>
+          </div>
         )}
       </div>
     </div>

@@ -27,7 +27,7 @@ body {
 .neon-panel {
   /* layout  */
   width: 100%;
-  padding: 32px;
+  padding: 16px;                    /* mobile: 16px */
   border-radius: 16px;
 
   /* glass background  */
@@ -42,6 +42,20 @@ body {
   /* position context for ::before halo  */
   position: relative;
   overflow: hidden;               /* clip pseudo-blur */
+}
+
+/* Tablet and up */
+@media (min-width: 640px) {
+  .neon-panel {
+    padding: 24px;                  /* tablet: 24px */
+  }
+}
+
+/* Desktop and up */
+@media (min-width: 1024px) {
+  .neon-panel {
+    padding: 32px;                  /* desktop: 32px (original) */
+  }
 }
 
 

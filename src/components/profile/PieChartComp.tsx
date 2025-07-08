@@ -6,7 +6,7 @@ import {
   Tooltip,
   Sector,
 } from "recharts";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import InfoIcon from "@mui/icons-material/Info";
 import {
   Tooltip as MuiToolTip,
@@ -38,7 +38,21 @@ export function PieChartComp({
     { name: "Lending", value: lending, color: "#FFBB28" },
     { name: "Yield", value: balancer, color: "#FF8042" },
   ];
+
   const [activeIndex, setActiveIndex] = useState<number | undefined>(undefined);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Check if mobile on client side
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   const handleMouseEnter = (_: any, index: number) => {
     setActiveIndex(index);
@@ -57,8 +71,8 @@ export function PieChartComp({
         <Sector
           {...props}
           stroke="#00FAFF"
-          strokeWidth={3}
-          outerRadius={outerRadius + 8} // More noticeable expansion
+          strokeWidth={isMobile ? 2 : 3}
+          outerRadius={outerRadius + (isMobile ? 6 : 8)} // Smaller expansion on mobile
           style={{
             filter: "drop-shadow(0 0 12px rgba(0, 250, 255, 0.6))",
             transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
@@ -88,15 +102,29 @@ export function PieChartComp({
     [`& .${tooltipClasses.tooltip}`]: {
       backgroundColor: "#05051299",
       color: "#00F5E0",
-      fontSize: 14,
+      fontSize: isMobile ? 12 : 14,
       border: "1px solid #00F5E0",
     },
   }));
 
+  // Responsive chart dimensions
+  const chartSize = isMobile ? 280 : 400;
+  const innerRadius = isMobile ? 70 : 100;
+  const outerRadius = isMobile ? 90 : 120;
+
   return (
-    <div className="flex items-stretch w-full gap-5">
-      <div className="relative inline-block">
-        <ResponsiveContainer width={400} height={400}>
+    <div
+      className={`flex ${
+        isMobile ? "flex-col" : "flex-row"
+      } items-stretch w-full ${isMobile ? "gap-4" : "gap-5"}`}
+    >
+      {/* Chart Container */}
+      <div
+        className={`relative ${
+          isMobile ? "w-full flex justify-center" : "inline-block"
+        }`}
+      >
+        <ResponsiveContainer width={chartSize} height={chartSize}>
           <PieChart>
             <defs>
               {/* Gradient definitions for enhanced visual appeal */}
@@ -147,8 +175,8 @@ export function PieChartComp({
               nameKey="name"
               cx="50%"
               cy="50%"
-              innerRadius={100}
-              outerRadius={120}
+              innerRadius={innerRadius}
+              outerRadius={outerRadius}
               paddingAngle={3}
               activeIndex={activeIndex}
               activeShape={renderActiveShape}
@@ -198,18 +226,29 @@ export function PieChartComp({
                 border: "none",
                 pointerEvents: "none",
                 fontWeight: "500",
+                fontSize: isMobile ? "12px" : "14px",
               }}
             />
           </PieChart>
         </ResponsiveContainer>
+
+        {/* Center Content */}
         <p className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
           {isLoading ? (
-            <span className="text-cyan-400 text-lg animate-pulse">
+            <span
+              className={`text-cyan-400 ${
+                isMobile ? "text-base" : "text-lg"
+              } animate-pulse`}
+            >
               Loading...
             </span>
           ) : activeIndex !== undefined ? (
             <>
-              <span className="block text-2xl font-bold text-[#00FAFF] mt-1">
+              <span
+                className={`block ${
+                  isMobile ? "text-xl" : "text-2xl"
+                } font-bold text-[#00FAFF] mt-1`}
+              >
                 {(
                   (data[activeIndex].value /
                     (spot + perp + lending + balancer)) *
@@ -217,14 +256,28 @@ export function PieChartComp({
                 ).toFixed(1)}
                 %
               </span>
-              <span className="block text-sm text-gray-300 mt-1">
+              <span
+                className={`block ${
+                  isMobile ? "text-xs" : "text-sm"
+                } text-gray-300 mt-1`}
+              >
                 {data[activeIndex].value.toFixed(2)} USD
               </span>
             </>
           ) : (
             <>
-              <span className="block text-sm text-gray-400">Account Value</span>
-              <span className="block text-lg font-semibold text-white mt-1">
+              <span
+                className={`block ${
+                  isMobile ? "text-xs" : "text-sm"
+                } text-gray-400`}
+              >
+                Account Value
+              </span>
+              <span
+                className={`block ${
+                  isMobile ? "text-base" : "text-lg"
+                } font-semibold text-white mt-1`}
+              >
                 {(spot + perp + lending + balancer).toFixed(2)} USD
               </span>
             </>
@@ -232,23 +285,40 @@ export function PieChartComp({
         </p>
       </div>
 
-      <div className="flex flex-1 flex-col justify-between">
+      {/* Legend Container */}
+      <div
+        className={`flex ${
+          isMobile ? "flex-row flex-wrap gap-2" : "flex-1 flex-col"
+        } justify-between ${isMobile ? "" : ""}`}
+      >
         {data.map((dataItem: any, i: number) => {
           return (
             <div
               key={i}
               onMouseEnter={() => handleMouseEnter(null, i)}
               onMouseLeave={() => setActiveIndex(undefined)}
-              className={`flex flex-1 justify-between  items-center text-center text-xl rounded-sm px-5 cursor-pointer transition-all duration-300 ease-out ${
+              className={`flex ${
+                isMobile
+                  ? "flex-1 min-w-[calc(50%-4px)] flex-col"
+                  : "flex-1 flex-row"
+              } justify-between items-center text-center ${
+                isMobile ? "text-sm" : "text-xl"
+              } rounded-sm ${
+                isMobile ? "p-3" : "px-5"
+              } cursor-pointer transition-all duration-300 ease-out ${
                 activeIndex === i
                   ? "bg-[rgba(0,250,255,0.15)] border-l-2 border-[#00FAFF] transform scale-[1.02]"
-                  : "hover:bg-[rgba(0,250,255,0.1)] border-l-2  border-transparent"
+                  : "hover:bg-[rgba(0,250,255,0.1)] border-l-2 border-transparent"
               }`}
               style={{
                 transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
               }}
             >
-              <div className="flex items-center gap-2">
+              <div
+                className={`flex items-center ${
+                  isMobile ? "justify-center mb-2" : ""
+                } gap-2`}
+              >
                 <div
                   style={{
                     backgroundColor: dataItem.color,
@@ -262,13 +332,13 @@ export function PieChartComp({
                 <p
                   className={`transition-colors duration-300 ${
                     activeIndex === i ? "text-[#00FAFF]" : ""
-                  }`}
+                  } ${isMobile ? "text-sm" : ""}`}
                 >
                   {dataItem.name}
                 </p>
                 {dataItem.name === "Perp" && !isDydxFetched && (
                   <HtmlTooltip
-                    placement="right"
+                    placement={isMobile ? "top" : "right"}
                     title={
                       <React.Fragment>
                         <a href="https://perp.aggtrade.xyz/">
@@ -278,14 +348,16 @@ export function PieChartComp({
                     }
                     sx={{ marginLeft: 1 }}
                   >
-                    <InfoIcon sx={{ color: "#00F5E0" }} />
+                    <InfoIcon
+                      sx={{ color: "#00F5E0", fontSize: isMobile ? 16 : 20 }}
+                    />
                   </HtmlTooltip>
                 )}
               </div>
               <p
                 className={`transition-colors duration-300 ${
                   activeIndex === i ? "text-[#00FAFF] font-semibold" : ""
-                }`}
+                } ${isMobile ? "text-xs text-center" : ""}`}
               >
                 {dataItem.value} USD
               </p>

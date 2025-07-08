@@ -22,6 +22,7 @@ export default function EquityTrendChart() {
   const [timeRange, setTimeRange] = useState<"7" | "30">("7");
   const [error, setError] = useState<string | null>(null);
   const [hasRealData, setHasRealData] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   // Sample data with flat line near x-axis for loading state
   const SAMPLE_DATA: EquityPoint[] = [
@@ -40,6 +41,18 @@ export default function EquityTrendChart() {
     { t: "07-06", v: 0.01 },
     { t: "07-07", v: 0.01 },
   ];
+
+  // Check if mobile on client side
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   // Using Covalent Portfolio API (since you already use Covalent)
   const getCovalentPortfolioHistory = async (userAddress: string) => {
@@ -263,7 +276,11 @@ export default function EquityTrendChart() {
         <ResponsiveContainer width="100%" height={250}>
           <AreaChart
             data={data}
-            margin={{ top: 20, right: 20, left: 20, bottom: 20 }}
+            margin={
+              isMobile
+                ? { top: 20, right: 0, left: 0, bottom: 0 }
+                : { top: 20, right: 20, left: 20, bottom: 20 }
+            }
           >
             <defs>
               {/* Enhanced gradient with multiple colors */}
