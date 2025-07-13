@@ -359,7 +359,7 @@ export function PieChartComp({
                   activeIndex === i ? "text-[#00FAFF] font-semibold" : ""
                 } ${isMobile ? "text-xs text-center" : ""}`}
               >
-                {dataItem.value} USD
+                {dataItem.value.toFixed(2)} USD
               </p>
             </div>
           );
