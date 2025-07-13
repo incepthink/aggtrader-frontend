@@ -1,3 +1,4 @@
+// Updated main page component
 "use client";
 
 import { useUserStore } from "@/store/store";
@@ -24,65 +25,53 @@ import { PieChartComp } from "@/components/profile/PieChartComp";
 import EstimatedBalanceCard from "@/components/profile/EstimatedBalanceCard";
 import EquityTrendChart from "@/components/profile/EquityTrendChart";
 import RecentTransactionCard from "@/components/profile/RecentTransactionCard";
+import { useSpotBalanceTotal } from "@/hooks/useSpotBalance";
 
 const client = new ApolloClient({
   uri: "https://api-v3.balancer.fi",
   cache: new InMemoryCache(),
 });
 
-interface TokenBalance {
-  symbol: string;
-  balance: number;
-  contractAddress?: string;
-  decimals?: number;
-}
-
 interface HoldingsData {
-  spot: number;
   dydx: number;
   balancer: number;
   aave: number;
   isDydxFetched: boolean;
-  spotTokens: TokenBalance[];
 }
 
 const page = () => {
   const { address, isConnected } = useAccount();
 
-  // Changed to single state object to batch updates
+  // Use the efficient spot balance hook
+  const { totalUsd: spotTotal, isLoading: spotLoading } = useSpotBalanceTotal();
+
   const [holdingsData, setHoldingsData] = useState<HoldingsData>({
-    spot: 0,
     dydx: 0,
     balancer: 0,
     aave: 0,
     isDydxFetched: false,
-    spotTokens: [],
   });
 
   const [isLoading, setIsLoading] = useState(false);
   const [dataReady, setDataReady] = useState(false);
 
-  async function getHoldings() {
+  async function getOtherHoldings() {
     if (!address) return;
 
     setIsLoading(true);
     setDataReady(false);
 
     try {
-      // Execute all API calls in parallel
-      const [spotResult, aaveResult, dydxResult, balancerResult] =
-        await Promise.allSettled([
-          getSpotBalance(address),
+      // Execute all API calls in parallel (excluding spot, which is handled by the hook)
+      const [aaveResult, dydxResult, balancerResult] = await Promise.allSettled(
+        [
           getAaveHoldings(address),
           getDydxData(address),
           getBalancerData(address),
-        ]);
+        ]
+      );
 
       // Extract results with fallback values
-      const spotData =
-        spotResult.status === "fulfilled"
-          ? spotResult.value
-          : { total: 0, tokens: [] };
       const aaveValue =
         aaveResult.status === "fulfilled" ? aaveResult.value : 0;
       const dydxData =
@@ -94,26 +83,20 @@ const page = () => {
 
       // Update all data at once
       setHoldingsData({
-        spot: Number(spotData.total.toFixed(2)),
         aave: Number(aaveValue.toFixed(2)),
         dydx: Number(dydxData.value.toFixed(2)),
         balancer: Number(balancerValue.toFixed(2)),
         isDydxFetched: dydxData.isFetched,
-        spotTokens: spotData.tokens,
       });
 
-      // Mark data as ready for smooth animation
       setDataReady(true);
     } catch (error) {
-      console.error("getHoldings", error);
-      // Set default values on error
+      console.error("getOtherHoldings", error);
       setHoldingsData({
-        spot: 0,
         dydx: 0,
         balancer: 0,
         aave: 0,
         isDydxFetched: false,
-        spotTokens: [],
       });
       setDataReady(true);
     } finally {
@@ -121,55 +104,7 @@ const page = () => {
     }
   }
 
-  async function getSpotBalance(
-    address: string
-  ): Promise<{ total: number; tokens: TokenBalance[] }> {
-    try {
-      const apiKey = process.env.NEXT_PUBLIC_COVALENT_KEY;
-      if (!apiKey) {
-        console.error("Covalent API key missing");
-        return { total: 0, tokens: [] };
-      }
-
-      const url = `https://api.covalenthq.com/v1/1/address/${address}/balances_v3/?no-nft-fetch=true&key=${apiKey}`;
-
-      const { data } = await axios.get(url);
-      const items = data?.data?.items || [];
-      console.log("ITEMS::", items);
-
-      let totalUsd = 0;
-      const tokens: TokenBalance[] = [];
-
-      items.forEach((item: any) => {
-        if (item.quote !== null && item.quote > 0) {
-          totalUsd += item.quote;
-
-          // Calculate token balance (convert from wei)
-          const balance =
-            parseFloat(item.balance) / Math.pow(10, item.contract_decimals);
-
-          // Only include tokens with meaningful balance (> $1 USD value)
-          if (item.quote > 1 && balance > 0) {
-            tokens.push({
-              symbol: item.contract_ticker_symbol || "UNKNOWN",
-              balance: balance,
-              contractAddress: item.contract_address,
-              decimals: item.contract_decimals,
-            });
-          }
-        }
-      });
-
-      console.log("SPOT::", Number(totalUsd.toFixed(2)));
-      console.log("TOKENS::", tokens);
-
-      return { total: totalUsd, tokens };
-    } catch (err) {
-      console.error("Error fetching Covalent balances:", err);
-      return { total: 0, tokens: [] };
-    }
-  }
-
+  // Keep your existing functions for Aave, dYdX, and Balancer
   async function getAaveHoldings(address: string): Promise<number> {
     try {
       const provider = new ethers.providers.JsonRpcProvider(
@@ -219,7 +154,6 @@ const page = () => {
         userEmodeCategoryId: userReserves.userEmodeCategoryId,
       });
 
-      console.log("AAVE::", userSummary);
       return Number(userSummary.totalLiquidityUSD);
     } catch (error) {
       console.error("Error fetching Aave data:", error);
@@ -232,8 +166,6 @@ const page = () => {
       const res = await axios.get(
         "https://aggtrade-backend.onrender.com/api/address/" + address
       );
-      console.log(res.data);
-
       return res.data.dydxAddress || null;
     } catch (error) {
       console.error("GETADDRESS::", error);
@@ -246,23 +178,19 @@ const page = () => {
   ): Promise<{ value: number; isFetched: boolean }> {
     try {
       const dydxAddress = await getDydxAddress(address);
-      console.log(dydxAddress);
 
       if (dydxAddress) {
         const client = new IndexerClient(Network.mainnet().indexerConfig);
-
         const positions = await client.account.getSubaccountAssetPositions(
           dydxAddress,
           0
         );
-
         const usdcPos = positions.positions.find(
           (p: any) => p.symbol === "USDC"
         );
 
         if (usdcPos) {
           const bal = parseFloat(usdcPos.size);
-          console.log("DYDX::", bal);
           return { value: bal, isFetched: true };
         }
       }
@@ -311,26 +239,21 @@ const page = () => {
 
   useEffect(() => {
     if (isConnected && address) {
-      getHoldings();
+      getOtherHoldings();
     } else {
       setDataReady(false);
       setHoldingsData({
-        spot: 0,
         dydx: 0,
         balancer: 0,
         aave: 0,
         isDydxFetched: false,
-        spotTokens: [],
       });
     }
   }, [isConnected, address]);
 
-  function getBal() {
+  function getTotalBalance() {
     return (
-      holdingsData.spot +
-      holdingsData.aave +
-      holdingsData.balancer +
-      holdingsData.dydx
+      spotTotal + holdingsData.aave + holdingsData.balancer + holdingsData.dydx
     );
   }
 
@@ -341,7 +264,7 @@ const page = () => {
           <div className="w-full">
             {/* Balance Card - Full width on mobile */}
             <div className="mb-6 lg:mb-8">
-              <EstimatedBalanceCard bal={getBal()} />
+              <EstimatedBalanceCard bal={getTotalBalance()} />
             </div>
 
             {/* Charts Section - Stack on mobile, side by side on desktop */}
@@ -358,11 +281,11 @@ const page = () => {
             <div className="neon-panel relative">
               <PieChartComp
                 isDydxFetched={dataReady ? holdingsData.isDydxFetched : false}
-                spot={dataReady ? holdingsData.spot : 0}
+                spot={dataReady ? spotTotal : 0}
                 perp={dataReady ? holdingsData.dydx : 0}
                 lending={dataReady ? holdingsData.aave : 0}
                 balancer={dataReady ? holdingsData.balancer : 0}
-                isLoading={isLoading}
+                isLoading={isLoading || spotLoading}
               />
             </div>
           </div>
