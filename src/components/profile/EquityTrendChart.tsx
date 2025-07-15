@@ -1,5 +1,4 @@
-"use client";
-
+// src/components/EquityTrendChart.tsx
 import {
   ResponsiveContainer,
   AreaChart,
@@ -9,13 +8,19 @@ import {
   CartesianGrid,
 } from "recharts";
 import { useState, useEffect } from "react";
+import { useAccount } from "wagmi";
 import { useEquityTrend } from "@/hooks/useEquityTrend";
 
 export default function EquityTrendChart() {
+  const { isConnected } = useAccount();
   const [timeRange, setTimeRange] = useState<"7" | "30">("7");
   const [isMobile, setIsMobile] = useState(false);
 
-  const { data, isLoading, error } = useEquityTrend(timeRange);
+  // Use the custom hook
+  const { data, isLoading, error, isSuccess } = useEquityTrend({
+    timeRange,
+    enabled: isConnected,
+  });
 
   // Check if mobile on client side
   useEffect(() => {
@@ -48,6 +53,8 @@ export default function EquityTrendChart() {
     return null;
   };
 
+  const hasRealData = isSuccess && data.length > 0;
+
   return (
     <div className="neon-panel h-[340px]">
       <header className="flex items-center justify-between mb-4">
@@ -55,12 +62,6 @@ export default function EquityTrendChart() {
           <h3 className="text-lg font-semibold text-white">Equity Trend</h3>
           {isLoading && (
             <div className="w-4 h-4 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
-          )}
-          {data?.source && (
-            <span className="text-xs text-slate-400 bg-slate-800 px-2 py-1 rounded capitalize">
-              {data.source}
-              {!data.hasRealData && " (simulated)"}
-            </span>
           )}
         </div>
         <div className="flex gap-2">
@@ -83,15 +84,15 @@ export default function EquityTrendChart() {
 
       {error && (
         <div className="text-yellow-400 text-sm mb-4 p-2 bg-yellow-900/20 rounded">
-          Failed to load portfolio history
+          {error.message}
         </div>
       )}
 
-      {/* Show chart when we have data */}
-      {data?.points && data.points.length > 0 ? (
+      {/* Show chart only when we have real data */}
+      {hasRealData ? (
         <ResponsiveContainer width="100%" height={250}>
           <AreaChart
-            data={data.points}
+            data={data}
             margin={
               isMobile
                 ? { top: 20, right: 0, left: 0, bottom: 0 }
@@ -171,9 +172,9 @@ export default function EquityTrendChart() {
               ? "Loading portfolio data..."
               : "No equity data available"}
           </p>
-          {error && (
+          {!isConnected && (
             <p className="text-slate-500 text-xs mt-2">
-              Try connecting your wallet or check back later
+              Connect your wallet to view equity trends
             </p>
           )}
         </div>
@@ -181,7 +182,7 @@ export default function EquityTrendChart() {
 
       {/* Debug info */}
       <div className="absolute bottom-2 right-2 text-xs text-gray-600">
-        Data points: {data?.points?.length || 0}
+        Data points: {data.length}
       </div>
 
       {/* Loading shimmer effect */}

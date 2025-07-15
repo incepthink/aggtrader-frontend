@@ -203,7 +203,10 @@ export function PieChartComp({
             <Tooltip
               cursor={true}
               offset={-50}
-              formatter={(value: number, name: string) => [`${value}`, name]}
+              formatter={(value: number, name: string) => [
+                `${value.toFixed(2)}`,
+                name,
+              ]}
               wrapperStyle={{
                 padding: "0px",
                 borderRadius: "8px",
