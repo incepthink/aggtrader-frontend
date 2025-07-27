@@ -1,11 +1,12 @@
-// app/layout.tsx  (RootLayout)
-
+// app/layout.tsx (RootLayout)
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import WagmiWalletProvider from "@/components/providers/WagmiWalletProvider";
 import Navbar from "@/components/common/navbar/Navbar";
 import MuiThemeProvider from "@/components/providers/MuiThemeProvider";
+import { ConditionalMorphoNavbar } from "@/components/common/navbar/ConditionalMorphoNavbar";
+import { Toolbar } from "@mui/material";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,26 +34,17 @@ export default function RootLayout({
       >
         <WagmiWalletProvider>
           <MuiThemeProvider>
-            {/* ───── background ───── */}
+            {/* Background */}
             <div className="fixed inset-0 -z-10 overflow-hidden">
-              {/* <video
-                className="w-full h-full object-cover"
-                src="/assets/home.mp4"
-                autoPlay
-                muted
-                loop
-                playsInline
-                preload="auto"
-              /> */}
               <img
                 src="/ellipse-home.png"
                 className="w-full h-full object-cover"
                 alt=""
               />
             </div>
-
-            {/* ───── main UI ───── */}
+            {/* Main UI */}
             <Navbar />
+            <ConditionalMorphoNavbar />
             {children}
           </MuiThemeProvider>
         </WagmiWalletProvider>

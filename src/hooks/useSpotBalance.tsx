@@ -140,6 +140,8 @@ async function fetchSpotBalance(address: string): Promise<SpotBalanceData> {
       ),
     ]);
 
+    console.log("PRICES FROM ALCHEMY::", prices);
+
     // 5. Process ETH balance
     const ethBalanceBigInt = BigInt(ethBalance.toString());
     const ethReadableBalance = Number(ethBalanceBigInt) / Math.pow(10, 18);
@@ -160,13 +162,23 @@ async function fetchSpotBalance(address: string): Promise<SpotBalanceData> {
       const decimals = metadata.decimals || 18;
       const readableBalance = balanceDecimal / Math.pow(10, decimals);
 
-      // Get price from batch result, fallback to CoinGecko if needed
+      // ✅ FIXED: Use Alchemy price first, fallback to CoinGecko only if needed
       let tokenPrice = prices[token.contractAddress.toLowerCase()] || 0;
 
-      // If Alchemy didn't return price, try fallback (with rate limiting consideration)
+      console.log(
+        `Token ${metadata.symbol} (${token.contractAddress}): Alchemy price = ${tokenPrice}`
+      );
+
+      // Only use fallback if Alchemy didn't return a price AND the balance is meaningful
       if (tokenPrice === 0 && readableBalance > 0.001) {
+        console.log(
+          `No Alchemy price for ${metadata.symbol}, trying CoinGecko fallback...`
+        );
         try {
           tokenPrice = await getFallbackPrice(token.contractAddress);
+          console.log(
+            `CoinGecko fallback price for ${metadata.symbol}: ${tokenPrice}`
+          );
         } catch (error) {
           console.warn(
             `Failed to get fallback price for ${token.contractAddress}`

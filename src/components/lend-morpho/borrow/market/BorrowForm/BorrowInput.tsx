@@ -1,0 +1,219 @@
+// /components/lend-morpho/borrow/market/BorrowForm/BorrowInput.tsx
+"use client";
+
+import React from "react";
+import { Box, Typography, TextField, InputAdornment } from "@mui/material";
+import { AccountBalanceWallet } from "@mui/icons-material";
+
+interface BorrowInputProps {
+  amount: string;
+  onAmountChange: (amount: string) => void;
+  symbol: string;
+  balance: string;
+  tokenPrice: number;
+  isConnected: boolean;
+  maxBorrowable?: string;
+  mode: "borrow" | "repay";
+  onMaxClick?: () => void;
+  suggestedAmount?: number; // New prop for suggested borrowable amount
+  collateralAmount?: string; // New prop to show collateral context
+
+  existingAmount?: number;
+  showExisting?: boolean;
+}
+
+export const BorrowInput: React.FC<BorrowInputProps> = ({
+  amount,
+  onAmountChange,
+  symbol,
+  balance,
+  tokenPrice,
+  isConnected,
+  maxBorrowable,
+  mode,
+  onMaxClick,
+  suggestedAmount,
+  collateralAmount,
+  existingAmount = 0,
+  showExisting = false,
+}) => {
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value;
+    if (value === "" || /^\d*\.?\d*$/.test(value)) {
+      onAmountChange(value);
+    }
+  };
+
+  const usdValue = (parseFloat(amount) || 0) * tokenPrice;
+  const displayBalance = mode === "repay" ? maxBorrowable || "0.00" : balance;
+
+  const getBalanceDisplay = () => {
+    if (!isConnected) {
+      return "Connect wallet to see balance";
+    }
+
+    if (mode === "repay") {
+      return `Current debt: ${displayBalance} ${symbol}`;
+    } else {
+      return `Balance: ${displayBalance} ${symbol}`;
+    }
+  };
+
+  const getSuggestedAmountDisplay = () => {
+    if (
+      mode === "borrow" &&
+      suggestedAmount &&
+      suggestedAmount > 0 &&
+      collateralAmount &&
+      parseFloat(collateralAmount) > 0
+    ) {
+      return `Max borrowable: ${suggestedAmount.toFixed(4)} ${symbol}`;
+    }
+    return null;
+  };
+
+  const handleSuggestedClick = () => {
+    if (suggestedAmount && suggestedAmount > 0) {
+      onAmountChange(suggestedAmount.toFixed(6));
+    }
+  };
+
+  return (
+    <Box sx={{ mb: 3 }}>
+      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
+        <Typography variant="body2" sx={{ color: "#8b949e" }}>
+          {mode === "borrow" ? `Borrow ${symbol}` : `Repay ${symbol}`}
+        </Typography>
+        <Typography variant="body2" sx={{ color: "#8b949e", fontSize: "12px" }}>
+          {getBalanceDisplay()}
+        </Typography>
+      </Box>
+
+      <TextField
+        fullWidth
+        value={amount}
+        onChange={handleChange}
+        placeholder="0.00"
+        disabled={!isConnected}
+        InputProps={{
+          endAdornment: (
+            <InputAdornment position="end">
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                {mode === "repay" && onMaxClick && (
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      cursor: isConnected ? "pointer" : "default",
+                      color: isConnected ? "#ef4444" : "#8b949e",
+                      fontWeight: "bold",
+                      fontSize: "12px",
+                      textTransform: "none",
+                      "&:hover": isConnected
+                        ? {
+                            backgroundColor: "rgba(239, 68, 68, 0.1)",
+                          }
+                        : {},
+                      p: 0.5,
+                      borderRadius: 1,
+                    }}
+                    onClick={isConnected ? onMaxClick : undefined}
+                  >
+                    MAX
+                  </Typography>
+                )}
+                <Typography
+                  variant="body2"
+                  sx={{ color: "#8b949e", fontSize: "16px" }}
+                >
+                  {symbol}
+                </Typography>
+              </Box>
+            </InputAdornment>
+          ),
+        }}
+        sx={{
+          "& .MuiOutlinedInput-root": {
+            fontSize: "28px",
+            fontWeight: "bold",
+            backgroundColor: "#0f1419",
+            color: "white",
+            "& fieldset": {
+              borderColor: mode === "repay" ? "#2d3748" : "#2d3748",
+            },
+            "&:hover fieldset": {
+              borderColor: mode === "repay" ? "#3b82f6" : "#3b82f6",
+            },
+            "&.Mui-focused fieldset": {
+              borderColor: mode === "repay" ? "#3b82f6" : "#3b82f6",
+            },
+            "&.Mui-disabled": {
+              opacity: 0.6,
+              "& fieldset": {
+                borderColor: "#2d3748",
+              },
+            },
+          },
+          "& .MuiInputBase-input": {
+            "&::placeholder": {
+              color: "#8b949e",
+              opacity: 1,
+            },
+            "&.Mui-disabled": {
+              color: "#8b949e",
+              WebkitTextFillColor: "#8b949e",
+            },
+          },
+        }}
+      />
+
+      <Box sx={{ display: "flex", justifyContent: "space-between", mt: 1 }}>
+        <Typography variant="caption" sx={{ color: "#8b949e" }}>
+          ${usdValue.toFixed(2)}
+        </Typography>
+
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "flex-end",
+          }}
+        >
+          {/* Suggested amount display */}
+          {getSuggestedAmountDisplay() && (
+            <Typography
+              variant="caption"
+              sx={{
+                color: "#3b82f6",
+                cursor: "pointer",
+                "&:hover": {
+                  textDecoration: "underline",
+                },
+              }}
+              onClick={handleSuggestedClick}
+            >
+              {getSuggestedAmountDisplay()}
+            </Typography>
+          )}
+
+          {/* Validation messages */}
+          {amount &&
+            mode === "repay" &&
+            parseFloat(amount) > parseFloat(maxBorrowable || "0") && (
+              <Typography variant="caption" sx={{ color: "#ef4444" }}>
+                Amount exceeds debt
+              </Typography>
+            )}
+
+          {amount &&
+            mode === "borrow" &&
+            suggestedAmount &&
+            parseFloat(amount) > suggestedAmount && (
+              <Typography variant="caption" sx={{ color: "#ef4444" }}>
+                Exceeds max borrowable
+              </Typography>
+            )}
+        </Box>
+      </Box>
+    </Box>
+  );
+};
