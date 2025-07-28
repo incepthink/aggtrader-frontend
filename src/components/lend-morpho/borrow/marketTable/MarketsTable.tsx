@@ -240,20 +240,26 @@ const MarketsTable: React.FC = () => {
         <TableContainer
           component={Paper}
           sx={{
-            backgroundColor: "rgba(30, 41, 59, 0.4)",
+            backgroundColor: "transparent",
             boxShadow: "none",
             borderRadius: 0,
           }}
         >
           <Table>
-            <TableHead>
+            <TableHead
+              sx={{
+                backgroundColor: "secondary.light",
+                padding: "0px",
+                borderRadius: "32px !important",
+              }}
+            >
               <TableRow>
                 <TableCell
                   sx={{
-                    color: "#9CA3AF",
+                    color: "text.primary",
                     borderBottom: "1px solid rgba(55, 65, 81, 0.5)",
                     backgroundColor: "transparent",
-                    fontSize: "0.875rem",
+                    fontSize: "1rem",
                     fontWeight: 500,
                     py: 2,
                   }}
@@ -262,10 +268,10 @@ const MarketsTable: React.FC = () => {
                 </TableCell>
                 <TableCell
                   sx={{
-                    color: "#9CA3AF",
+                    color: "text.primary",
                     borderBottom: "1px solid rgba(55, 65, 81, 0.5)",
                     backgroundColor: "transparent",
-                    fontSize: "0.875rem",
+                    fontSize: "1rem",
                     fontWeight: 500,
                     py: 2,
                   }}
@@ -274,10 +280,10 @@ const MarketsTable: React.FC = () => {
                 </TableCell>
                 <TableCell
                   sx={{
-                    color: "#9CA3AF",
+                    color: "text.primary",
                     borderBottom: "1px solid rgba(55, 65, 81, 0.5)",
                     backgroundColor: "transparent",
-                    fontSize: "0.875rem",
+                    fontSize: "1rem",
                     fontWeight: 500,
                     py: 2,
                   }}
@@ -286,10 +292,10 @@ const MarketsTable: React.FC = () => {
                 </TableCell>
                 <TableCell
                   sx={{
-                    color: "#9CA3AF",
+                    color: "text.primary",
                     borderBottom: "1px solid rgba(55, 65, 81, 0.5)",
                     backgroundColor: "transparent",
-                    fontSize: "0.875rem",
+                    fontSize: "1rem",
                     fontWeight: 500,
                     py: 2,
                   }}
@@ -298,10 +304,10 @@ const MarketsTable: React.FC = () => {
                 </TableCell>
                 <TableCell
                   sx={{
-                    color: "#9CA3AF",
+                    color: "text.primary",
                     borderBottom: "1px solid rgba(55, 65, 81, 0.5)",
                     backgroundColor: "transparent",
-                    fontSize: "0.875rem",
+                    fontSize: "1rem",
                     fontWeight: 500,
                     py: 2,
                   }}
@@ -310,10 +316,10 @@ const MarketsTable: React.FC = () => {
                 </TableCell>
                 <TableCell
                   sx={{
-                    color: "#9CA3AF",
+                    color: "text.primary",
                     borderBottom: "1px solid rgba(55, 65, 81, 0.5)",
                     backgroundColor: "transparent",
-                    fontSize: "0.875rem",
+                    fontSize: "1rem",
                     fontWeight: 500,
                     py: 2,
                   }}
@@ -322,10 +328,10 @@ const MarketsTable: React.FC = () => {
                 </TableCell>
                 <TableCell
                   sx={{
-                    color: "#9CA3AF",
+                    color: "text.primary",
                     borderBottom: "1px solid rgba(55, 65, 81, 0.5)",
                     backgroundColor: "transparent",
-                    fontSize: "0.875rem",
+                    fontSize: "1rem",
                     fontWeight: 500,
                     py: 2,
                   }}
@@ -337,7 +343,7 @@ const MarketsTable: React.FC = () => {
                     color: "#9CA3AF",
                     borderBottom: "1px solid rgba(55, 65, 81, 0.5)",
                     backgroundColor: "transparent",
-                    fontSize: "0.875rem",
+                    fontSize: "1rem",
                     fontWeight: 500,
                     py: 2,
                   }}

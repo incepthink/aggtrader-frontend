@@ -8,13 +8,13 @@ import { Menu, Close } from "@mui/icons-material";
 
 const navItems = [
   {
-    href: "https://sushiswap-web.vercel.app/ethereum/swap",
+    href: ["https://sushiswap-web.vercel.app/ethereum/swap"],
     label: "Spot",
   },
-  { href: "https://perp.aggtrade.xyz/", label: "Perps" },
-  { href: "/lend/earn", label: "Lend/Borrow" },
-  { href: "https://yield.aggtrade.xyz/", label: "Yield Farming" },
-  { href: "/profile", label: "Account" },
+  { href: ["https://perp.aggtrade.xyz/"], label: "Perps" },
+  { href: ["/lend/earn", "/lend/borrow"], label: "Lend/Borrow" },
+  { href: ["https://yield.aggtrade.xyz/"], label: "Yield Farming" },
+  { href: ["/profile"], label: "Account" },
 ];
 
 interface GradientConnectButtonProps {
@@ -124,7 +124,7 @@ export default function Navbar() {
         {/* Desktop Navigation */}
         <ul className="hidden lg:flex list-none gap-6 m-0 p-4">
           {navItems.map(({ href, label }) => (
-            <li key={href}>
+            <li key={href[0]}>
               <NavLink href={href}>{label}</NavLink>
             </li>
           ))}
@@ -178,9 +178,9 @@ export default function Navbar() {
         </div>
         <ul className="flex flex-col p-4 gap-4">
           {navItems.map(({ href, label }) => (
-            <li key={href}>
+            <li key={href[0]}>
               <a
-                href={href}
+                href={href[0]}
                 onClick={closeMenu}
                 className="block text-white hover:text-[#00F5E0] transition-colors duration-200 py-2"
               >

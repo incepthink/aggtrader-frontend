@@ -88,7 +88,7 @@ const VaultTabs: React.FC<VaultTabsProps> = ({ vault }) => {
     <GlowBox>
       <Paper
         sx={{
-          backgroundColor: "rgba(30, 41, 59, 0.3)",
+          backgroundColor: "transparent",
           borderRadius: 2,
           overflow: "hidden",
         }}

@@ -15,6 +15,7 @@ const MuiThemeProvider = ({ children }: any) => {
       secondary: {
         main: "#00FFE9",
         dark: "#1E1E1E",
+        light: "rgba(0, 245, 224, 0.1)",
       },
       text: {
         primary: "#fff",

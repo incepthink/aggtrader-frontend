@@ -32,7 +32,7 @@ const DepositSummary = () => {
         <Box
           sx={{
             p: 3,
-            backgroundColor: "rgba(30, 41, 59, 0.3)",
+            backgroundColor: "transparent",
             color: "white",
             borderRadius: 0,
           }}
@@ -109,7 +109,7 @@ const DepositSummary = () => {
       <Box
         sx={{
           p: 3,
-          backgroundColor: "rgba(30, 41, 59, 0.3)",
+          backgroundColor: "transparent",
           color: "white",
           borderRadius: 0,
         }}

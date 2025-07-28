@@ -122,23 +122,25 @@ const MarketRow: React.FC<MarketRowProps> = ({
     </Box>
   );
 
-  const VaultBadge = ({ count }: { count: number }) => (
-    <Box
-      sx={{
-        display: "flex",
-        alignItems: "center",
-        gap: "4px",
-        backgroundColor: "#4F46E5",
-        color: "#FFFFFF",
-        fontSize: "10px",
-        fontWeight: "600",
-        padding: "2px 6px",
-        borderRadius: "4px",
-      }}
-    >
-      <Typography sx={{ fontSize: "10px" }}>+{count}</Typography>
-    </Box>
-  );
+  const VaultChip = ({ vaults }: { vaults: any }) =>
+    vaults.map((vault: any, i: any) => {
+      return (
+        <Chip
+          label={vault.symbol || vault.name || "Vault"}
+          size="small"
+          sx={{
+            backgroundColor: "primary.light",
+            color: "#FFFFFF",
+            fontSize: "10px",
+            fontWeight: "600",
+            height: "20px",
+            "& .MuiChip-label": {
+              padding: "0 6px",
+            },
+          }}
+        />
+      );
+    });
 
   return (
     <TableRow
@@ -254,8 +256,8 @@ const MarketRow: React.FC<MarketRowProps> = ({
           label={`${((market.state?.borrowApy || 0) * 100).toFixed(2)}%`}
           size="small"
           sx={{
-            backgroundColor: "#10B981",
-            color: "#FFFFFF",
+            backgroundColor: "primary.main",
+            color: "primary.dark",
             fontSize: "12px",
             fontWeight: "600",
             height: "24px",
@@ -275,7 +277,25 @@ const MarketRow: React.FC<MarketRowProps> = ({
         }}
       >
         {market.supplyingVaults && market.supplyingVaults.length > 0 ? (
-          <VaultBadge count={market.supplyingVaults.length} />
+          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
+            <VaultChip vaults={market.supplyingVaults.slice(0, 2)} />
+            {market.supplyingVaults.length > 1 && (
+              <Chip
+                label={`+${market.supplyingVaults.length - 2}`}
+                size="small"
+                sx={{
+                  backgroundColor: "primary.light",
+                  color: "#FFFFFF",
+                  fontSize: "10px",
+                  fontWeight: "600",
+                  height: "20px",
+                  "& .MuiChip-label": {
+                    padding: "0 6px",
+                  },
+                }}
+              />
+            )}
+          </Box>
         ) : (
           <Typography sx={{ color: "#8B8D98", fontSize: "12px" }}>-</Typography>
         )}

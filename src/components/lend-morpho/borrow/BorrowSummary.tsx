@@ -24,7 +24,7 @@ const formatNumber = (num: number): string => {
 const formatCurrency = (amount: number): string => {
   if (amount === 0) return "$0.00";
   if (amount < 0.01) return "<$0.01";
-  return `${formatNumber(amount)}`;
+  return `$${formatNumber(amount)}`;
 };
 
 const BorrowSummary: React.FC = () => {
@@ -42,7 +42,7 @@ const BorrowSummary: React.FC = () => {
         <Box
           sx={{
             p: 3,
-            backgroundColor: "rgba(30, 41, 59, 0.3)",
+            backgroundColor: "transparent",
             color: "white",
             borderRadius: 0,
           }}
@@ -121,7 +121,7 @@ const BorrowSummary: React.FC = () => {
       <Box
         sx={{
           p: 3,
-          backgroundColor: "rgba(30, 41, 59, 0.3)",
+          backgroundColor: "transparent",
           color: "white",
           borderRadius: 0,
         }}
@@ -169,7 +169,7 @@ const BorrowSummary: React.FC = () => {
                 color: "#ffffff",
               }}
             >
-              ${formatCurrency(totalLoans)}
+              {formatCurrency(totalLoans)}
             </Typography>
 
             {/* Show connection prompt if not connected */}

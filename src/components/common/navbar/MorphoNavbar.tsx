@@ -24,22 +24,12 @@ export const MorphoNavbar: React.FC = () => {
         zIndex: 20, // Lower than main nav
         backgroundColor: "#0a0e1a",
         transition: "transform 0.3s ease, opacity 0.3s ease",
-        transform: scrollUp ? "translateY(0)" : "translateY(-100%)",
+        transform: scrollUp ? "translateY(0%)" : "translateY(-100%)",
         opacity: scrollUp ? 1 : 0,
         pointerEvents: scrollUp ? "auto" : "none", // avoids invisible click zones
       }}
     >
-      <Toolbar
-        disableGutters
-        sx={{
-          minHeight: "auto", // Remove default height
-          height: "fit-content", // Only as tall as its content
-          px: 2,
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
+      <div className="flex mx-auto">
         <Button
           onClick={() => handleTabClick("earn")}
           sx={{
@@ -82,7 +72,7 @@ export const MorphoNavbar: React.FC = () => {
         >
           Borrow
         </Button>
-      </Toolbar>
+      </div>
     </AppBar>
   );
 };

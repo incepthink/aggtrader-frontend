@@ -1,25 +1,36 @@
 import React from "react";
-import { Box, TextField, InputAdornment, Typography } from "@mui/material";
+import {
+  Box,
+  TextField,
+  InputAdornment,
+  Typography,
+  useMediaQuery,
+  useTheme,
+} from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
-import InfoIcon from "@mui/icons-material/Info";
 
-interface FilterControlsProps {
+interface ResponsiveFilterControlsProps {
   searchTerm: string;
   onSearchChange: (value: string) => void;
 }
 
-const FilterControls: React.FC<FilterControlsProps> = ({
+const ResponsiveFilterControls: React.FC<ResponsiveFilterControlsProps> = ({
   searchTerm,
   onSearchChange,
 }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+
   return (
     <Box
       sx={{
         display: "flex",
         justifyContent: "space-between",
-        alignItems: "center",
+        alignItems: isMobile ? "flex-start" : "center",
+        flexDirection: isMobile ? "column" : "row",
         pt: 4,
         pb: 2,
+        gap: isMobile ? 2 : 0,
       }}
     >
       {/* Vaults Heading */}
@@ -28,19 +39,29 @@ const FilterControls: React.FC<FilterControlsProps> = ({
         sx={{
           color: "white",
           fontWeight: 600,
-          fontSize: "2rem",
+          fontSize: isMobile ? "1.75rem" : "2rem",
+          alignSelf: isMobile ? "flex-start" : "auto",
+          display: isMobile ? "none" : "visible",
         }}
       >
         Vaults
       </Typography>
 
       {/* Search Controls */}
-      <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: 2,
+          width: isMobile ? "100%" : "auto",
+        }}
+      >
         <TextField
           placeholder="Filter vaults"
-          size="small"
+          size={isMobile ? "medium" : "small"}
           value={searchTerm}
           onChange={(e) => onSearchChange(e.target.value)}
+          fullWidth={isMobile}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
@@ -50,10 +71,11 @@ const FilterControls: React.FC<FilterControlsProps> = ({
             sx: {
               boxShadow: "inset 0 1px 12px rgba(0, 255, 233, 0.6)",
               px: 2,
-              py: 0.5,
+              py: isMobile ? 1 : 0.5,
               backgroundColor: "primary.dark",
               color: "white",
-              minWidth: "250px",
+              minWidth: isMobile ? "100%" : "250px",
+              fontSize: isMobile ? "16px" : "14px", // Prevents zoom on iOS
               "& .MuiOutlinedInput-notchedOutline": {
                 border: "none",
               },
@@ -66,6 +88,7 @@ const FilterControls: React.FC<FilterControlsProps> = ({
               "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
                 boxShadow: "inset 0 1px 12px rgba(0, 255, 233, 0.7)",
               },
+              borderRadius: isMobile ? 2 : 1,
             },
           }}
           sx={{
@@ -83,4 +106,4 @@ const FilterControls: React.FC<FilterControlsProps> = ({
   );
 };
 
-export default FilterControls;
+export default ResponsiveFilterControls;

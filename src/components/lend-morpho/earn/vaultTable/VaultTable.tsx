@@ -1,22 +1,13 @@
 "use client";
 
 import React, { useState, useMemo, useCallback } from "react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Alert,
-  TablePagination,
-} from "@mui/material";
+import { Alert } from "@mui/material";
 import { useVaultsQuery, type Vault } from "@/hooks/lend-morpho/useVaultsQuery";
 import GlowBox from "@/components/common/ui/GlowBox";
+import ResponsiveFilterControls from "./ResponsiveFilterControls";
+import ResponsiveLoadingSkeleton from "./ResponsiveLoadingSkeleton";
+import ResponsiveVaultsContainer from "./ResponsiveVaultsContainer";
 import FilterControls from "./FilterControls";
-import VaultRow from "./VaultRow";
-import LoadingSkeleton from "./LoadingSkeleton";
 
 // Helper function to format large numbers
 const formatNumber = (num: number): string => {
@@ -129,11 +120,11 @@ const VaultsTable = () => {
   if (isLoading) {
     return (
       <>
-        <FilterControls
+        <ResponsiveFilterControls
           searchTerm={searchTerm}
           onSearchChange={handleSearchChange}
         />
-        <LoadingSkeleton />
+        <ResponsiveLoadingSkeleton />
       </>
     );
   }
@@ -142,7 +133,7 @@ const VaultsTable = () => {
   if (isError) {
     return (
       <>
-        <FilterControls
+        <ResponsiveFilterControls
           searchTerm={searchTerm}
           onSearchChange={handleSearchChange}
         />
@@ -168,7 +159,7 @@ const VaultsTable = () => {
   if (!vaults || vaults.length === 0) {
     return (
       <>
-        <FilterControls
+        <ResponsiveFilterControls
           searchTerm={searchTerm}
           onSearchChange={handleSearchChange}
         />
@@ -219,134 +210,22 @@ const VaultsTable = () => {
 
   return (
     <>
-      <FilterControls
+      <ResponsiveFilterControls
         searchTerm={searchTerm}
         onSearchChange={handleSearchChange}
       />
-      <GlowBox>
-        <TableContainer
-          component={Paper}
-          sx={{
-            backgroundColor: "rgba(30, 41, 59, 0.4)",
-            boxShadow: "none",
-            borderRadius: 0,
-          }}
-        >
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell
-                  sx={{
-                    color: "#9CA3AF",
-                    borderBottom: "1px solid rgba(55, 65, 81, 0.5)",
-                    backgroundColor: "transparent",
-                    fontSize: "0.875rem",
-                    fontWeight: 500,
-                    py: 2,
-                  }}
-                >
-                  Vault
-                </TableCell>
-                <TableCell
-                  sx={{
-                    color: "#9CA3AF",
-                    borderBottom: "1px solid rgba(55, 65, 81, 0.5)",
-                    backgroundColor: "transparent",
-                    fontSize: "0.875rem",
-                    fontWeight: 500,
-                    py: 2,
-                  }}
-                >
-                  Deposits
-                </TableCell>
-                <TableCell
-                  sx={{
-                    color: "#9CA3AF",
-                    borderBottom: "1px solid rgba(55, 65, 81, 0.5)",
-                    backgroundColor: "transparent",
-                    fontSize: "0.875rem",
-                    fontWeight: 500,
-                    py: 2,
-                  }}
-                >
-                  Curator
-                </TableCell>
-                <TableCell
-                  sx={{
-                    color: "#9CA3AF",
-                    borderBottom: "1px solid rgba(55, 65, 81, 0.5)",
-                    backgroundColor: "transparent",
-                    fontSize: "0.875rem",
-                    fontWeight: 500,
-                    py: 2,
-                  }}
-                >
-                  Collateral
-                </TableCell>
-                <TableCell
-                  sx={{
-                    color: "#9CA3AF",
-                    borderBottom: "1px solid rgba(55, 65, 81, 0.5)",
-                    backgroundColor: "transparent",
-                    fontSize: "0.875rem",
-                    fontWeight: 500,
-                    py: 2,
-                  }}
-                >
-                  APY
-                </TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {paginatedVaults.map((vault: any, index: number) => (
-                <VaultRow
-                  key={vault.address}
-                  vault={vault}
-                  index={index}
-                  isLastRow={index === paginatedVaults.length - 1}
-                  formatNumber={formatNumber}
-                  getTotalCollateralAssets={getTotalCollateralAssets}
-                  getTotalSupplyUsd={getTotalSupplyUsd}
-                  getCollateralAssets={getCollateralAssets}
-                />
-              ))}
-            </TableBody>
-          </Table>
-
-          {/* Pagination */}
-          {filteredVaults.length > rowsPerPage && (
-            <TablePagination
-              component="div"
-              count={filteredVaults.length}
-              page={page}
-              onPageChange={handleChangePage}
-              rowsPerPage={rowsPerPage}
-              onRowsPerPageChange={handleChangeRowsPerPage}
-              rowsPerPageOptions={[10, 25, 50, 100]}
-              sx={{
-                color: "#9CA3AF",
-                borderTop: "1px solid rgba(55, 65, 81, 0.3)",
-                backgroundColor: "transparent",
-                "& .MuiTablePagination-selectIcon": {
-                  color: "#9CA3AF",
-                },
-                "& .MuiTablePagination-select": {
-                  color: "#9CA3AF",
-                },
-                "& .MuiTablePagination-displayedRows": {
-                  color: "#9CA3AF",
-                },
-                "& .MuiIconButton-root": {
-                  color: "#9CA3AF",
-                },
-                "& .MuiIconButton-root.Mui-disabled": {
-                  color: "rgba(156, 163, 175, 0.3)",
-                },
-              }}
-            />
-          )}
-        </TableContainer>
-      </GlowBox>
+      <ResponsiveVaultsContainer
+        paginatedVaults={paginatedVaults}
+        filteredVaults={filteredVaults}
+        page={page}
+        rowsPerPage={rowsPerPage}
+        formatNumber={formatNumber}
+        getTotalCollateralAssets={getTotalCollateralAssets}
+        getTotalSupplyUsd={getTotalSupplyUsd}
+        getCollateralAssets={getCollateralAssets}
+        handleChangePage={handleChangePage}
+        handleChangeRowsPerPage={handleChangeRowsPerPage}
+      />
     </>
   );
 };

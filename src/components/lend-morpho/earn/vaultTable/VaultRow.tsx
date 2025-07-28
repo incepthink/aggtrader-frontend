@@ -32,6 +32,7 @@ const VaultRow: React.FC<VaultRowProps> = ({
   getCollateralAssets,
 }) => {
   const router = useRouter();
+  console.log("VAULT::", vault);
 
   const handleVaultClick = (vaultAddress: string) => {
     router.push(`/lend/earn/${vaultAddress}`);
@@ -123,7 +124,7 @@ const VaultRow: React.FC<VaultRowProps> = ({
           <Typography
             variant="caption"
             sx={{
-              color: "#9CA3AF",
+              color: "primary.main",
               fontSize: "0.8rem",
             }}
           >
@@ -214,7 +215,7 @@ const VaultRow: React.FC<VaultRowProps> = ({
                     label={asset}
                     size="small"
                     sx={{
-                      backgroundColor: "rgba(55, 65, 81, 0.6)",
+                      backgroundColor: "primary.light",
                       color: "white",
                       fontSize: "0.75rem",
                       height: "24px",
@@ -225,97 +226,21 @@ const VaultRow: React.FC<VaultRowProps> = ({
                     }}
                   />
                 ))}
-              {getCollateralAssets(vault).length > 2 && (
-                <Tooltip
-                  title={
-                    <Box
-                      sx={{
-                        width: "200px",
-                        p: 1.5,
-                      }}
-                    >
-                      <Typography
-                        variant="subtitle2"
-                        sx={{
-                          fontWeight: 600,
-                          mb: 1,
-                          color: "white",
-                          fontSize: "0.8rem",
-                        }}
-                      >
-                        All Collateral Assets:
-                      </Typography>
-                      <Box
-                        sx={{
-                          display: "flex",
-                          flexWrap: "wrap",
-                          gap: 0.5,
-                        }}
-                      >
-                        {getCollateralAssets(vault).map(
-                          (asset, tooltipIndex) => (
-                            <Chip
-                              key={tooltipIndex}
-                              label={asset}
-                              size="small"
-                              sx={{
-                                backgroundColor: "rgba(16, 185, 129, 0.8)",
-                                color: "white",
-                                fontSize: "0.7rem",
-                                height: "20px",
-                                borderRadius: "10px",
-                                "& .MuiChip-label": {
-                                  px: 1,
-                                },
-                              }}
-                            />
-                          )
-                        )}
-                      </Box>
-                    </Box>
-                  }
-                  arrow
-                  placement="top"
-                  PopperProps={{
-                    style: { zIndex: 9999 },
-                  }}
-                  componentsProps={{
-                    tooltip: {
-                      sx: {
-                        bgcolor: "rgba(17, 24, 39, 0.98)",
-                        border: "1px solid rgba(55, 65, 81, 0.5)",
-                        borderRadius: "8px",
-                        maxWidth: "none",
-                        boxShadow: "0 10px 25px rgba(0, 0, 0, 0.5)",
-                      },
-                    },
-                    arrow: {
-                      sx: {
-                        color: "rgba(17, 24, 39, 0.98)",
-                      },
-                    },
-                  }}
-                >
-                  <Chip
-                    label={`+${getCollateralAssets(vault).length - 2}`}
-                    size="small"
-                    sx={{
-                      backgroundColor: "#10B981",
-                      color: "white",
-                      fontSize: "0.75rem",
-                      height: "24px",
-                      borderRadius: "12px",
-                      cursor: "pointer",
-                      "&:hover": {
-                        backgroundColor: "#059669",
-                      },
-                      "& .MuiChip-label": {
-                        px: 1.5,
-                      },
-                    }}
-                  />
-                </Tooltip>
-              )}
+              <Chip
+                label={`+${getCollateralAssets(vault).length - 2}`}
+                size="small"
+                sx={{
+                  backgroundColor: "primary.light",
+                  color: "white",
+                  fontSize: "0.75rem",
+                  height: "24px",
+                  borderRadius: "12px",
+                  cursor: "pointer",
+                  "& .MuiChip-label": {
+                    px: 1.5,
+                  },
+                }}
+              />
             </>
           ) : (
             <Typography

@@ -123,7 +123,7 @@ export default function MarketTabs({ market }: MarketTabsProps) {
     <GlowBox>
       <Paper
         sx={{
-          backgroundColor: "rgba(30, 41, 59, 0.3)",
+          backgroundColor: "transparent",
           borderRadius: 2,
           overflow: "hidden",
         }}
@@ -594,7 +594,7 @@ export default function MarketTabs({ market }: MarketTabsProps) {
               component={Paper}
               sx={{
                 mt: 2,
-                backgroundColor: "rgba(30, 41, 59, 0.3)",
+                backgroundColor: "transparent",
                 "& .MuiTableCell-root": {
                   borderColor: "rgba(75, 85, 99, 0.3)",
                   color: "white",
