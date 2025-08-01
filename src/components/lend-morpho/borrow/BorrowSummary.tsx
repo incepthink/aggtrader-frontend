@@ -33,7 +33,7 @@ const BorrowSummary: React.FC = () => {
     data: userBorrowPositions,
     isLoading,
     error,
-  } = useUserMarketPositions(1); // Ethereum mainnet
+  } = useUserMarketPositions(); // Ethereum mainnet
 
   // Show loading state
   if (isLoading && isConnected) {

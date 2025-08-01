@@ -1,5 +1,6 @@
 import { useQuery, UseQueryResult } from "@tanstack/react-query";
 import axios, { AxiosResponse } from "axios";
+import { useChain } from "@/context/ChainContext";
 
 // Updated to official API endpoint
 const MORPHO_API_URL = "https://api.morpho.org/graphql";
@@ -140,8 +141,9 @@ export const useVaultsQuery = (
   const {
     limit = 100,
     whitelistedOnly = true, // Default to whitelisted only like official app
-    chainId = [1], // Default to Ethereum mainnet
   } = options;
+
+  const { chainId } = useChain(); // Get chainId from context
 
   // Updated GraphQL query to match official API structure - fixed VaultFilters type
   const query = `

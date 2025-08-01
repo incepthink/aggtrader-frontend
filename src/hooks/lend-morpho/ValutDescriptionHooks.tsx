@@ -1,7 +1,8 @@
+import { useChain } from "@/context/ChainContext";
 import { useQuery, UseQueryResult } from "@tanstack/react-query";
 import axios, { AxiosResponse } from "axios";
 
-const MORPHO_API_URL = "https://blue-api.morpho.org/graphql";
+const MORPHO_API_URL = "https://api.morpho.org/graphql";
 
 // Type definitions for vault detail
 export interface Asset {
@@ -231,9 +232,10 @@ export interface TimeseriesOptions {
  * Hook to fetch detailed vault information
  */
 export const useVaultDetail = (
-  address: string,
-  chainId: number = 1
+  address: string
 ): UseQueryResult<VaultDetail, Error> => {
+  const { chainId } = useChain(); // Get chainId from context
+
   const query = `
     query GetVaultDetails($address: String!, $chainId: Int!) {
       vaultByAddress(address: $address, chainId: $chainId) {
@@ -397,9 +399,10 @@ export const useVaultDetail = (
  */
 export const useVaultHistorical = (
   address: string,
-  options: TimeseriesOptions,
-  chainId: number = 1
+  options: TimeseriesOptions
 ): UseQueryResult<HistoricalState, Error> => {
+  const { chainId } = useChain(); // Get chainId from context
+
   const query = `
     query GetVaultHistoricalAPY($address: String!, $chainId: Int!, $options: TimeseriesOptions) {
       vaultByAddress(address: $address, chainId: $chainId) {

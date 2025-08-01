@@ -20,12 +20,7 @@ export default function MarketDetailPage({ params }: PageProps) {
   const resolvedParams = React.use(params);
   const { address } = resolvedParams;
 
-  const {
-    data: market,
-    isLoading,
-    error,
-    isError,
-  } = useMarketDetail(address, 1);
+  const { data: market, isLoading, error, isError } = useMarketDetail(address);
 
   if (isLoading) {
     return <LoadingSkeleton />;

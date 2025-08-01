@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAccount } from "wagmi";
 import axios from "axios";
+import { useChain } from "@/context/ChainContext";
 
 // Keep existing interface for backward compatibility
 interface UserPosition {
@@ -45,11 +46,10 @@ export interface UserPositionsSummary {
 const MORPHO_API_URL = "https://api.morpho.org/graphql";
 
 // Original hook - kept for backward compatibility
-export const useUserVaultPosition = (
-  vaultAddress: string,
-  chainId: number = 1
-) => {
+export const useUserVaultPosition = (vaultAddress: string) => {
   const { address, isConnected } = useAccount();
+
+  const { chainId } = useChain(); // Get chainId from context
 
   const query = `
     query GetUserVaultPosition($vaultAddress: String!, $userAddress: String!, $chainId: Int!) {
@@ -140,8 +140,10 @@ export const useUserVaultPosition = (
 };
 
 // New hook for all user positions
-export const useUserVaultPositions = (chainId: number = 1) => {
+export const useUserVaultPositions = () => {
   const { address, isConnected } = useAccount();
+
+  const { chainId } = useChain(); // Get chainId from context
 
   const query = `
     query GetAllUserPositions($chainId: Int!, $userAddress: String!) {

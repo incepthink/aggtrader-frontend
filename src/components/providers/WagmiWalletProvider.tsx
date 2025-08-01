@@ -19,6 +19,27 @@ import { mainnet, polygon, optimism, arbitrum, base } from "wagmi/chains";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 import { createConfig, http } from "wagmi";
 
+// Define Katana chain (replace with actual values)
+export const katana = {
+  id: 747474,
+  name: "Katana",
+  nativeCurrency: {
+    decimals: 18,
+    name: "Ethereum",
+    symbol: "ETH",
+  },
+  rpcUrls: {
+    default: {
+      http: ["https://rpc.katana.network/"],
+    },
+  },
+  blockExplorers: {
+    default: {
+      name: "Katana Explorer",
+      url: "https://explorer.katanarpc.com",
+    },
+  },
+} as const;
 // Custom mobile phantom wallet connector
 const customPhantomWallet = () => ({
   ...phantomWallet(),
@@ -55,9 +76,11 @@ const connectors = connectorsForWallets(
 
 const config = createConfig({
   connectors,
-  chains: [mainnet, polygon, optimism, arbitrum, base],
+  // Add Katana chain to the supported chains
+  chains: [mainnet, katana, polygon, optimism, arbitrum, base],
   transports: {
     [mainnet.id]: http(),
+    [katana.id]: http(), // Add Katana transport
     [polygon.id]: http(),
     [optimism.id]: http(),
     [arbitrum.id]: http(),

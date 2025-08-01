@@ -1,3 +1,4 @@
+import { useChain } from "@/context/ChainContext";
 import { useQuery, UseQueryResult } from "@tanstack/react-query";
 import axios, { AxiosResponse } from "axios";
 
@@ -95,7 +96,6 @@ export interface GraphQLResponse<T> {
 export interface MarketsQueryOptions {
   limit?: number;
   skip?: number;
-  chainIds?: number[];
   whitelistedOnly?: boolean;
   orderBy?: "SupplyAssetsUsd" | "BorrowAssetsUsd" | "Lltv";
   orderDirection?: "Asc" | "Desc";
@@ -112,11 +112,12 @@ export const useMarketsQuery = (
   const {
     limit = 100,
     skip = 0,
-    chainIds = [1, 8453], // Ethereum and Base by default
     whitelistedOnly = true, // Default to true to filter spam markets
     orderBy = "SupplyAssetsUsd",
     orderDirection = "Desc",
   } = options;
+
+  const { chainId } = useChain(); // Get chainId from context
 
   // Comprehensive GraphQL query for markets data
   const query = `
@@ -199,13 +200,13 @@ export const useMarketsQuery = (
   return useQuery<Market[], Error>({
     queryKey: [
       "morpho-markets",
-      { limit, skip, chainIds, whitelistedOnly, orderBy, orderDirection },
+      { limit, skip, chainId, whitelistedOnly, orderBy, orderDirection },
     ],
     queryFn: async (): Promise<Market[]> => {
       try {
         // Build where clause based on options
         const whereClause: any = {
-          chainId_in: chainIds,
+          chainId_in: chainId,
         };
 
         // Add whitelisted filter - null gets all markets, true gets only whitelisted

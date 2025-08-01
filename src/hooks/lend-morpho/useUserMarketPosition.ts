@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAccount } from "wagmi";
 import axios from "axios";
+import { useChain } from "@/context/ChainContext";
 
 export interface UserMarketPosition {
   market: {
@@ -30,16 +31,19 @@ export interface UserBorrowPositionsSummary {
 
 const MORPHO_API_URL = "https://api.morpho.org/graphql";
 
-export const useUserMarketPositions = (chainId: number = 1) => {
+export const useUserMarketPositions = () => {
   const { address, isConnected } = useAccount();
+
+  const { chainId } = useChain(); // Get chainId from context
 
   // Simple query focusing only on essential fields
   const query = `
-    query GetUserMarketPositions($userAddress: String!) {
+    query GetUserMarketPositions($userAddress: String!, $chainId: Int!) {
       marketPositions(
         first: 100
         where: {
           userAddress_in: [$userAddress]
+          chainId: $chainId
         }
       ) {
         items {
@@ -94,6 +98,7 @@ export const useUserMarketPositions = (chainId: number = 1) => {
             query,
             variables: {
               userAddress: address.toLowerCase(),
+              chainId: chainId,
             },
           },
           {
@@ -151,7 +156,7 @@ export const useUserMarketPositions = (chainId: number = 1) => {
         return defaultResult;
       }
     },
-    enabled: Boolean(address && isConnected),
+    enabled: Boolean(address && isConnected && chainId),
     staleTime: 30 * 1000,
     gcTime: 5 * 60 * 1000,
     retry: 2,

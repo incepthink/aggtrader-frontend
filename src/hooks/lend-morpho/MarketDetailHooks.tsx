@@ -1,6 +1,7 @@
 // /hooks/lend-morpho/MarketDetailHooks.ts
 "use client";
 
+import { useChain } from "@/context/ChainContext";
 import { useQuery } from "@tanstack/react-query";
 
 // Types based on Morpho API structure
@@ -69,7 +70,7 @@ export interface MarketData {
 }
 
 // Morpho API base URL
-const MORPHO_API_BASE = "https://blue-api.morpho.org/graphql";
+const MORPHO_API_BASE = "https://api.morpho.org/graphql";
 
 // Enhanced GraphQL query to get market data by unique key
 const GET_MARKET_QUERY = `
@@ -209,7 +210,8 @@ async function fetchMarketData(
 }
 
 // Custom hook to get market details
-export function useMarketDetail(uniqueKey: string, chainId: number = 1) {
+export function useMarketDetail(uniqueKey: string) {
+  const { chainId } = useChain(); // Get chainId from contex
   return useQuery({
     queryKey: ["market", uniqueKey, chainId],
     queryFn: () => fetchMarketData(uniqueKey, chainId),
@@ -227,7 +229,8 @@ export function useMarketDetail(uniqueKey: string, chainId: number = 1) {
 }
 
 // Enhanced markets query with additional fields
-export function useMarkets(chainId: number = 1) {
+export function useMarkets() {
+  const { chainId } = useChain(); // Get chainId from context
   const GET_MARKETS_QUERY = `
     query GetMarkets($chainId: Int!) {
       markets(where: { chainId_in: [$chainId] }, first: 50, orderBy: SupplyAssetsUsd, orderDirection: Desc) {

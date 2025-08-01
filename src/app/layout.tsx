@@ -7,6 +7,7 @@ import Navbar from "@/components/common/navbar/Navbar";
 import MuiThemeProvider from "@/components/providers/MuiThemeProvider";
 import { ConditionalMorphoNavbar } from "@/components/common/navbar/ConditionalMorphoNavbar";
 import { Toolbar } from "@mui/material";
+import { ChainProvider } from "@/context/ChainContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -34,18 +35,20 @@ export default function RootLayout({
       >
         <WagmiWalletProvider>
           <MuiThemeProvider>
-            {/* Background */}
-            <div className="fixed inset-0 -z-10 overflow-hidden">
-              <img
-                src="/ellipse-home.png"
-                className="w-full h-full object-cover"
-                alt=""
-              />
-            </div>
-            {/* Main UI */}
-            <Navbar />
-            <ConditionalMorphoNavbar />
-            {children}
+            <ChainProvider defaultChain="ETHEREUM">
+              {/* Background */}
+              <div className="fixed inset-0 -z-10 overflow-hidden">
+                <img
+                  src="/ellipse-home.png"
+                  className="w-full h-full object-cover"
+                  alt=""
+                />
+              </div>
+              {/* Main UI */}
+              <Navbar />
+              <ConditionalMorphoNavbar />
+              {children}
+            </ChainProvider>
           </MuiThemeProvider>
         </WagmiWalletProvider>
       </body>
