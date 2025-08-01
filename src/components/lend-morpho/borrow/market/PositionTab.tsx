@@ -54,7 +54,7 @@ const formatPercentage = (value: number): string => {
 
 const PositionTab: React.FC<PositionTabProps> = ({ market }) => {
   const { isConnected } = useAccount();
-  const { data: userPositions, isLoading, error } = useUserMarketPositions(1);
+  const { data: userPositions, isLoading, error } = useUserMarketPositions();
 
   // Find position for this specific market
   const currentPosition = userPositions?.positions?.find(

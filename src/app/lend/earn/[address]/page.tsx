@@ -20,7 +20,7 @@ export default function VaultDetailPage({ params }: PageProps) {
   const resolvedParams = React.use(params);
   const { address } = resolvedParams;
 
-  const { data: vault, isLoading, error, isError } = useVaultDetail(address, 1);
+  const { data: vault, isLoading, error, isError } = useVaultDetail(address);
 
   if (isLoading) {
     return <LoadingSkeleton />;

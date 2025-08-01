@@ -78,7 +78,7 @@ const VaultTabs: React.FC<VaultTabsProps> = ({ vault }) => {
   };
 
   const { data: historicalData, isLoading: isHistoricalLoading } =
-    useVaultHistorical(vault.address, getTimeRangeOptions(), 1);
+    useVaultHistorical(vault.address, getTimeRangeOptions());
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);

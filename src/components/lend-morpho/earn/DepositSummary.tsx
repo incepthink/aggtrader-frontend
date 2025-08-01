@@ -23,7 +23,7 @@ const formatCurrency = (amount: number): string => {
 
 const DepositSummary = () => {
   const { isConnected } = useAccount();
-  const { data: userPositions, isLoading, error } = useUserVaultPositions(1); // Ethereum mainnet
+  const { data: userPositions, isLoading, error } = useUserVaultPositions(); // Ethereum mainnet
 
   // Show loading state
   if (isLoading && isConnected) {

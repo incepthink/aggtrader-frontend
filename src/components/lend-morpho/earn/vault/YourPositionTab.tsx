@@ -44,7 +44,7 @@ const YourPositionTab: React.FC<YourPositionTabProps> = ({ vault }) => {
     data: userPosition,
     isLoading,
     error,
-  } = useUserVaultPosition(vault.address, 1); // Ethereum mainnet
+  } = useUserVaultPosition(vault.address); // Ethereum mainnet
 
   // Calculate projected earnings based on position and APY
   const calculateProjectedEarnings = (positionUsd: number, apy: number) => {
