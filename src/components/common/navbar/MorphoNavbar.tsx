@@ -37,8 +37,8 @@ export const MorphoNavbar: React.FC = () => {
         pointerEvents: scrollUp ? "auto" : "none", // avoids invisible click zones
       }}
     >
-      <div className="flex mx-auto justify-between items-center w-full max-w-7xl px-4">
-        {/* Left side - Navigation tabs */}
+      <div className="flex mx-auto justify-center items-center w-full px-4 relative">
+        {/* Center - Navigation tabs */}
         <div className="flex">
           <Button
             onClick={() => handleTabClick("earn")}
@@ -84,8 +84,8 @@ export const MorphoNavbar: React.FC = () => {
           </Button>
         </div>
 
-        {/* Right side - Chain Switcher */}
-        <div className="flex items-center">
+        {/* Right side - Chain Switcher (positioned absolutely to extreme right) */}
+        <div className="absolute right-9 flex items-center">
           {isLoading ? (
             <div className="animate-pulse bg-gray-700 rounded-lg h-8 w-24" />
           ) : (
