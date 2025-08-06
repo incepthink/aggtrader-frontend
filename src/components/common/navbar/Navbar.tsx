@@ -8,12 +8,10 @@ import { Menu, Close } from "@mui/icons-material";
 
 const navItems = [
   {
-    href: ["https://sushiswap-web.vercel.app/ethereum/swap"],
+    href: ["https://sushi.aggtrade.xyz/ethereum/swap"],
     label: "Spot",
   },
-  { href: ["https://perp.aggtrade.xyz/"], label: "Perps" },
   { href: ["/lend/earn", "/lend/borrow"], label: "Lend/Borrow" },
-  { href: ["https://yield.aggtrade.xyz/"], label: "Yield Farming" },
   { href: ["/profile"], label: "Account" },
 ];
 
@@ -125,7 +123,7 @@ export default function Navbar() {
         <ul className="hidden lg:flex list-none gap-6 m-0 p-4">
           {navItems.map(({ href, label }) => (
             <li key={href[0]}>
-              <NavLink href={href}>{label}</NavLink>
+              <NavLink href={href[0]}>{label}</NavLink>
             </li>
           ))}
         </ul>
