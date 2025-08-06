@@ -123,7 +123,7 @@ export default function Navbar() {
         <ul className="hidden lg:flex list-none gap-6 m-0 p-4">
           {navItems.map(({ href, label }) => (
             <li key={href[0]}>
-              <NavLink href={href[0]}>{label}</NavLink>
+              <NavLink href={href}>{label}</NavLink>
             </li>
           ))}
         </ul>
