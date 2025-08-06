@@ -26,6 +26,7 @@ import EstimatedBalanceCard from "@/components/profile/EstimatedBalanceCard";
 import EquityTrendChart from "@/components/profile/EquityTrendChart";
 import RecentTransactionCard from "@/components/profile/RecentTransactionCard";
 import { useSpotBalanceTotal } from "@/hooks/useSpotBalance";
+import { usePortfolioDetailed } from "@/hooks/usePortfolioDetailed";
 
 const client = new ApolloClient({
   uri: "https://api-v3.balancer.fi",
@@ -43,7 +44,8 @@ const page = () => {
   const { address, isConnected } = useAccount();
 
   // Use the efficient spot balance hook
-  const { totalUsd: spotTotal, isLoading: spotLoading } = useSpotBalanceTotal();
+  const { totalValue: spotTotal, isLoading: spotLoading } =
+    usePortfolioDetailed();
 
   const [holdingsData, setHoldingsData] = useState<HoldingsData>({
     dydx: 0,
