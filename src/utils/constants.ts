@@ -1,1 +1,1 @@
-export const BACKEND_URL = "https://aggtrade-backend-1.onrender.com"; //https://aggtrade-backend.onrender.com || http://localhost:5000
+export const BACKEND_URL = "https://api.aggtrade.xyz"; //https://aggtrade-backend.onrender.com || http://localhost:5000
