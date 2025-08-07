@@ -11,7 +11,7 @@ const navItems = [
     href: ["https://sushi.aggtrade.xyz/ethereum/swap"],
     label: "Spot",
   },
-  { href: ["/lend/earn", "/lend/borrow"], label: "Lend/Borrow" },
+  { href: ["/lend/earn", "/lend/borrow"], label: "Earn/Borrow" },
   { href: ["/profile"], label: "Account" },
 ];
 
