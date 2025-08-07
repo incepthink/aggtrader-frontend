@@ -27,6 +27,7 @@ import EquityTrendChart from "@/components/profile/EquityTrendChart";
 import RecentTransactionCard from "@/components/profile/RecentTransactionCard";
 import { useSpotBalanceTotal } from "@/hooks/useSpotBalance";
 import { usePortfolioDetailed } from "@/hooks/usePortfolioDetailed";
+import { BACKEND_URL } from "@/utils/constants";
 
 const client = new ApolloClient({
   uri: "https://api-v3.balancer.fi",
@@ -165,9 +166,7 @@ const page = () => {
 
   async function getDydxAddress(address: string): Promise<string | null> {
     try {
-      const res = await axios.get(
-        "https://aggtrade-backend.onrender.com/api/address/" + address
-      );
+      const res = await axios.get(BACKEND_URL + address);
       return res.data.dydxAddress || null;
     } catch (error) {
       console.error("GETADDRESS::", error);
