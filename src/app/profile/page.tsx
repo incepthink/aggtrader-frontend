@@ -254,7 +254,8 @@ const page = () => {
 
   function getTotalBalance() {
     return (
-      spotTotal + holdingsData.aave + holdingsData.balancer + holdingsData.dydx
+      // spotTotal + holdingsData.aave + holdingsData.balancer + holdingsData.dydx
+      spotTotal
     );
   }
 

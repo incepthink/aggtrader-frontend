@@ -7,13 +7,9 @@ import {
   Sector,
 } from "recharts";
 import React, { useState, useEffect } from "react";
-import InfoIcon from "@mui/icons-material/Info";
-import {
-  Tooltip as MuiToolTip,
-  styled,
-  tooltipClasses,
-  TooltipProps,
-} from "@mui/material";
+import { useSpotBalance } from "@/hooks/useSpotBalance";
+import { usePortfolioDetailed } from "@/hooks/usePortfolioDetailed";
+import { usePieChartData } from "../spot/usePieChartData";
 
 type PropType = {
   spot: number;
@@ -24,6 +20,15 @@ type PropType = {
   isLoading?: boolean;
 };
 
+// Explicit pie data item type
+interface PieDataItem {
+  name: string;
+  value: number;
+  color: string;
+  balance: number;
+  symbol: string;
+}
+
 export function PieChartComp({
   spot,
   perp,
@@ -32,13 +37,7 @@ export function PieChartComp({
   isDydxFetched,
   isLoading = false,
 }: PropType) {
-  const data = [
-    { name: "Spot", value: spot, color: "#0088FE" },
-    { name: "Perp", value: perp, color: "#00C49F" },
-    { name: "Lending", value: lending, color: "#FFBB28" },
-    { name: "Yield", value: balancer, color: "#FF8042" },
-  ];
-
+  const { data: spotData } = usePieChartData();
   const [activeIndex, setActiveIndex] = useState<number | undefined>(undefined);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -47,12 +46,87 @@ export function PieChartComp({
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
     };
-
     checkMobile();
     window.addEventListener("resize", checkMobile);
-
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
+
+  // Generate colors for tokens
+  const generateColors = (count: number) => {
+    const colors = [
+      "#0088FE",
+      "#00C49F",
+      "#FFBB28",
+      "#FF8042",
+      "#8884D8",
+      "#82CA9D",
+      "#FFC658",
+      "#FF7C7C",
+      "#8DD1E1",
+      "#D084D0",
+      "#87D068",
+      "#FFA500",
+    ];
+    return colors.slice(0, count);
+  };
+
+  // Pie chart data, fully typed!
+  const createPieData = (): PieDataItem[] => {
+    if (!spotData || !spotData.tokens.length) {
+      // Placeholder, all fields included!
+      return [
+        {
+          name: "No Data",
+          value: 0,
+          color: "#666666",
+          balance: 0,
+          symbol: "",
+        },
+      ];
+    }
+    console.log("SPOTDATAPIE::", spotData);
+
+    // Add tokens
+    const colorList = generateColors(spotData.tokens.length + 1);
+    const symbolMap = new Map<string, PieDataItem>();
+
+    spotData.tokens.forEach((token, index) => {
+      if (token.usdValue > 0.01) {
+        if (symbolMap.has(token.symbol)) {
+          // Add to existing
+          const existing = symbolMap.get(token.symbol)!;
+          existing.balance += token.balance;
+          existing.value += token.usdValue;
+        } else {
+          // Add new
+          symbolMap.set(token.symbol, {
+            name: token.symbol,
+            value: token.usdValue,
+            color: colorList[index + 1],
+            balance: token.balance,
+            symbol: token.symbol,
+          });
+        }
+      }
+    });
+
+    const pieData: PieDataItem[] = Array.from(symbolMap.values());
+
+    return pieData.length > 0
+      ? pieData
+      : [
+          {
+            name: "No Data",
+            value: 0,
+            color: "#666666",
+            balance: 0,
+            symbol: "",
+          },
+        ];
+  };
+
+  const data: PieDataItem[] = createPieData();
+  const totalValue = data.reduce((sum, item) => sum + item.value, 0);
 
   const handleMouseEnter = (_: any, index: number) => {
     setActiveIndex(index);
@@ -65,20 +139,18 @@ export function PieChartComp({
   const renderActiveShape = (props: any) => {
     const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill } =
       props;
-
     return (
       <g>
         <Sector
           {...props}
           stroke="#00FAFF"
           strokeWidth={isMobile ? 2 : 3}
-          outerRadius={outerRadius + (isMobile ? 6 : 8)} // Smaller expansion on mobile
+          outerRadius={outerRadius + (isMobile ? 6 : 8)}
           style={{
             filter: "drop-shadow(0 0 12px rgba(0, 250, 255, 0.6))",
             transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
           }}
         />
-        {/* Add inner glow effect */}
         <Sector
           cx={cx}
           cy={cy}
@@ -95,17 +167,6 @@ export function PieChartComp({
       </g>
     );
   };
-
-  const HtmlTooltip = styled(({ className, ...props }: TooltipProps) => (
-    <MuiToolTip {...props} classes={{ popper: className }} />
-  ))(({ theme }) => ({
-    [`& .${tooltipClasses.tooltip}`]: {
-      backgroundColor: "#05051299",
-      color: "#00F5E0",
-      fontSize: isMobile ? 12 : 14,
-      border: "1px solid #00F5E0",
-    },
-  }));
 
   // Responsive chart dimensions
   const chartSize = isMobile ? 280 : 400;
@@ -127,47 +188,19 @@ export function PieChartComp({
         <ResponsiveContainer width={chartSize} height={chartSize}>
           <PieChart>
             <defs>
-              {/* Gradient definitions for enhanced visual appeal */}
-              <linearGradient
-                id="spotGradient"
-                x1="0%"
-                y1="0%"
-                x2="100%"
-                y2="0%"
-              >
-                <stop offset="0%" stopColor="#0088FE" stopOpacity={0.9} />
-                <stop offset="100%" stopColor="#0088FE" stopOpacity={1} />
-              </linearGradient>
-              <linearGradient
-                id="perpGradient"
-                x1="0%"
-                y1="0%"
-                x2="100%"
-                y2="0%"
-              >
-                <stop offset="0%" stopColor="#00C49F" stopOpacity={0.9} />
-                <stop offset="100%" stopColor="#00C49F" stopOpacity={1} />
-              </linearGradient>
-              <linearGradient
-                id="lendingGradient"
-                x1="0%"
-                y1="0%"
-                x2="100%"
-                y2="0%"
-              >
-                <stop offset="0%" stopColor="#FFBB28" stopOpacity={0.9} />
-                <stop offset="100%" stopColor="#FFBB28" stopOpacity={1} />
-              </linearGradient>
-              <linearGradient
-                id="yieldGradient"
-                x1="0%"
-                y1="0%"
-                x2="100%"
-                y2="0%"
-              >
-                <stop offset="0%" stopColor="#FF8042" stopOpacity={0.9} />
-                <stop offset="100%" stopColor="#FF8042" stopOpacity={1} />
-              </linearGradient>
+              {data.map((entry, index) => (
+                <linearGradient
+                  key={`gradient-${index}`}
+                  id={`gradient-${index}`}
+                  x1="0%"
+                  y1="0%"
+                  x2="100%"
+                  y2="0%"
+                >
+                  <stop offset="0%" stopColor={entry.color} stopOpacity={0.9} />
+                  <stop offset="100%" stopColor={entry.color} stopOpacity={1} />
+                </linearGradient>
+              ))}
             </defs>
             <Pie
               data={data}
@@ -177,7 +210,7 @@ export function PieChartComp({
               cy="50%"
               innerRadius={innerRadius}
               outerRadius={outerRadius}
-              paddingAngle={3}
+              paddingAngle={2}
               activeIndex={activeIndex}
               activeShape={renderActiveShape}
               onMouseEnter={handleMouseEnter}
@@ -187,24 +220,22 @@ export function PieChartComp({
               animationDuration={1200}
               animationEasing="ease-out"
             >
-              {data.map((entry, i) => {
-                return (
-                  <Cell
-                    key={i}
-                    fill={entry.color}
-                    style={{
-                      transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-                      cursor: "pointer",
-                    }}
-                  />
-                );
-              })}
+              {data.map((entry, i) => (
+                <Cell
+                  key={i}
+                  fill={`url(#gradient-${i})`}
+                  style={{
+                    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                    cursor: "pointer",
+                  }}
+                />
+              ))}
             </Pie>
             <Tooltip
               cursor={true}
               offset={-50}
               formatter={(value: number, name: string) => [
-                `${value.toFixed(2)}`,
+                `$${(value as number).toFixed(2)}`,
                 name,
               ]}
               wrapperStyle={{
@@ -245,18 +276,16 @@ export function PieChartComp({
             >
               Loading...
             </span>
-          ) : activeIndex !== undefined ? (
+          ) : activeIndex !== undefined && data[activeIndex] ? (
             <>
               <span
                 className={`block ${
                   isMobile ? "text-xl" : "text-2xl"
                 } font-bold text-[#00FAFF] mt-1`}
               >
-                {(
-                  (data[activeIndex].value /
-                    (spot + perp + lending + balancer)) *
-                  100
-                ).toFixed(1)}
+                {totalValue > 0
+                  ? ((data[activeIndex].value / totalValue) * 100).toFixed(1)
+                  : "0.0"}
                 %
               </span>
               <span
@@ -264,7 +293,7 @@ export function PieChartComp({
                   isMobile ? "text-xs" : "text-sm"
                 } text-gray-300 mt-1`}
               >
-                {data[activeIndex].value.toFixed(2)} USD
+                ${data[activeIndex].value.toFixed(2)}
               </span>
             </>
           ) : (
@@ -274,45 +303,48 @@ export function PieChartComp({
                   isMobile ? "text-xs" : "text-sm"
                 } text-gray-400`}
               >
-                Account Value
+                Total Portfolio
               </span>
               <span
                 className={`block ${
                   isMobile ? "text-base" : "text-lg"
                 } font-semibold text-white mt-1`}
               >
-                {(spot + perp + lending + balancer).toFixed(2)} USD
+                ${totalValue.toFixed(2)}
               </span>
             </>
           )}
         </p>
       </div>
 
-      {/* Legend Container */}
+      {/* Legend Container - Token Breakdown */}
       <div
         className={`flex ${
           isMobile ? "flex-row flex-wrap gap-2" : "flex-1 flex-col"
-        } justify-between ${isMobile ? "" : ""}`}
+        } justify-between`}
       >
-        {data.map((dataItem: any, i: number) => {
+        {data.map((dataItem: PieDataItem, i: number) => {
+          const percentage =
+            totalValue > 0 ? (dataItem.value / totalValue) * 100 : 0;
+
           return (
             <div
               key={i}
               onMouseEnter={() => handleMouseEnter(null, i)}
-              onMouseLeave={() => setActiveIndex(undefined)}
+              onMouseLeave={handleMouseLeave}
               className={`flex ${
                 isMobile
                   ? "flex-1 min-w-[calc(50%-4px)] flex-col"
                   : "flex-1 flex-row"
               } justify-between items-center text-center ${
-                isMobile ? "text-sm" : "text-xl"
-              } rounded-sm ${
-                isMobile ? "p-3" : "px-5"
+                isMobile ? "text-sm" : "text-lg"
+              } rounded-lg ${
+                isMobile ? "p-3" : "px-4 py-3"
               } cursor-pointer transition-all duration-300 ease-out ${
                 activeIndex === i
-                  ? "bg-[rgba(0,250,255,0.15)] border-l-2 border-[#00FAFF] transform scale-[1.02]"
-                  : "hover:bg-[rgba(0,250,255,0.1)] border-l-2 border-transparent"
-              }`}
+                  ? "bg-black/30 border-l-2 border-[#00FAFF] transform scale-[1.02] shadow-lg"
+                  : "hover:bg-black/20 border-l-2 border-transparent hover:border-cyan-400/40"
+              } border border-white/5 hover:border-cyan-400/20`}
               style={{
                 transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
               }}
@@ -320,7 +352,7 @@ export function PieChartComp({
               <div
                 className={`flex items-center ${
                   isMobile ? "justify-center mb-2" : ""
-                } gap-2`}
+                } gap-3`}
               >
                 <div
                   style={{
@@ -328,45 +360,45 @@ export function PieChartComp({
                     boxShadow:
                       activeIndex === i ? `0 0 8px ${dataItem.color}` : "none",
                   }}
-                  className={`h-1.5 w-1.5 rounded-full transition-all duration-300 ${
-                    activeIndex === i ? "scale-150" : ""
+                  className={`h-3 w-3 rounded-full transition-all duration-300 ${
+                    activeIndex === i ? "scale-125" : ""
                   }`}
                 ></div>
-                <p
-                  className={`transition-colors duration-300 ${
-                    activeIndex === i ? "text-[#00FAFF]" : ""
-                  } ${isMobile ? "text-sm" : ""}`}
-                >
-                  {dataItem.name}
-                </p>
-                {dataItem.name === "Perp" && !isDydxFetched && (
-                  <HtmlTooltip
-                    placement={isMobile ? "top" : "right"}
-                    title={
-                      <React.Fragment>
-                        <a href="https://perp.aggtrade.xyz/">
-                          Connect Wallet on Perp to show balance
-                        </a>
-                      </React.Fragment>
-                    }
-                    sx={{ marginLeft: 1 }}
+                <div className="flex flex-col items-start">
+                  <p
+                    className={`transition-colors duration-300 font-medium ${
+                      activeIndex === i ? "text-[#00FAFF]" : "text-white"
+                    } ${isMobile ? "text-sm" : "text-base"}`}
                   >
-                    <InfoIcon
-                      sx={{ color: "#00F5E0", fontSize: isMobile ? 16 : 20 }}
-                    />
-                  </HtmlTooltip>
-                )}
+                    {dataItem.name}
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    {dataItem.balance.toFixed(4)} {dataItem.symbol}
+                  </p>
+                </div>
               </div>
-              <p
-                className={`transition-colors duration-300 ${
-                  activeIndex === i ? "text-[#00FAFF] font-semibold" : ""
-                } ${isMobile ? "text-xs text-center" : ""}`}
-              >
-                {dataItem.value.toFixed(2)} USD
-              </p>
+              <div className="text-right">
+                <p
+                  className={`transition-colors duration-300 font-medium ${
+                    activeIndex === i ? "text-[#00FAFF]" : "text-white"
+                  } ${isMobile ? "text-sm" : "text-base"}`}
+                >
+                  ${dataItem.value.toFixed(2)}
+                </p>
+                <p className="text-xs text-gray-400">
+                  {percentage.toFixed(1)}%
+                </p>
+              </div>
             </div>
           );
         })}
+
+        {/* Info text */}
+        <div className={`${isMobile ? "mt-4" : "mt-6"} text-center`}>
+          <p className={`text-gray-500 ${isMobile ? "text-xs" : "text-sm"}`}>
+            Real-time portfolio breakdown via 1inch API
+          </p>
+        </div>
       </div>
     </div>
   );
