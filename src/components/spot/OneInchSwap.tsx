@@ -2,7 +2,8 @@
 
 import { DownOutlined, SettingOutlined } from "@ant-design/icons";
 import SwapVertIcon from "@mui/icons-material/SwapVert";
-import { Input, Modal, Popover, Radio, message } from "antd";
+import { Input, Modal, Popover, Radio } from "antd";
+import { Alert, Snackbar } from "@mui/material";
 import axios from "axios";
 import React, { useEffect, useState } from "react";
 import { formatUnits, type Address } from "viem";
@@ -41,9 +42,9 @@ function OneInchSwap() {
 
   /* --------- global token selection from store --------- */
   const tokenOne = useSpotStore((s) => s.tokenOne);
-  const tokenTwo = useSpotStore((s) => s.tokenTwo); // Now using global state
+  const tokenTwo = useSpotStore((s) => s.tokenTwo);
   const setTokenOne = useSpotStore((s) => s.setTokenOne);
-  const setTokenTwo = useSpotStore((s) => s.setTokenTwo); // Need this function in store
+  const setTokenTwo = useSpotStore((s) => s.setTokenTwo);
   const openModal = useSpotStore((s) => s.openModal);
 
   /* --------- local component state --------- */
@@ -56,8 +57,16 @@ function OneInchSwap() {
     data: null,
     value: null,
   });
-  const [msgApi, contextHolder] = message.useMessage();
+  // const [msgApi, contextHolder] = message.useMessage();
   const [isOpenTwo, setIsOpenTwo] = useState(false);
+  const [isInitiatingSwap, setIsInitiatingSwap] = useState(false);
+
+  // MUI Snackbar states
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [snackbarSeverity, setSnackbarSeverity] = useState<
+    "success" | "error" | "warning" | "info"
+  >("info"); // Add this state
 
   /* --------- wagmi tx hooks --------- */
   const {
@@ -72,7 +81,15 @@ function OneInchSwap() {
     error: confirmErr,
   } = useWaitForTransactionReceipt({ hash: txHash });
 
-  /* --------- slippage radio handler --------- */
+  // Helper function to show snackbar
+  const showSnackbar = (
+    message: string,
+    severity: "success" | "error" | "warning" | "info"
+  ) => {
+    setSnackbarMessage(message);
+    setSnackbarSeverity(severity);
+    setSnackbarOpen(true);
+  };
   const handleSlippageChange = (e: any) => setSlippage(e.target.value);
 
   /* --------- amount change --------- */
@@ -122,7 +139,7 @@ function OneInchSwap() {
       setPrices(data.data);
     } catch (err) {
       console.error(err);
-      msgApi.error("Failed to fetch token prices");
+      showSnackbar("Failed to fetch token prices", "error");
     }
   };
 
@@ -130,53 +147,70 @@ function OneInchSwap() {
   const API = `${BACKEND_URL}/proxy/1inch`;
 
   const fetchDexSwap = async () => {
+    // Prevent multiple calls
+    if (isInitiatingSwap || isSending || isConfirming) {
+      return;
+    }
+
     if (!tokenOneAmount || !address || !isConnected) {
-      msgApi.warning("Connect wallet and enter an amount");
+      showSnackbar("Connect wallet and enter an amount", "warning");
       return;
     }
 
-    /* 1 — allowance */
-    const {
-      data: { allowance },
-    } = await axios.get(
-      `${API}/approve/allowance?tokenAddress=${tokenOne.address}&walletAddress=${address}`
-    );
+    // Set loading state immediately
+    setIsInitiatingSwap(true);
 
-    const amountWei = BigInt(
-      (parseFloat(tokenOneAmount) * 10 ** tokenOne.decimals).toFixed(0)
-    );
-
-    if (BigInt(allowance) < amountWei) {
-      /* 2 — approval tx */
-      const { data: approveTx } = await axios.get(
-        `${API}/approve/transaction?tokenAddress=${tokenOne.address}`
+    try {
+      /* 1 — allowance */
+      const {
+        data: { allowance },
+      } = await axios.get(
+        `${API}/approve/allowance?tokenAddress=${tokenOne.address}&walletAddress=${address}`
       );
+
+      const amountWei = BigInt(
+        (parseFloat(tokenOneAmount) * 10 ** tokenOne.decimals).toFixed(0)
+      );
+
+      if (BigInt(allowance) < amountWei) {
+        /* 2 — approval tx */
+        const { data: approveTx } = await axios.get(
+          `${API}/approve/transaction?tokenAddress=${tokenOne.address}`
+        );
+        setTxDetails({
+          to: approveTx.to,
+          data: approveTx.data,
+          value: BigInt(approveTx.value ?? "0"),
+        });
+        return;
+      }
+
+      /* 3 — swap tx */
+      const swapUrl =
+        `${API}/swap?src=${tokenOne.address}&dst=${tokenTwo.address}` +
+        `&amount=${amountWei}&from=${address}&slippage=${slippage}`;
+
+      const { data: swap } = await axios.get(swapUrl);
+      setT2Amount(formatUnits(BigInt(swap.toAmount), tokenTwo.decimals));
+
       setTxDetails({
-        to: approveTx.to,
-        data: approveTx.data,
-        value: BigInt(approveTx.value ?? "0"),
+        to: swap.tx.to,
+        data: swap.tx.data,
+        value: BigInt(swap.tx.value ?? "0"),
       });
-      return;
+    } catch (error) {
+      console.error("Swap error:", error);
+      showSnackbar("Failed to fetch swap data", "error");
+      // Reset loading state on error
+      setIsInitiatingSwap(false);
     }
-
-    /* 3 — swap tx */
-    const swapUrl =
-      `${API}/swap?src=${tokenOne.address}&dst=${tokenTwo.address}` +
-      `&amount=${amountWei}&from=${address}&slippage=${slippage}`;
-
-    const { data: swap } = await axios.get(swapUrl);
-    setT2Amount(formatUnits(BigInt(swap.toAmount), tokenTwo.decimals));
-
-    setTxDetails({
-      to: swap.tx.to,
-      data: swap.tx.data,
-      value: BigInt(swap.tx.value ?? "0"),
-    });
   };
 
   /* --------- auto-send when txDetails populated --------- */
   useEffect(() => {
     if (txDetails.to && txDetails.data && isConnected) {
+      // Reset isInitiatingSwap since we're now sending the transaction
+      setIsInitiatingSwap(false);
       sendTransaction({
         to: txDetails.to,
         data: txDetails.data,
@@ -187,28 +221,26 @@ function OneInchSwap() {
 
   /* --------- toast messages --------- */
   useEffect(() => {
-    msgApi.destroy();
-    if (isSending || isConfirming) {
-      msgApi.open({
-        type: "loading",
-        content: isSending ? "Sending tx…" : "Confirming…",
-        duration: 0,
-      });
+    if (isSending) {
+      showSnackbar("Sending tx…", "info");
+    } else if (isConfirming) {
+      showSnackbar("Confirming…", "info");
     }
-  }, [isSending, isConfirming, msgApi]);
+  }, [isSending, isConfirming]);
 
   useEffect(() => {
-    msgApi.destroy();
     if (isDone) {
-      msgApi.success("Transaction successful!", 3);
+      showSnackbar("Transaction successful!", "success");
       setT1Amount("");
       setT2Amount("");
       setTxDetails({ to: null, data: null, value: null });
+      setIsInitiatingSwap(false);
     } else if (sendErr || confirmErr) {
-      msgApi.error(`Transaction failed`, 5);
+      showSnackbar("Transaction failed", "error");
       setTxDetails({ to: null, data: null, value: null });
+      setIsInitiatingSwap(false);
     }
-  }, [isDone, sendErr, confirmErr, msgApi]);
+  }, [isDone, sendErr, confirmErr]);
 
   /* --------- initial price load --------- */
   useEffect(() => {
@@ -229,12 +261,16 @@ function OneInchSwap() {
   );
 
   const isSwapDisabled =
-    !tokenOneAmount || !isConnected || !prices || isSending || isConfirming;
+    !tokenOneAmount ||
+    !isConnected ||
+    !prices ||
+    isSending ||
+    isConfirming ||
+    isInitiatingSwap; // Add this condition
 
   /* ---------- render ---------- */
   return (
     <>
-      {contextHolder}
       <div className="tradeBox p-4">
         <div className="flex justify-between items-center mb-8">
           <h4 className="text-xl">Swap</h4>
@@ -259,6 +295,14 @@ function OneInchSwap() {
               disabled={!prices}
             />
             <span className="input-tag">Sell</span>
+            {tokenOneAmount && prices && (
+              <div className="text-sm text-gray-300 font-medium -mt-5 mb-2 px-3">
+                ≈ $
+                {(parseFloat(tokenOneAmount) * (prices.tokenOne || 0)).toFixed(
+                  2
+                )}
+              </div>
+            )}
           </div>
 
           {/* switch */}
@@ -279,6 +323,14 @@ function OneInchSwap() {
               disabled={!prices}
             />
             <span className="input-tag">Buy</span>
+            {tokenTwoAmount && prices && (
+              <div className="text-sm text-gray-300 font-medium -mt-5 mb-2 px-3">
+                ≈ $
+                {(parseFloat(tokenTwoAmount) * (prices.tokenTwo || 0)).toFixed(
+                  2
+                )}
+              </div>
+            )}
           </div>
 
           {/* token selectors */}
@@ -330,6 +382,8 @@ function OneInchSwap() {
                 ? "Sending…"
                 : isConfirming
                 ? "Confirming…"
+                : isInitiatingSwap
+                ? "Preparing…"
                 : "Swap"
               : "Connect Wallet"}
           </div>
@@ -373,6 +427,24 @@ function OneInchSwap() {
           ))}
         </div>
       </Modal>
+
+      {/* MUI Snackbar for notifications */}
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={4000}
+        onClose={() => setSnackbarOpen(false)}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+        sx={{ mt: 8 }}
+      >
+        <Alert
+          onClose={() => setSnackbarOpen(false)}
+          severity={snackbarSeverity}
+          variant="filled"
+          sx={{ width: "100%" }}
+        >
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
     </>
   );
 }
