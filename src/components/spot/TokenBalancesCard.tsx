@@ -1,7 +1,8 @@
 // components/TokenBalancesCard.tsx - Updated to use portfolio data and filter for chain_id 1
 "use client";
 
-import { CircularProgress } from "@mui/material";
+import { CircularProgress, IconButton, Tooltip } from "@mui/material";
+import RefreshIcon from "@mui/icons-material/Refresh";
 import {
   usePortfolioDetailed,
   type PortfolioToken,
@@ -170,13 +171,28 @@ const formatPercent = (value: number) => {
 
 export default function TokenBalancesCard() {
   const { address } = useAccount();
-  const { data, isLoading, error, totalValue, totalPnL, totalROI } =
+  const { data, isLoading, error, totalValue, totalPnL, totalROI, refetch } =
     usePortfolioDetailed();
 
   const { updateEntryPrice, getEntryPrice } = useEntryPrices(address);
+  const [isRefetching, setIsRefetching] = useState(false);
 
   // Filter for only Ethereum mainnet (chain_id: 1) tokens
   const ethereumTokens = data?.filter((token) => token.chain_id === 1) || [];
+
+  // Handle refetch with loading state
+  const handleRefetch = async () => {
+    if (isRefetching) return;
+
+    setIsRefetching(true);
+    try {
+      await refetch();
+    } catch (error) {
+      console.error("Failed to refetch portfolio data:", error);
+    } finally {
+      setIsRefetching(false);
+    }
+  };
 
   // Calculate custom totals based on user-defined entry prices for Ethereum tokens only
   const calculateCustomTotals = () => {
@@ -227,8 +243,34 @@ export default function TokenBalancesCard() {
     return (
       <div className="relative mx-auto rounded-xl">
         <div className="relative p-4 sm:p-6 md:p-8 rounded-2xl text-white font-sans">
-          <div className="text-lg sm:text-xl font-semibold mb-4">
-            Token Balances (Ethereum)
+          <div className="flex justify-between items-center mb-4">
+            <div className="text-lg sm:text-xl font-semibold">
+              Token Balances (Ethereum)
+            </div>
+            <Tooltip title="Retry" arrow>
+              <IconButton
+                onClick={handleRefetch}
+                disabled={isRefetching}
+                sx={{
+                  color: "white",
+                  "&:hover": { color: "#00F5E0" },
+                  "&:disabled": { color: "gray" },
+                }}
+              >
+                <RefreshIcon
+                  sx={{
+                    fontSize: 20,
+                    animation: isRefetching
+                      ? "spin 1s linear infinite"
+                      : "none",
+                    "@keyframes spin": {
+                      "0%": { transform: "rotate(0deg)" },
+                      "100%": { transform: "rotate(360deg)" },
+                    },
+                  }}
+                />
+              </IconButton>
+            </Tooltip>
           </div>
           <div className="text-center py-8">
             <div className="text-red-400 text-sm">
@@ -247,6 +289,30 @@ export default function TokenBalancesCard() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-3 sm:gap-0">
           <div className="text-lg sm:text-xl font-semibold flex items-center gap-2">
             Token Balances (Ethereum)
+            <Tooltip title="Refresh Data" arrow>
+              <IconButton
+                onClick={handleRefetch}
+                disabled={isRefetching || isLoading}
+                sx={{
+                  color: "white",
+                  "&:hover": { color: "#00F5E0" },
+                  "&:disabled": { color: "gray" },
+                }}
+              >
+                <RefreshIcon
+                  sx={{
+                    fontSize: 20,
+                    animation: isRefetching
+                      ? "spin 1s linear infinite"
+                      : "none",
+                    "@keyframes spin": {
+                      "0%": { transform: "rotate(0deg)" },
+                      "100%": { transform: "rotate(360deg)" },
+                    },
+                  }}
+                />
+              </IconButton>
+            </Tooltip>
           </div>
 
           {/* Portfolio Summary Stats - Only show if we have Ethereum tokens */}
@@ -287,7 +353,7 @@ export default function TokenBalancesCard() {
 
         {/* Content */}
         <div className="w-full">
-          {isLoading ? (
+          {isLoading || isRefetching ? (
             <div className="w-full flex justify-center pb-4">
               <CircularProgress sx={{ color: "primary.main" }} />
             </div>
