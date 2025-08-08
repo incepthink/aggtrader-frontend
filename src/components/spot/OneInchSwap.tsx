@@ -57,16 +57,16 @@ function OneInchSwap() {
     data: null,
     value: null,
   });
-  // const [msgApi, contextHolder] = message.useMessage();
   const [isOpenTwo, setIsOpenTwo] = useState(false);
   const [isInitiatingSwap, setIsInitiatingSwap] = useState(false);
+  const [isLoadingPrices, setIsLoadingPrices] = useState(false);
 
   // MUI Snackbar states
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [snackbarSeverity, setSnackbarSeverity] = useState<
     "success" | "error" | "warning" | "info"
-  >("info"); // Add this state
+  >("info");
 
   /* --------- wagmi tx hooks --------- */
   const {
@@ -90,6 +90,7 @@ function OneInchSwap() {
     setSnackbarSeverity(severity);
     setSnackbarOpen(true);
   };
+
   const handleSlippageChange = (e: any) => setSlippage(e.target.value);
 
   /* --------- amount change --------- */
@@ -127,18 +128,34 @@ function OneInchSwap() {
     fetchPrices(tempTokenTwo.address, tempTokenOne.address);
   };
 
-  /* --------- price fetch --------- */
-  const fetchPrices = async (one: Address, two: Address) => {
+  /* --------- price fetch with retry logic --------- */
+  const fetchPrices = async (one: Address, two: Address, retryCount = 0) => {
+    if (retryCount === 0) setIsLoadingPrices(true);
+
     try {
       const { data } = await axios.get<PriceData>(
         `${BACKEND_URL}/api/tokenPrice`,
         {
           params: { addressOne: one, addressTwo: two },
+          timeout: 10000, // 10 second timeout
         }
       );
       setPrices(data.data);
+      setIsLoadingPrices(false);
     } catch (err) {
-      console.error(err);
+      console.error("Price fetch error:", err);
+
+      // Retry logic for mobile/network issues
+      if (retryCount < 2) {
+        console.log(`Retrying price fetch (attempt ${retryCount + 1})`);
+        setTimeout(() => {
+          fetchPrices(one, two, retryCount + 1);
+        }, 1000 * (retryCount + 1)); // Exponential backoff: 1s, 2s
+        return;
+      }
+
+      // Only show error after all retries failed
+      setIsLoadingPrices(false);
       showSnackbar("Failed to fetch token prices", "error");
     }
   };
@@ -200,9 +217,24 @@ function OneInchSwap() {
         data: swap.tx.data,
         value: BigInt(swap.tx.value ?? "0"),
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Swap error:", error);
-      showSnackbar("Failed to fetch swap data", "error");
+
+      // Handle structured error responses from backend
+      if (error.response?.data) {
+        const errorData = error.response.data;
+
+        // Show user-friendly error message
+        showSnackbar(errorData.error || "Failed to fetch swap data", "error");
+
+        // Log additional details for debugging
+        if (errorData.details) {
+          console.error("Error details:", errorData.details);
+        }
+      } else {
+        showSnackbar("Failed to fetch swap data", "error");
+      }
+
       // Reset loading state on error
       setIsInitiatingSwap(false);
     }
@@ -244,9 +276,14 @@ function OneInchSwap() {
     }
   }, [isDone, sendErr, confirmErr]);
 
-  /* --------- initial price load --------- */
+  /* --------- initial price load with delay for mobile --------- */
   useEffect(() => {
-    fetchPrices(tokenOne.address, tokenTwo.address);
+    // Add a small delay for mobile devices to ensure proper mounting
+    const timer = setTimeout(() => {
+      fetchPrices(tokenOne.address, tokenTwo.address);
+    }, 500);
+
+    return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tokenOne.address, tokenTwo.address]);
 
@@ -266,9 +303,10 @@ function OneInchSwap() {
     !tokenOneAmount ||
     !isConnected ||
     !prices ||
+    isLoadingPrices ||
     isSending ||
     isConfirming ||
-    isInitiatingSwap; // Add this condition
+    isInitiatingSwap;
 
   /* ---------- render ---------- */
   return (
@@ -294,7 +332,7 @@ function OneInchSwap() {
               placeholder="0"
               value={tokenOneAmount}
               onChange={changeSellAmount}
-              disabled={!prices}
+              disabled={!prices || isLoadingPrices}
               type="number"
               style={{ maxWidth: "350px" }}
               className="outline-none focus:outline-none! focus:ring-0! focus:border-transparent focus:shadow-none [&.ant-input:focus]:outline-none [&.ant-input:focus]:shadow-none [&.ant-input:focus]:border-transparent [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-inner-spin-button]:m-0"
@@ -325,7 +363,7 @@ function OneInchSwap() {
               placeholder="0"
               value={tokenTwoAmount}
               onChange={changeBuyAmount}
-              disabled={!prices}
+              disabled={!prices || isLoadingPrices}
               className="outline-none focus:outline-none! focus:ring-0! focus:border-transparent focus:shadow-none [&.ant-input:focus]:outline-none [&.ant-input:focus]:shadow-none [&.ant-input:focus]:border-transparent [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-inner-spin-button]:m-0"
               type="number"
               style={{ maxWidth: "350px" }}
@@ -386,7 +424,9 @@ function OneInchSwap() {
             }}
           >
             {isConnected
-              ? isSending
+              ? isLoadingPrices
+                ? "Loading prices…"
+                : isSending
                 ? "Sending…"
                 : isConfirming
                 ? "Confirming…"
