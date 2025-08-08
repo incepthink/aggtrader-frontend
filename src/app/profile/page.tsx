@@ -282,12 +282,12 @@ const page = () => {
             {/* Pie Chart - Full width */}
             <div className="neon-panel relative">
               <PieChartComp
-                isDydxFetched={dataReady ? holdingsData.isDydxFetched : false}
-                spot={dataReady ? spotTotal : 0}
-                perp={dataReady ? holdingsData.dydx : 0}
-                lending={dataReady ? holdingsData.aave : 0}
-                balancer={dataReady ? holdingsData.balancer : 0}
-                isLoading={isLoading || spotLoading}
+              // isDydxFetched={dataReady ? holdingsData.isDydxFetched : false}
+              // spot={dataReady ? spotTotal : 0}
+              // perp={dataReady ? holdingsData.dydx : 0}
+              // lending={dataReady ? holdingsData.aave : 0}
+              // balancer={dataReady ? holdingsData.balancer : 0}
+              // isLoading={isLoading || spotLoading}
               />
             </div>
           </div>
