@@ -166,7 +166,7 @@ const page = () => {
 
   async function getDydxAddress(address: string): Promise<string | null> {
     try {
-      const res = await axios.get(BACKEND_URL + address);
+      const res = await axios.get(BACKEND_URL + "/api/address/" + address);
       return res.data.dydxAddress || null;
     } catch (error) {
       console.error("GETADDRESS::", error);
