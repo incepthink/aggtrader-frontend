@@ -74,6 +74,8 @@ const page = () => {
         ]
       );
 
+      console.log("DYDX RESULT", dydxResult);
+
       // Extract results with fallback values
       const aaveValue =
         aaveResult.status === "fulfilled" ? aaveResult.value : 0;
@@ -167,6 +169,8 @@ const page = () => {
   async function getDydxAddress(address: string): Promise<string | null> {
     try {
       const res = await axios.get(BACKEND_URL + "/api/address/" + address);
+      console.log("RESSSSSS", res);
+
       return res.data.dydxAddress || null;
     } catch (error) {
       console.error("GETADDRESS::", error);
@@ -181,21 +185,33 @@ const page = () => {
       const dydxAddress = await getDydxAddress(address);
 
       if (dydxAddress) {
-        const client = new IndexerClient(Network.mainnet().indexerConfig);
-        const positions = await client.account.getSubaccountAssetPositions(
-          dydxAddress,
-          0
-        );
-        const usdcPos = positions.positions.find(
-          (p: any) => p.symbol === "USDC"
-        );
+        try {
+          const client = new IndexerClient(Network.mainnet().indexerConfig);
+          const positions = await client.account.getSubaccountAssetPositions(
+            dydxAddress,
+            0
+          );
+          console.log("POSITION", positions);
+          const usdcPos = positions.positions.find(
+            (p: any) => p.symbol === "USDC"
+          );
 
-        if (usdcPos) {
-          const bal = parseFloat(usdcPos.size);
-          return { value: bal, isFetched: true };
+          if (usdcPos) {
+            const bal = parseFloat(usdcPos.size);
+            console.log("BAL", bal);
+            return { value: bal, isFetched: true };
+          }
+
+          // User has dydxAddress but no USDC position
+          return { value: 0, isFetched: true };
+        } catch (positionError) {
+          console.error("Error fetching dYdX positions:", positionError);
+          // User has dydxAddress but API call failed
+          return { value: 0, isFetched: true };
         }
       }
 
+      // No dydxAddress found
       return { value: 0, isFetched: false };
     } catch (error) {
       console.error("Error fetching dYdX data:", error);
