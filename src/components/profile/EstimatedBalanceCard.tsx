@@ -18,16 +18,16 @@ export default function EstimatedBalanceCard({ bal }: any) {
 
         {/* Buttons */}
         <div className="flex flex-wrap gap-3">
-          <button className="px-5 py-2 rounded bg-[#00FFE9]/10 text-[#00FFE9] hover:bg-[#00FFE9]/20 text-sm font-medium">
+          <button className="px-5 py-2 opacity-50 cursor-not-allowed rounded bg-[#00FFE9]/10 text-[#00FFE9] hover:bg-[#00FFE9]/20 text-sm font-medium">
             Deposit
           </button>
-          <button className="px-5 py-2 rounded bg-[#00FFE9]/10 text-[#00FFE9] hover:bg-[#00FFE9]/20 text-sm font-medium">
+          <button className="px-5 py-2 opacity-50 cursor-not-allowed  rounded bg-[#00FFE9]/10 text-[#00FFE9] hover:bg-[#00FFE9]/20 text-sm font-medium">
             Withdraw
           </button>
-          <button className="px-5 py-2 rounded bg-[#00FFE9]/10 text-[#00FFE9] hover:bg-[#00FFE9]/20 text-sm font-medium">
+          <button className="px-5 py-2 opacity-50 cursor-not-allowed  rounded bg-[#00FFE9]/10 text-[#00FFE9] hover:bg-[#00FFE9]/20 text-sm font-medium">
             Transfer
           </button>
-          <button className="px-4 py-2 rounded bg-[#00FFE9]/10 text-[#00FFE9] hover:bg-[#00FFE9]/20 text-sm font-medium">
+          <button className="px-4 py-2 opacity-50 cursor-not-allowed  rounded bg-[#00FFE9]/10 text-[#00FFE9] hover:bg-[#00FFE9]/20 text-sm font-medium">
             ...
           </button>
         </div>

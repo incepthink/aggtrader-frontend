@@ -2,7 +2,7 @@ import { formatUnits } from "viem";
 import { useAccount, useBalance } from "wagmi";
 import "./index.css";
 
-const MaxButton = ({ token, setToken }: any) => {
+const MaxButton = ({ token, setToken, showBtn }: any) => {
   const { address } = useAccount();
 
   // pulls ERC-20 balance if `token` supplied, native balance otherwise
@@ -32,9 +32,11 @@ const MaxButton = ({ token, setToken }: any) => {
     <div className="max-btn">
       <span>Balance: </span>
       <span>{parseFloat(maxHuman).toFixed(5)}</span>
-      <span onClick={handleMaxClick} className="max">
-        Max
-      </span>
+      {showBtn && (
+        <span onClick={handleMaxClick} className="max">
+          Max
+        </span>
+      )}
     </div>
   );
 };

@@ -293,7 +293,11 @@ function OneInchSwap() {
               <p className="text-white">{tokenOne.ticker}</p> <DownOutlined />
             </div>
             <div className="max-btn-container">
-              <MaxButton token={tokenOne.address} setToken={setMaxBal} />
+              <MaxButton
+                token={tokenOne.address}
+                setToken={setMaxBal}
+                showBtn={true}
+              />
             </div>
           </div>
 
@@ -305,6 +309,9 @@ function OneInchSwap() {
                 className="assetLogo"
               />
               <p className="text-white">{tokenTwo.ticker}</p> <DownOutlined />
+            </div>
+            <div className="absolute right-5 bottom-6">
+              <MaxButton token={tokenTwo.address} setToken={setMaxBal} />
             </div>
           </div>
         </div>
