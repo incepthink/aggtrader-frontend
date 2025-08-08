@@ -295,6 +295,9 @@ function OneInchSwap() {
               value={tokenOneAmount}
               onChange={changeSellAmount}
               disabled={!prices}
+              type="number"
+              style={{ maxWidth: "350px" }}
+              className="outline-none focus:outline-none! focus:ring-0! focus:border-transparent focus:shadow-none [&.ant-input:focus]:outline-none [&.ant-input:focus]:shadow-none [&.ant-input:focus]:border-transparent [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-inner-spin-button]:m-0"
             />
             <span className="input-tag">Sell</span>
             {tokenOneAmount && prices && (
@@ -323,6 +326,9 @@ function OneInchSwap() {
               value={tokenTwoAmount}
               onChange={changeBuyAmount}
               disabled={!prices}
+              className="outline-none focus:outline-none! focus:ring-0! focus:border-transparent focus:shadow-none [&.ant-input:focus]:outline-none [&.ant-input:focus]:shadow-none [&.ant-input:focus]:border-transparent [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-inner-spin-button]:m-0"
+              type="number"
+              style={{ maxWidth: "350px" }}
             />
             <span className="input-tag">Buy</span>
             {tokenTwoAmount && prices && (

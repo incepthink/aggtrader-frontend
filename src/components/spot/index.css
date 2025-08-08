@@ -6,6 +6,7 @@
   margin-bottom: 5px;
   font-size: 35px;
   border-radius: 12px !important;
+  outline: none !important;
 }
 
 .ant-input::placeholder {
@@ -439,3 +440,12 @@
   color: #00F5E0;
 }
 
+.no-spinner input[type="number"]::-webkit-outer-spin-button,
+.no-spinner input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.no-spinner input[type="number"] {
+  -moz-appearance: textfield;
+}
