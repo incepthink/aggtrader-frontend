@@ -172,6 +172,8 @@ function OneInchSwap() {
         (parseFloat(tokenOneAmount) * 10 ** tokenOne.decimals).toFixed(0)
       );
 
+      console.log("ALLOWANCE", BigInt(allowance), amountWei);
+
       if (BigInt(allowance) < amountWei) {
         /* 2 — approval tx */
         const { data: approveTx } = await axios.get(
