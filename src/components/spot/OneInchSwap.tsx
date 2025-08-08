@@ -38,13 +38,15 @@ interface TxDetails {
 
 function OneInchSwap() {
   const { address, isConnected } = useAccount();
-  /* --------- global sell-token selection --------- */
+
+  /* --------- global token selection from store --------- */
   const tokenOne = useSpotStore((s) => s.tokenOne);
+  const tokenTwo = useSpotStore((s) => s.tokenTwo); // Now using global state
   const setTokenOne = useSpotStore((s) => s.setTokenOne);
+  const setTokenTwo = useSpotStore((s) => s.setTokenTwo); // Need this function in store
   const openModal = useSpotStore((s) => s.openModal);
 
   /* --------- local component state --------- */
-  const [tokenTwo, setTokenTwo] = useState<Token>(TOKENS[1]);
   const [tokenOneAmount, setT1Amount] = useState("");
   const [tokenTwoAmount, setT2Amount] = useState("");
   const [prices, setPrices] = useState<PriceData | null>(null);
@@ -86,12 +88,6 @@ function OneInchSwap() {
     setT2Amount(v && prices ? (parseFloat(v) * prices.ratio).toFixed(6) : "");
   };
 
-  const changeAmount = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const v = e.target.value;
-    setT1Amount(v);
-    setT2Amount(v && prices ? (parseFloat(v) * prices.ratio).toFixed(6) : "");
-  };
-
   const setMaxBal = (bal: string) => {
     setT1Amount(bal);
     setT2Amount(
@@ -104,11 +100,14 @@ function OneInchSwap() {
     setPrices(null);
     setT1Amount("");
     setT2Amount("");
-    const one = tokenOne,
-      two = tokenTwo;
-    setTokenOne(two); // update global
-    setTokenTwo(one);
-    fetchPrices(two.address, one.address);
+
+    // Switch both tokens using global store
+    const tempTokenOne = tokenOne;
+    const tempTokenTwo = tokenTwo;
+    setTokenOne(tempTokenTwo);
+    setTokenTwo(tempTokenOne);
+
+    fetchPrices(tempTokenTwo.address, tempTokenOne.address);
   };
 
   /* --------- price fetch --------- */
@@ -256,7 +255,7 @@ function OneInchSwap() {
             <Input
               placeholder="0"
               value={tokenOneAmount}
-              onChange={changeSellAmount} // renamed for clarity
+              onChange={changeSellAmount}
               disabled={!prices}
             />
             <span className="input-tag">Sell</span>
@@ -276,8 +275,8 @@ function OneInchSwap() {
             <Input
               placeholder="0"
               value={tokenTwoAmount}
-              onChange={changeBuyAmount} // new handler
-              disabled={!prices} // same disabled condition as sell
+              onChange={changeBuyAmount}
+              disabled={!prices}
             />
             <span className="input-tag">Buy</span>
           </div>
@@ -338,6 +337,8 @@ function OneInchSwap() {
           <GradientConnectButton />
         )}
       </div>
+
+      {/* Token Two Selection Modal */}
       <Modal
         open={isOpenTwo}
         footer={null}
@@ -350,11 +351,17 @@ function OneInchSwap() {
               key={i}
               className="tokenChoice"
               onClick={() => {
-                if (token !== tokenOne) {
+                // If the selected token is the same as tokenOne, switch them
+                if (token === tokenOne) {
+                  setTokenOne(tokenTwo);
                   setTokenTwo(token);
-                  fetchPrices(tokenOne.address, token.address);
+                } else {
+                  // Otherwise, just set tokenTwo normally
+                  setTokenTwo(token);
                 }
                 setIsOpenTwo(false);
+                // Fetch new prices after token selection
+                fetchPrices(tokenOne.address, token.address);
               }}
             >
               <img src={token.img} alt={token.ticker} className="tokenLogo" />
