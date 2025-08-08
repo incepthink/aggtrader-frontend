@@ -154,9 +154,8 @@ function OneInchSwap() {
         return;
       }
 
-      // Only show error after all retries failed
+      // Just stop loading, don't show error
       setIsLoadingPrices(false);
-      showSnackbar("Failed to fetch token prices", "error");
     }
   };
 
