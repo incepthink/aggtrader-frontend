@@ -266,7 +266,7 @@ const page = () => {
           <div className="w-full">
             {/* Balance Card - Full width on mobile */}
             <div className="mb-6 lg:mb-8">
-              <EstimatedBalanceCard bal={getTotalBalance()} />
+              <EstimatedBalanceCard />
             </div>
 
             {/* Charts Section - Stack on mobile, side by side on desktop */}

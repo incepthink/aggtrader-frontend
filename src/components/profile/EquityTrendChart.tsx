@@ -35,6 +35,13 @@ export default function EquityTrendChart() {
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
+  return (
+    <div className="neon-panel h-[400px] flex justify-center items-center w-[300px] relative">
+      <p className="text-xl font-bold absolute top-8 left-8">Equity Trend</p>
+      <p className="text-2xl sm:text-4xl">Coming Soon...</p>
+    </div>
+  );
+
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
@@ -52,7 +59,7 @@ export default function EquityTrendChart() {
     return null;
   };
 
-  const hasRealData = isSuccess && data && data.length > 0;
+  const hasRealData = isSuccess && data && data!.length > 0;
 
   // Calculate percentage change and stats
   const getPortfolioStats = () => {
@@ -114,13 +121,13 @@ export default function EquityTrendChart() {
           {stats && (
             <div
               className={`px-3 py-1 rounded-full text-sm font-medium ${
-                stats.change >= 0
+                stats!.change >= 0
                   ? "bg-green-400/20 text-green-400 border border-green-400/30"
                   : "bg-red-400/20 text-red-400 border border-red-400/30"
               }`}
             >
-              {stats.change >= 0 ? "+" : ""}
-              {stats.change.toFixed(2)}%
+              {stats!.change >= 0 ? "+" : ""}
+              {stats!.change.toFixed(2)}%
             </div>
           )}
         </div>
@@ -252,7 +259,7 @@ export default function EquityTrendChart() {
       {/* Data points indicator */}
       {hasRealData && (
         <div className="absolute bottom-2 right-2 text-xs text-white/30">
-          Data points: {data.length}
+          Data points: {data!.length}
         </div>
       )}
 

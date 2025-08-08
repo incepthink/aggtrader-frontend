@@ -7,16 +7,10 @@ import {
   Sector,
 } from "recharts";
 import React, { useState, useEffect } from "react";
-import { useSpotBalance } from "@/hooks/useSpotBalance";
-import { usePortfolioDetailed } from "@/hooks/usePortfolioDetailed";
-import { usePieChartData } from "../spot/usePieChartData";
+import { useAccount } from "wagmi";
+import { useKatanaPortfolio } from "@/hooks/useKatanaPortfolio";
 
 type PropType = {
-  spot: number;
-  perp: number;
-  lending: number;
-  balancer: number;
-  isDydxFetched: boolean;
   isLoading?: boolean;
 };
 
@@ -29,15 +23,11 @@ interface PieDataItem {
   symbol: string;
 }
 
-export function PieChartComp({
-  spot,
-  perp,
-  lending,
-  balancer,
-  isDydxFetched,
-  isLoading = false,
-}: PropType) {
-  const { data: spotData } = usePieChartData();
+export function PieChartComp({ isLoading = false }: PropType) {
+  const { address } = useAccount();
+  const { tokens: katanaTokens, isLoading: katanaLoading } = useKatanaPortfolio(
+    address || null
+  );
   const [activeIndex, setActiveIndex] = useState<number | undefined>(undefined);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -72,7 +62,7 @@ export function PieChartComp({
 
   // Pie chart data, fully typed!
   const createPieData = (): PieDataItem[] => {
-    if (!spotData || !spotData.tokens.length) {
+    if (!katanaTokens || !katanaTokens.length) {
       // Placeholder, all fields included!
       return [
         {
@@ -84,25 +74,25 @@ export function PieChartComp({
         },
       ];
     }
-    console.log("SPOTDATAPIE::", spotData);
+    console.log("KATANA TOKENS PIE::", katanaTokens);
 
     // Add tokens
-    const colorList = generateColors(spotData.tokens.length + 1);
+    const colorList = generateColors(katanaTokens.length);
     const symbolMap = new Map<string, PieDataItem>();
 
-    spotData.tokens.forEach((token, index) => {
-      if (token.usdValue > 0.01) {
+    katanaTokens.forEach((token, index) => {
+      if (token.value > 0.01) {
         if (symbolMap.has(token.symbol)) {
           // Add to existing
           const existing = symbolMap.get(token.symbol)!;
           existing.balance += token.balance;
-          existing.value += token.usdValue;
+          existing.value += token.value;
         } else {
           // Add new
           symbolMap.set(token.symbol, {
             name: token.symbol,
-            value: token.usdValue,
-            color: colorList[index + 1],
+            value: token.value,
+            color: colorList[index],
             balance: token.balance,
             symbol: token.symbol,
           });
@@ -172,6 +162,8 @@ export function PieChartComp({
   const chartSize = isMobile ? 280 : 400;
   const innerRadius = isMobile ? 70 : 100;
   const outerRadius = isMobile ? 90 : 120;
+
+  const isChartLoading = isLoading || katanaLoading;
 
   return (
     <div
@@ -268,7 +260,7 @@ export function PieChartComp({
 
         {/* Center Content */}
         <p className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
-          {isLoading ? (
+          {isChartLoading ? (
             <span
               className={`text-cyan-400 ${
                 isMobile ? "text-base" : "text-lg"
@@ -303,7 +295,7 @@ export function PieChartComp({
                   isMobile ? "text-xs" : "text-sm"
                 } text-gray-400`}
               >
-                Total Portfolio
+                Katana Portfolio
               </span>
               <span
                 className={`block ${
@@ -396,7 +388,7 @@ export function PieChartComp({
         {/* Info text */}
         <div className={`${isMobile ? "mt-4" : "mt-6"} text-center`}>
           <p className={`text-gray-500 ${isMobile ? "text-xs" : "text-sm"}`}>
-            Real-time portfolio breakdown via 1inch API
+            Real-time Katana portfolio breakdown
           </p>
         </div>
       </div>
