@@ -34,10 +34,7 @@ const SwapQuote: React.FC<SwapQuoteProps> = ({
     );
   }
 
-  const expectedOutput = formatUnits(
-    BigInt(quote.dstAmount),
-    tokenTwo.decimals
-  );
+  const expectedOutput = formatUnits(BigInt(quote.toAmount), tokenTwo.decimals);
   const priceImpact = "< 0.01%"; // You can calculate this based on your price data
   const minimumReceived = (parseFloat(expectedOutput) * 0.975).toFixed(6); // Assuming 2.5% slippage
 
@@ -72,7 +69,7 @@ const SwapQuote: React.FC<SwapQuoteProps> = ({
       <div className="flex justify-between items-center text-sm">
         <span className="text-gray-400">Route</span>
         <span className="text-gray-300">
-          {quote.protocols.length > 1 ? "Multi-hop" : "Direct"}
+          {quote.protocols!.length > 1 ? "Multi-hop" : "Direct"}
         </span>
       </div>
     </div>
