@@ -1,184 +1,44 @@
-// components/TokenBalancesCard.tsx - Updated to use portfolio data and filter for chain_id 1
+// components/TokenBalancesCard.tsx - Refactored
 "use client";
 
-import { CircularProgress, IconButton, Tooltip } from "@mui/material";
-import RefreshIcon from "@mui/icons-material/Refresh";
+import { CircularProgress } from "@mui/material";
 import {
   usePortfolioDetailed,
   type PortfolioToken,
 } from "@/hooks/usePortfolioDetailed";
 import { useAccount } from "wagmi";
-import { useState, useEffect } from "react";
-
-const getTokenLogo = (symbol: string, chainId: number) => {
-  const symbolUpper = symbol.toUpperCase();
-  switch (symbolUpper) {
-    case "ETH":
-      return "https://cdn.moralis.io/eth/0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee.png";
-    case "USDC":
-      return "/logos/usdc.png";
-    case "USDT":
-      return "https://cdn.moralis.io/eth/0xdac17f958d2ee523a2206206994597c13d831ec7.png";
-    case "WETH":
-      return "/logos/weth.png";
-    case "WBTC":
-      return "/logos/wbtc.png";
-    case "LINK":
-      return "https://tokens.1inch.io/0x514910771af9ca656af840dff83e8264ecf986ca.png";
-    default:
-      return null;
-  }
-};
-
-// Custom hook for managing entry prices in localStorage
-const useEntryPrices = (address: string | undefined) => {
-  const [entryPrices, setEntryPrices] = useState<{ [key: string]: number }>({});
-
-  useEffect(() => {
-    if (!address) return;
-
-    const storageKey = `entry_prices_${address}`;
-    const stored = localStorage.getItem(storageKey);
-    if (stored) {
-      try {
-        setEntryPrices(JSON.parse(stored));
-      } catch (error) {
-        console.error("Error parsing stored entry prices:", error);
-        setEntryPrices({});
-      }
-    }
-  }, [address]);
-
-  const updateEntryPrice = (tokenKey: string, price: number) => {
-    if (!address) return;
-
-    const newEntryPrices = { ...entryPrices, [tokenKey]: price };
-    setEntryPrices(newEntryPrices);
-
-    const storageKey = `entry_prices_${address}`;
-    localStorage.setItem(storageKey, JSON.stringify(newEntryPrices));
-  };
-
-  const getEntryPrice = (tokenKey: string, defaultPrice: number) => {
-    return entryPrices[tokenKey] ?? defaultPrice;
-  };
-
-  return { entryPrices, updateEntryPrice, getEntryPrice };
-};
-
-// Editable price input component
-const EditablePrice = ({
-  tokenKey,
-  currentPrice,
-  defaultPrice,
-  onPriceChange,
-}: {
-  tokenKey: string;
-  currentPrice: number;
-  defaultPrice: number;
-  onPriceChange: (price: number) => void;
-}) => {
-  const [isEditing, setIsEditing] = useState(false);
-  const [editValue, setEditValue] = useState(currentPrice.toFixed(2));
-
-  const handleSave = () => {
-    const newPrice = parseFloat(editValue);
-    if (!isNaN(newPrice) && newPrice > 0) {
-      onPriceChange(newPrice);
-      setIsEditing(false);
-    } else {
-      setEditValue(currentPrice.toFixed(2));
-      setIsEditing(false);
-    }
-  };
-
-  const handleCancel = () => {
-    setEditValue(currentPrice.toFixed(2));
-    setIsEditing(false);
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleSave();
-    } else if (e.key === "Escape") {
-      handleCancel();
-    }
-  };
-
-  if (isEditing) {
-    return (
-      <div className="flex items-center justify-center gap-1">
-        <input
-          type="number"
-          value={editValue}
-          onChange={(e) => setEditValue(e.target.value)}
-          onKeyDown={handleKeyPress}
-          onBlur={handleSave}
-          className="w-20 px-2 py-1 text-sm bg-gray-700 border border-gray-600 rounded text-white text-center focus:outline-none focus:border-[#00F5E0]"
-          autoFocus
-          step="0.01"
-        />
-      </div>
-    );
-  }
-
-  return (
-    <div
-      className="group flex items-center justify-center"
-      onClick={() => setIsEditing(true)}
-      title="Click to edit entry price"
-    >
-      <div className="flex justify-center gap-2 relative cursor-pointer hover:bg-gray-700 px-2 py-1 rounded transition-colors">
-        <span>${currentPrice.toFixed(2)}</span>
-        {currentPrice !== defaultPrice && (
-          <div className="text-xs text-blue-400 mt-1">Custom</div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-// Utility functions
-const formatNumber = (value: number | string) => {
-  const num = typeof value === "string" ? parseFloat(value) : value;
-  if (num >= 1000000) {
-    return (num / 1000000).toFixed(2) + "M";
-  } else if (num >= 1000) {
-    return (num / 1000).toFixed(2) + "K";
-  } else if (num >= 1) {
-    return num.toFixed(6);
-  } else {
-    return num.toFixed(8);
-  }
-};
-
-const formatUSD = (value: number) => {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value);
-};
-
-const formatPercent = (value: number) => {
-  return new Intl.NumberFormat("en-US", {
-    style: "percent",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value);
-};
+import { useState } from "react";
+import { useEntryPrices } from "@/hooks/useEntryPrices";
+import { useBinancePrices } from "@/hooks/useBinancePrices";
+import { calculatePortfolioTotals } from "@/utils/portfolioCalculations";
+import { PortfolioHeader } from "./PortfolioHeader";
+import { TokenRowDesktop } from "./TokenRowDesktop";
+import { TokenCardMobile } from "./TokenCardMobile";
 
 export default function TokenBalancesCard() {
   const { address } = useAccount();
-  const { data, isLoading, error, totalValue, totalPnL, totalROI, refetch } =
-    usePortfolioDetailed();
-
-  const { updateEntryPrice, getEntryPrice } = useEntryPrices(address);
-  const [isRefetching, setIsRefetching] = useState(false);
+  const { data, isLoading, error, refetch } = usePortfolioDetailed();
 
   // Filter for only Ethereum mainnet (chain_id: 1) tokens
   const ethereumTokens = data?.filter((token) => token.chain_id === 1) || [];
+
+  const { updateEntryPrice, getEntryPrice, isCustomPrice } = useEntryPrices(
+    address,
+    ethereumTokens
+  );
+  const {
+    getTokenPrice,
+    getTokenChange24h,
+    hasPrice,
+    isLoading: isPriceLoading,
+    error: priceError,
+    lastUpdated,
+    refresh: refreshPrices,
+    unsupportedTokens,
+    supportedTokensCount,
+    totalTokensCount,
+  } = useBinancePrices(ethereumTokens);
+  const [isRefetching, setIsRefetching] = useState(false);
 
   // Handle refetch with loading state
   const handleRefetch = async () => {
@@ -187,6 +47,7 @@ export default function TokenBalancesCard() {
     setIsRefetching(true);
     try {
       await refetch();
+      refreshPrices(); // Also refresh CoinGecko prices
     } catch (error) {
       console.error("Failed to refetch portfolio data:", error);
     } finally {
@@ -194,10 +55,17 @@ export default function TokenBalancesCard() {
     }
   };
 
-  // Calculate custom totals based on user-defined entry prices for Ethereum tokens only
-  const calculateCustomTotals = () => {
-    if (!ethereumTokens.length)
+  // Helper function to get current price (CoinGecko or fallback to 1inch)
+  const getCurrentPrice = (token: PortfolioToken): number => {
+    const coinGeckoPrice = getTokenPrice(token);
+    return coinGeckoPrice !== null ? coinGeckoPrice : token.price_to_usd;
+  };
+
+  // Calculate custom totals with updated prices
+  const calculateUpdatedPortfolioTotals = () => {
+    if (!ethereumTokens.length) {
       return { customTotalPnL: 0, customTotalROI: 0, customTotalValue: 0 };
+    }
 
     let customTotalPnL = 0;
     let totalInvested = 0;
@@ -205,10 +73,10 @@ export default function TokenBalancesCard() {
 
     ethereumTokens.forEach((token) => {
       const tokenKey = `${token.chain_id}-${token.contract_address}`;
-      const defaultEntryPrice = token.price_to_usd; // Use current price as default
-      const entryPrice = getEntryPrice(tokenKey, defaultEntryPrice);
+      const entryPrice = getEntryPrice(tokenKey, token.price_to_usd);
+      const currentPrice = getCurrentPrice(token);
+      const currentValue = currentPrice * token.amount;
       const investedValue = entryPrice * token.amount;
-      const currentValue = token.value_usd;
       const tokenPnL = currentValue - investedValue;
 
       customTotalPnL += tokenPnL;
@@ -221,9 +89,9 @@ export default function TokenBalancesCard() {
     return { customTotalPnL, customTotalROI, customTotalValue };
   };
 
-  const { customTotalPnL, customTotalROI, customTotalValue } =
-    calculateCustomTotals();
+  const portfolioTotals = calculateUpdatedPortfolioTotals();
 
+  // Wallet not connected state
   if (!address) {
     return (
       <div className="relative mx-auto rounded-xl">
@@ -239,39 +107,18 @@ export default function TokenBalancesCard() {
     );
   }
 
+  // Error state
   if (error) {
     return (
       <div className="relative mx-auto rounded-xl">
         <div className="relative p-4 sm:p-6 md:p-8 rounded-2xl text-white font-sans">
-          <div className="flex justify-between items-center mb-4">
-            <div className="text-lg sm:text-xl font-semibold">
-              Token Balances (Ethereum)
-            </div>
-            <Tooltip title="Retry" arrow>
-              <IconButton
-                onClick={handleRefetch}
-                disabled={isRefetching}
-                sx={{
-                  color: "white",
-                  "&:hover": { color: "#00F5E0" },
-                  "&:disabled": { color: "gray" },
-                }}
-              >
-                <RefreshIcon
-                  sx={{
-                    fontSize: 20,
-                    animation: isRefetching
-                      ? "spin 1s linear infinite"
-                      : "none",
-                    "@keyframes spin": {
-                      "0%": { transform: "rotate(0deg)" },
-                      "100%": { transform: "rotate(360deg)" },
-                    },
-                  }}
-                />
-              </IconButton>
-            </Tooltip>
-          </div>
+          <PortfolioHeader
+            isRefetching={isRefetching}
+            isLoading={isLoading}
+            hasTokens={false}
+            totals={portfolioTotals}
+            onRefetch={handleRefetch}
+          />
           <div className="text-center py-8">
             <div className="text-red-400 text-sm">
               Failed to load token balances
@@ -285,71 +132,15 @@ export default function TokenBalancesCard() {
   return (
     <div className="relative mx-auto rounded-xl">
       <div className="relative p-4 sm:p-6 md:p-8 rounded-2xl text-white font-sans">
-        {/* Header with Portfolio Summary */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-3 sm:gap-0">
-          <div className="text-lg sm:text-xl font-semibold flex items-center gap-2">
-            Token Balances (Ethereum)
-            <Tooltip title="Refresh Data" arrow>
-              <IconButton
-                onClick={handleRefetch}
-                disabled={isRefetching || isLoading}
-                sx={{
-                  color: "white",
-                  "&:hover": { color: "#00F5E0" },
-                  "&:disabled": { color: "gray" },
-                }}
-              >
-                <RefreshIcon
-                  sx={{
-                    fontSize: 20,
-                    animation: isRefetching
-                      ? "spin 1s linear infinite"
-                      : "none",
-                    "@keyframes spin": {
-                      "0%": { transform: "rotate(0deg)" },
-                      "100%": { transform: "rotate(360deg)" },
-                    },
-                  }}
-                />
-              </IconButton>
-            </Tooltip>
-          </div>
-
-          {/* Portfolio Summary Stats - Only show if we have Ethereum tokens */}
-          {ethereumTokens.length > 0 && (
-            <div className="flex gap-6">
-              <div className="flex flex-col items-center">
-                <div className="text-lg sm:text-xl font-bold">
-                  ${customTotalValue.toFixed(2)}
-                </div>
-                <div className="text-xs text-gray-400">Total Value</div>
-              </div>
-
-              <div className="flex flex-col items-center">
-                <div
-                  className={`text-sm sm:text-lg font-semibold ${
-                    customTotalPnL >= 0 ? "text-green-400" : "text-red-400"
-                  }`}
-                >
-                  {customTotalPnL >= 0 ? "+" : ""}${customTotalPnL.toFixed(2)}
-                </div>
-                <div className="text-xs text-gray-400">P&L</div>
-              </div>
-
-              <div className="flex flex-col items-center">
-                <div
-                  className={`text-sm sm:text-lg font-semibold ${
-                    customTotalROI >= 0 ? "text-green-400" : "text-red-400"
-                  }`}
-                >
-                  {customTotalROI >= 0 ? "+" : ""}
-                  {formatPercent(customTotalROI)}
-                </div>
-                <div className="text-xs text-gray-400">ROI</div>
-              </div>
-            </div>
-          )}
-        </div>
+        <PortfolioHeader
+          isRefetching={isRefetching || isPriceLoading}
+          isLoading={isLoading}
+          hasTokens={ethereumTokens.length > 0}
+          totals={portfolioTotals}
+          onRefetch={handleRefetch}
+          priceError={priceError}
+          lastPriceUpdate={lastUpdated}
+        />
 
         {/* Content */}
         <div className="w-full">
@@ -359,6 +150,49 @@ export default function TokenBalancesCard() {
             </div>
           ) : ethereumTokens.length > 0 ? (
             <>
+              {/* Price Update Status */}
+              {priceError && (
+                <div className="mb-4 p-3 bg-red-900/20 border border-red-500/30 rounded-lg">
+                  <div className="text-red-400 text-sm">
+                    Binance API error: {priceError}
+                  </div>
+                  <div className="text-xs text-gray-400 mt-1">
+                    Falling back to 1inch prices
+                  </div>
+                </div>
+              )}
+
+              {unsupportedTokens.length > 0 && (
+                <div className="mb-4 p-3 bg-yellow-900/20 border border-yellow-500/30 rounded-lg">
+                  <div className="text-yellow-400 text-sm">
+                    {unsupportedTokens.length} token(s) not available on Binance
+                  </div>
+                  <div className="text-xs text-gray-400 mt-1">
+                    Using 1inch prices for:{" "}
+                    {unsupportedTokens.map((t) => t.symbol).join(", ")}
+                  </div>
+                </div>
+              )}
+
+              {lastUpdated > 0 && (
+                <div className="mb-4 flex justify-between items-center text-xs text-gray-400">
+                  <span>
+                    Binance prices updated:{" "}
+                    {new Date(lastUpdated).toLocaleTimeString()}(
+                    {supportedTokensCount}/{totalTokensCount} tokens)
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <div
+                      className={`w-2 h-2 rounded-full ${
+                        isPriceLoading
+                          ? "bg-yellow-400 animate-pulse"
+                          : "bg-green-400"
+                      }`}
+                    ></div>
+                    {isPriceLoading ? "Updating..." : "Live prices"}
+                  </span>
+                </div>
+              )}
               {/* Desktop Table View */}
               <div className="hidden md:block">
                 <table className="w-full border-collapse text-sm">
@@ -392,102 +226,25 @@ export default function TokenBalancesCard() {
                   </thead>
                   <tbody>
                     {ethereumTokens.map((token: PortfolioToken) => {
-                      const tokenLogo = getTokenLogo(
-                        token.symbol,
-                        token.chain_id
-                      );
                       const tokenKey = `${token.chain_id}-${token.contract_address}`;
-
-                      // Use current price as default entry price (so P&L starts at 0)
-                      const defaultEntryPrice = token.price_to_usd;
                       const entryPrice = getEntryPrice(
                         tokenKey,
-                        defaultEntryPrice
+                        token.price_to_usd
                       );
-
-                      // Calculate custom P&L and ROI based on user entry price
-                      const investedValue = entryPrice * token.amount;
-                      const currentValue = token.value_usd;
-                      const customPnL = currentValue - investedValue;
-                      const customROI =
-                        investedValue > 0 ? customPnL / investedValue : 0;
+                      const isCustom = isCustomPrice(tokenKey);
+                      const currentPrice = getCurrentPrice(token);
+                      const change24h = getTokenChange24h(token);
 
                       return (
-                        <tr
+                        <TokenRowDesktop
                           key={tokenKey}
-                          className="hover:bg-white/5 transition-colors duration-200"
-                        >
-                          <td className="py-3 border-b border-white/8 last:border-b-0">
-                            <div className="flex items-center gap-2">
-                              {tokenLogo ? (
-                                <img
-                                  src={tokenLogo}
-                                  alt={token.symbol}
-                                  className="w-6 h-6 rounded-full"
-                                  onError={(e) => {
-                                    const target = e.target as HTMLImageElement;
-                                    target.style.display = "none";
-                                    const fallback =
-                                      target.nextElementSibling as HTMLElement;
-                                    if (fallback)
-                                      fallback.style.display = "flex";
-                                  }}
-                                />
-                              ) : null}
-                              <div
-                                className="w-6 h-6 rounded-full bg-gradient-to-r from-gray-600 to-gray-800 flex items-center justify-center"
-                                style={{ display: tokenLogo ? "none" : "flex" }}
-                              >
-                                <span className="text-xs font-bold text-white">
-                                  {token.symbol.charAt(0)}
-                                </span>
-                              </div>
-                              <div>
-                                <div className="font-medium">
-                                  {token.symbol}
-                                </div>
-                                <div className="text-xs text-gray-400">
-                                  {token.name}
-                                </div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="py-3 border-b border-white/8 last:border-b-0 text-right">
-                            {formatNumber(token.amount)}
-                          </td>
-                          <td className="py-3 border-b border-white/8 last:border-b-0 text-center">
-                            <EditablePrice
-                              tokenKey={tokenKey}
-                              currentPrice={entryPrice}
-                              defaultPrice={defaultEntryPrice}
-                              onPriceChange={(price) =>
-                                updateEntryPrice(tokenKey, price)
-                              }
-                            />
-                          </td>
-                          <td className="py-3 border-b border-white/8 last:border-b-0 text-center">
-                            ${token.price_to_usd.toFixed(2)}
-                          </td>
-                          <td className="py-3 border-b border-white/8 last:border-b-0 text-center font-medium">
-                            {formatUSD(token.value_usd)}
-                          </td>
-                          <td
-                            className={`py-3 border-b border-white/8 last:border-b-0 text-center font-medium ${
-                              customPnL >= 0 ? "text-green-400" : "text-red-400"
-                            }`}
-                          >
-                            {customPnL >= 0 ? "+" : ""}
-                            {formatUSD(customPnL)}
-                          </td>
-                          <td
-                            className={`py-3 border-b border-white/8 last:border-b-0 text-center font-medium ${
-                              customROI >= 0 ? "text-green-400" : "text-red-400"
-                            }`}
-                          >
-                            {customROI >= 0 ? "+" : ""}
-                            {formatPercent(customROI)}
-                          </td>
-                        </tr>
+                          token={token}
+                          entryPrice={entryPrice}
+                          currentPrice={currentPrice}
+                          change24h={change24h}
+                          isCustomPrice={isCustom}
+                          onPriceChange={updateEntryPrice}
+                        />
                       );
                     })}
                   </tbody>
@@ -497,115 +254,25 @@ export default function TokenBalancesCard() {
               {/* Mobile Card View */}
               <div className="block md:hidden space-y-3">
                 {ethereumTokens.map((token: PortfolioToken) => {
-                  const tokenLogo = getTokenLogo(token.symbol, token.chain_id);
                   const tokenKey = `${token.chain_id}-${token.contract_address}`;
-
-                  // Use current price as default entry price (so P&L starts at 0)
-                  const defaultEntryPrice = token.price_to_usd;
-                  const entryPrice = getEntryPrice(tokenKey, defaultEntryPrice);
-
-                  // Calculate custom P&L and ROI based on user entry price
-                  const investedValue = entryPrice * token.amount;
-                  const currentValue = token.value_usd;
-                  const customPnL = currentValue - investedValue;
-                  const customROI =
-                    investedValue > 0 ? customPnL / investedValue : 0;
+                  const entryPrice = getEntryPrice(
+                    tokenKey,
+                    token.price_to_usd
+                  );
+                  const isCustom = isCustomPrice(tokenKey);
+                  const currentPrice = getCurrentPrice(token);
+                  const change24h = getTokenChange24h(token);
 
                   return (
-                    <div
+                    <TokenCardMobile
                       key={tokenKey}
-                      className="bg-white/5 rounded-lg p-4 border border-white/10"
-                    >
-                      <div className="flex items-center gap-2 mb-6">
-                        {tokenLogo ? (
-                          <img
-                            src={tokenLogo}
-                            alt={token.symbol}
-                            className="w-8 h-8 rounded-full"
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              target.style.display = "none";
-                              const fallback =
-                                target.nextElementSibling as HTMLElement;
-                              if (fallback) fallback.style.display = "flex";
-                            }}
-                          />
-                        ) : null}
-                        <div
-                          className="w-8 h-8 rounded-full bg-gradient-to-r from-gray-600 to-gray-800 flex items-center justify-center"
-                          style={{ display: tokenLogo ? "none" : "flex" }}
-                        >
-                          <span className="text-sm font-bold text-white">
-                            {token.symbol.charAt(0)}
-                          </span>
-                        </div>
-                        <div className="flex-1">
-                          <div className="font-semibold text-base">
-                            {token.symbol}
-                          </div>
-                          <div className="text-sm text-gray-400">
-                            {token.name}
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-lg font-bold">
-                            {formatUSD(token.value_usd)}
-                          </div>
-                          <div
-                            className={`text-sm font-medium ${
-                              customPnL >= 0 ? "text-green-400" : "text-red-400"
-                            }`}
-                          >
-                            {customPnL >= 0 ? "+" : ""}
-                            {formatUSD(customPnL)}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <div className="text-cyan-300 text-xs mb-1">
-                            Balance
-                          </div>
-                          <div className="font-medium text-white">
-                            {formatNumber(token.amount)}
-                          </div>
-                        </div>
-                        <div>
-                          <div className="text-cyan-300 text-xs mb-1">
-                            Current Price
-                          </div>
-                          <div className="font-medium text-white">
-                            ${token.price_to_usd.toFixed(2)}
-                          </div>
-                        </div>
-                        <div>
-                          <div className="text-cyan-300 text-xs mb-1">
-                            Entry Price
-                          </div>
-                          <div className="font-medium text-white flex justify-start">
-                            <EditablePrice
-                              tokenKey={tokenKey}
-                              currentPrice={entryPrice}
-                              defaultPrice={defaultEntryPrice}
-                              onPriceChange={(price) =>
-                                updateEntryPrice(tokenKey, price)
-                              }
-                            />
-                          </div>
-                        </div>
-                        <div>
-                          <div className="text-cyan-300 text-xs mb-1">ROI</div>
-                          <div
-                            className={`font-medium ${
-                              customROI >= 0 ? "text-green-400" : "text-red-400"
-                            }`}
-                          >
-                            {customROI >= 0 ? "+" : ""}
-                            {formatPercent(customROI)}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                      token={token}
+                      entryPrice={entryPrice}
+                      currentPrice={currentPrice}
+                      change24h={change24h}
+                      isCustomPrice={isCustom}
+                      onPriceChange={updateEntryPrice}
+                    />
                   );
                 })}
               </div>

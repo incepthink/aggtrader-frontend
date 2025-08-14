@@ -1,83 +1,33 @@
 "use client";
 
-import { DownOutlined, SettingOutlined } from "@ant-design/icons";
 import SwapVertIcon from "@mui/icons-material/SwapVert";
-import { Input, Modal, Popover, Radio } from "antd";
 import { Alert, Snackbar } from "@mui/material";
 import axios from "axios";
 import React, { useEffect, useState, useCallback } from "react";
-import { formatUnits, type Address } from "viem";
+import { formatUnits } from "viem";
 import {
   useAccount,
   useSendTransaction,
   useWaitForTransactionReceipt,
 } from "wagmi";
-import { TOKENS } from "@/utils/spot/TokenList";
-import MaxButton from "./MaxButton";
 import "./index.css";
 import { BACKEND_URL } from "@/utils/constants";
 import { useSpotStore } from "@/store/spotStore";
 import { GradientConnectButton } from "../common/navbar/Navbar";
 
-/* ---------- local helpers ---------- */
-interface Token {
-  address: Address;
-  name: string;
-  ticker: string;
-  img: string;
-  decimals: number;
-}
+// Import refactored components
+import { SwapSettings } from "./SwapSettings";
+import { SwapInput } from "./SwapInput";
+import { TokenSelector } from "./TokenSelector";
+import { QuoteDisplay } from "./QuoteDisplay";
+import { TokenSelectionModal } from "./TokenSelectionModal";
 
-interface PriceData {
-  ratio: number;
-  tokenOne?: number;
-  tokenTwo?: number;
-  [k: string]: any;
-}
+// Import hooks
+import { useSwapQuote } from "@/hooks/useSwapQuote";
+import { useSwapPrices } from "@/hooks/useSwapPrices";
 
-interface TxDetails {
-  to: Address | null;
-  data: `0x${string}` | null;
-  value: bigint | null;
-}
-
-interface TokenInfo {
-  address: string;
-  symbol: string;
-  name: string;
-  decimals: number;
-  logoURI: string;
-  domainVersion?: string;
-  eip2612?: boolean;
-  isFoT?: boolean;
-  tags?: string[];
-}
-
-interface SelectedLiquiditySource {
-  name: string;
-  part: number;
-}
-
-interface TokenHop {
-  part: number;
-  dst: string;
-  fromTokenId: number;
-  toTokenId: number;
-  protocols: SelectedLiquiditySource[];
-}
-
-interface TokenSwaps {
-  token: string;
-  hops: TokenHop[];
-}
-
-interface QuoteResponse {
-  toAmount: string;
-  estimatedGas?: number;
-  gas?: number;
-  protocols?: any[];
-  // The 1inch quote API returns a simpler response than swap
-}
+// Import types
+import type { TxDetails, SnackbarSeverity } from "@/types/swap.types";
 
 function OneInchSwap() {
   const { address, isConnected } = useAccount();
@@ -92,7 +42,6 @@ function OneInchSwap() {
   /* --------- local component state --------- */
   const [tokenOneAmount, setT1Amount] = useState("");
   const [tokenTwoAmount, setT2Amount] = useState("");
-  const [prices, setPrices] = useState<PriceData | null>(null);
   const [slippage, setSlippage] = useState<number>(2.5);
   const [txDetails, setTxDetails] = useState<TxDetails>({
     to: null,
@@ -101,18 +50,23 @@ function OneInchSwap() {
   });
   const [isOpenTwo, setIsOpenTwo] = useState(false);
   const [isInitiatingSwap, setIsInitiatingSwap] = useState(false);
-  const [isLoadingPrices, setIsLoadingPrices] = useState(false);
-
-  // Quote state
-  const [quote, setQuote] = useState<QuoteResponse | null>(null);
-  const [isLoadingQuote, setIsLoadingQuote] = useState(false);
 
   // MUI Snackbar states
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
-  const [snackbarSeverity, setSnackbarSeverity] = useState<
-    "success" | "error" | "warning" | "info"
-  >("info");
+  const [snackbarSeverity, setSnackbarSeverity] =
+    useState<SnackbarSeverity>("info");
+
+  /* --------- Custom hooks --------- */
+  const { quote, isLoadingQuote, fetchQuote, clearQuote } = useSwapQuote();
+  const {
+    prices,
+    isLoadingPrices,
+    tokenOnePrice,
+    tokenTwoPrice,
+    binancePriceError,
+    fetchPrices,
+  } = useSwapPrices(tokenOne, tokenTwo);
 
   /* --------- wagmi tx hooks --------- */
   const {
@@ -128,10 +82,7 @@ function OneInchSwap() {
   } = useWaitForTransactionReceipt({ hash: txHash });
 
   // Helper function to show snackbar
-  const showSnackbar = (
-    message: string,
-    severity: "success" | "error" | "warning" | "info"
-  ) => {
+  const showSnackbar = (message: string, severity: SnackbarSeverity) => {
     setSnackbarMessage(message);
     setSnackbarSeverity(severity);
     setSnackbarOpen(true);
@@ -139,38 +90,7 @@ function OneInchSwap() {
 
   const handleSlippageChange = (e: any) => setSlippage(e.target.value);
 
-  /* --------- Quote fetch --------- */
-  const API = `${BACKEND_URL}/proxy/1inch`;
-
-  const fetchQuote = useCallback(
-    async (amount: string) => {
-      if (!amount || !tokenOne || !tokenTwo || parseFloat(amount) <= 0) {
-        setQuote(null);
-        return;
-      }
-
-      setIsLoadingQuote(true);
-      try {
-        const amountWei = BigInt(
-          (parseFloat(amount) * 10 ** tokenOne.decimals).toFixed(0)
-        );
-
-        const { data } = await axios.get(
-          `${API}/quote?src=${tokenOne.address}&dst=${tokenTwo.address}&amount=${amountWei}`
-        );
-
-        setQuote(data);
-      } catch (error: any) {
-        console.error("Quote error:", error);
-        setQuote(null);
-      } finally {
-        setIsLoadingQuote(false);
-      }
-    },
-    [tokenOne, tokenTwo, API]
-  );
-
-  /* --------- amount change --------- */
+  /* --------- amount change handlers --------- */
   const changeBuyAmount = (e: React.ChangeEvent<HTMLInputElement>) => {
     const v = e.target.value;
     setT2Amount(v);
@@ -197,17 +117,17 @@ function OneInchSwap() {
   useEffect(() => {
     if (tokenOneAmount && parseFloat(tokenOneAmount) > 0) {
       const timeoutId = setTimeout(() => {
-        fetchQuote(tokenOneAmount);
+        fetchQuote(tokenOneAmount, tokenOne, tokenTwo);
       }, 500);
 
       return () => clearTimeout(timeoutId);
     } else {
-      setQuote(null);
+      clearQuote();
       if (!tokenOneAmount) {
         setT2Amount("");
       }
     }
-  }, [tokenOneAmount, fetchQuote]);
+  }, [tokenOneAmount, fetchQuote, clearQuote, tokenOne, tokenTwo]);
 
   // Update tokenTwoAmount when quote is received
   useEffect(() => {
@@ -232,10 +152,9 @@ function OneInchSwap() {
 
   /* --------- switch tokens --------- */
   const switchTokens = () => {
-    setPrices(null);
     setT1Amount("");
     setT2Amount("");
-    setQuote(null);
+    clearQuote();
 
     // Switch both tokens using global store
     const tempTokenOne = tokenOne;
@@ -246,38 +165,24 @@ function OneInchSwap() {
     fetchPrices(tempTokenTwo.address, tempTokenOne.address);
   };
 
-  /* --------- price fetch with retry logic --------- */
-  const fetchPrices = async (one: Address, two: Address, retryCount = 0) => {
-    if (retryCount === 0) setIsLoadingPrices(true);
-
-    try {
-      const { data } = await axios.get<PriceData>(
-        `${BACKEND_URL}/api/tokenPrice`,
-        {
-          params: { addressOne: one, addressTwo: two },
-          timeout: 10000, // 10 second timeout
-        }
-      );
-      setPrices(data.data);
-      setIsLoadingPrices(false);
-    } catch (err) {
-      console.error("Price fetch error:", err);
-
-      // Retry logic for mobile/network issues
-      if (retryCount < 2) {
-        console.log(`Retrying price fetch (attempt ${retryCount + 1})`);
-        setTimeout(() => {
-          fetchPrices(one, two, retryCount + 1);
-        }, 1000 * (retryCount + 1)); // Exponential backoff: 1s, 2s
-        return;
-      }
-
-      // Just stop loading, don't show error
-      setIsLoadingPrices(false);
+  /* --------- token selection handlers --------- */
+  const handleTokenTwoSelect = (token: typeof tokenTwo) => {
+    // If the selected token is the same as tokenOne, switch them
+    if (token === tokenOne) {
+      setTokenOne(tokenTwo);
+      setTokenTwo(token);
+    } else {
+      // Otherwise, just set tokenTwo normally
+      setTokenTwo(token);
     }
+    // Fetch new prices after token selection
+    fetchPrices(tokenOne.address, token.address);
+    clearQuote();
   };
 
   /* --------- swap flow --------- */
+  const API = `${BACKEND_URL}/proxy/1inch`;
+
   const fetchDexSwap = async () => {
     // Prevent multiple calls
     if (isInitiatingSwap || isSending || isConfirming) {
@@ -312,8 +217,8 @@ function OneInchSwap() {
           `${API}/approve/transaction?tokenAddress=${tokenOne.address}`
         );
         setTxDetails({
-          to: approveTx.to as Address,
-          data: approveTx.data as `0x${string}`,
+          to: approveTx.to,
+          data: approveTx.data,
           value: BigInt(approveTx.value ?? "0"),
         });
         return;
@@ -330,8 +235,8 @@ function OneInchSwap() {
       setT2Amount(formatUnits(BigInt(swap.toAmount), tokenTwo.decimals));
 
       setTxDetails({
-        to: swap.tx.to as Address,
-        data: swap.tx.data as `0x${string}`,
+        to: swap.tx.to,
+        data: swap.tx.data,
         value: BigInt(swap.tx.value ?? "0"),
       });
     } catch (error: any) {
@@ -386,13 +291,13 @@ function OneInchSwap() {
       setT2Amount("");
       setTxDetails({ to: null, data: null, value: null });
       setIsInitiatingSwap(false);
-      setQuote(null);
+      clearQuote();
     } else if (sendErr || confirmErr) {
       showSnackbar("Transaction failed", "error");
       setTxDetails({ to: null, data: null, value: null });
       setIsInitiatingSwap(false);
     }
-  }, [isDone, sendErr, confirmErr]);
+  }, [isDone, sendErr, confirmErr, clearQuote]);
 
   /* --------- initial price load --------- */
   useEffect(() => {
@@ -400,17 +305,13 @@ function OneInchSwap() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tokenOne.address, tokenTwo.address]);
 
-  /* --------- settings popover --------- */
-  const settings = (
-    <>
-      <div>Slippage Tolerance</div>
-      <Radio.Group value={slippage} onChange={handleSlippageChange}>
-        <Radio.Button value={0.5}>0.5%</Radio.Button>
-        <Radio.Button value={2.5}>2.5%</Radio.Button>
-        <Radio.Button value={5}>5.0%</Radio.Button>
-      </Radio.Group>
-    </>
-  );
+  // Show Binance price error if needed
+  useEffect(() => {
+    if (binancePriceError) {
+      console.warn("Binance price error:", binancePriceError);
+      // Don't show error to user, just use fallback prices
+    }
+  }, [binancePriceError]);
 
   const isSwapDisabled =
     !tokenOneAmount ||
@@ -421,126 +322,30 @@ function OneInchSwap() {
     isConfirming ||
     isInitiatingSwap;
 
-  /* --------- Quote display component --------- */
-  const renderQuoteDisplay = () => {
-    if (!tokenOneAmount || isLoadingQuote) {
-      return (
-        <div className="bg-gray-800/50 rounded-lg p-4 mt-4 mb-4">
-          <div className="text-center text-gray-400 text-sm">
-            {isLoadingQuote
-              ? "Loading quote..."
-              : "Enter an amount to see quote details"}
-          </div>
-        </div>
-      );
-    }
-
-    if (!quote || !quote.toAmount) {
-      return null;
-    }
-
-    // Add validation for toAmount
-    let expectedOutput = "0";
-    try {
-      expectedOutput = formatUnits(BigInt(quote.toAmount), tokenTwo.decimals);
-    } catch (error) {
-      console.error("Error parsing quote amount:", error);
-      return (
-        <div className="bg-gray-800/50 rounded-lg p-4 mt-4 mb-4">
-          <div className="text-center text-gray-400 text-sm">
-            Invalid quote data
-          </div>
-        </div>
-      );
-    }
-
-    const priceImpact = "< 0.01%"; // You can calculate this based on your price data
-    const minimumReceived = (
-      parseFloat(expectedOutput) *
-      (1 - slippage / 100)
-    ).toFixed(6);
-
-    return (
-      <div className="bg-gray-800/50 rounded-lg p-4 mt-4 mb-4 space-y-3">
-        <div className="flex justify-between items-center text-sm">
-          <span className="text-gray-400">Expected Output</span>
-          <span className="text-white font-medium">
-            {parseFloat(expectedOutput).toFixed(6)} {tokenTwo.ticker}
-          </span>
-        </div>
-
-        <div className="flex justify-between items-center text-sm">
-          <span className="text-gray-400">Price Impact</span>
-          <span className="text-green-400">{priceImpact}</span>
-        </div>
-
-        <div className="flex justify-between items-center text-sm">
-          <span className="text-gray-400">Minimum Received</span>
-          <span className="text-gray-300">
-            {minimumReceived} {tokenTwo.ticker}
-          </span>
-        </div>
-
-        {quote.estimatedGas && (
-          <div className="flex justify-between items-center text-sm">
-            <span className="text-gray-400">Estimated Gas</span>
-            <span className="text-gray-300">
-              {quote.estimatedGas.toLocaleString()}
-            </span>
-          </div>
-        )}
-
-        <div className="flex justify-between items-center text-sm">
-          <span className="text-gray-400">Route</span>
-          <span className="text-gray-300">
-            {quote.protocols && quote.protocols.length > 1
-              ? "Multi-hop"
-              : "Direct"}
-          </span>
-        </div>
-      </div>
-    );
-  };
-
   /* ---------- render ---------- */
   return (
     <>
       <div className="tradeBox p-4">
         <div className="flex justify-between items-center mb-8">
           <h4 className="text-xl">Swap</h4>
-          <Popover
-            content={settings}
-            title="Settings"
-            trigger="click"
-            placement="bottomRight"
-          >
-            <SettingOutlined className="text-white text-xl hover:rotate-90 transition duration-300 hover:text-[#00F5E0]" />
-          </Popover>
+          <SwapSettings
+            slippage={slippage}
+            onSlippageChange={handleSlippageChange}
+          />
         </div>
 
         {/* amounts */}
         <div className="inputs">
           {/* sell */}
-          <div className="input-container">
-            <Input
-              placeholder="0"
-              value={tokenOneAmount}
-              onChange={changeSellAmount}
-              disabled={!prices || isLoadingPrices}
-              type="number"
-              style={{ maxWidth: "350px" }}
-              className="outline-none focus:outline-none! focus:ring-0! focus:border-transparent focus:shadow-none [&.ant-input:focus]:outline-none [&.ant-input:focus]:shadow-none [&.ant-input:focus]:border-transparent [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-inner-spin-button]:m-0"
-            />
-            <span className="input-tag">Sell</span>
-            {tokenOneAmount && prices && (
-              <div className="text-sm text-gray-300 font-medium -mt-5 mb-2 px-3">
-                ≈ $
-                {(parseFloat(tokenOneAmount) * (prices.tokenOne || 0)).toFixed(
-                  2
-                )}
-              </div>
-            )}
-          </div>
+          <SwapInput
+            value={tokenOneAmount}
+            onChange={changeSellAmount}
+            disabled={!prices || isLoadingPrices}
+            label="Sell"
+            showPrice={true}
+            price={tokenOnePrice}
+            isLoadingPrice={isLoadingPrices}
+          />
 
           {/* switch */}
           <div className="switch-container">
@@ -552,78 +357,42 @@ function OneInchSwap() {
           </div>
 
           {/* buy */}
-          <div className="input-container">
-            <Input
-              placeholder="0"
-              value={isLoadingQuote ? "" : tokenTwoAmount}
-              onChange={changeBuyAmount}
-              disabled={!prices || isLoadingPrices || isLoadingQuote}
-              className="outline-none focus:outline-none! focus:ring-0! focus:border-transparent focus:shadow-none [&.ant-input:focus]:outline-none [&.ant-input:focus]:shadow-none [&.ant-input:focus]:border-transparent [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:m-0 [&::-webkit-inner-spin-button]:m-0"
-              type="number"
-              style={{ maxWidth: "350px" }}
-            />
-            <span className="input-tag">Buy</span>
-
-            {/* Loading animation overlay */}
-            {/* {isLoadingQuote && tokenOneAmount && (
-              <div className="absolute inset-0 flex items-center justify-center bg-transparent pointer-events-none">
-                <div className="text-2xl text-gray-400">
-                  <div className="animate-pulse">Loading...</div>
-                </div>
-              </div>
-            )} */}
-
-            {/* Price display with loading animation */}
-            {tokenTwoAmount && prices && !isLoadingQuote && (
-              <div className="text-sm text-gray-300 font-medium -mt-5 mb-2 px-3">
-                ≈ $
-                {(parseFloat(tokenTwoAmount) * (prices.tokenTwo || 0)).toFixed(
-                  2
-                )}
-              </div>
-            )}
-
-            {/* Loading animation for price */}
-            {isLoadingQuote && tokenOneAmount && (
-              <div className="text-sm text-gray-300 font-medium -mt-5 mb-2 px-3">
-                <div className="animate-pulse bg-gray-600 h-4 w-16 rounded"></div>
-              </div>
-            )}
-          </div>
+          <SwapInput
+            value={isLoadingQuote ? "" : tokenTwoAmount}
+            onChange={changeBuyAmount}
+            disabled={!prices || isLoadingPrices || isLoadingQuote}
+            label="Buy"
+            showPrice={true}
+            price={tokenTwoPrice}
+            isLoadingPrice={isLoadingPrices || isLoadingQuote}
+          />
 
           {/* token selectors */}
-          <div className="assetOneContainer">
-            <div className="assetOne" onClick={openModal}>
-              <img
-                src={tokenOne.img}
-                alt="assetOneLogo"
-                className="assetLogo"
-              />
-              <p className="text-white">{tokenOne.ticker}</p> <DownOutlined />
-            </div>
-            <div className="max-btn-container">
-              <MaxButton
-                token={tokenOne.address}
-                setToken={setMaxBal}
-                showBtn={true}
-              />
-            </div>
-          </div>
+          <TokenSelector
+            token={tokenOne}
+            onClick={openModal}
+            showMaxButton={true}
+            onMaxClick={setMaxBal}
+            position="top"
+          />
 
-          <div className="assetTowContainer">
-            <div className="assetTwo" onClick={() => setIsOpenTwo(true)}>
-              <img
-                src={tokenTwo.img}
-                alt="assetTwoLogo"
-                className="assetLogo"
-              />
-              <p className="text-white">{tokenTwo.ticker}</p> <DownOutlined />
-            </div>
-            <div className="absolute right-5 bottom-6">
-              <MaxButton token={tokenTwo.address} setToken={setMaxBal} />
-            </div>
-          </div>
+          <TokenSelector
+            token={tokenTwo}
+            onClick={() => setIsOpenTwo(true)}
+            showMaxButton={true}
+            onMaxClick={setMaxBal}
+            position="bottom"
+          />
         </div>
+
+        {/* Quote Display */}
+        <QuoteDisplay
+          quote={quote}
+          isLoadingQuote={isLoadingQuote}
+          tokenOneAmount={tokenOneAmount}
+          tokenTwo={tokenTwo}
+          slippage={slippage}
+        />
 
         {/* swap button */}
         {isConnected ? (
@@ -653,41 +422,13 @@ function OneInchSwap() {
       </div>
 
       {/* Token Two Selection Modal */}
-      <Modal
-        open={isOpenTwo}
-        footer={null}
-        onCancel={() => setIsOpenTwo(false)}
+      <TokenSelectionModal
+        isOpen={isOpenTwo}
+        onClose={() => setIsOpenTwo(false)}
+        onTokenSelect={handleTokenTwoSelect}
+        currentTokenOne={tokenOne}
         title="Select a token"
-      >
-        <div className="modalContent">
-          {(TOKENS as Token[]).map((token, i) => (
-            <div
-              key={i}
-              className="tokenChoice"
-              onClick={() => {
-                // If the selected token is the same as tokenOne, switch them
-                if (token === tokenOne) {
-                  setTokenOne(tokenTwo);
-                  setTokenTwo(token);
-                } else {
-                  // Otherwise, just set tokenTwo normally
-                  setTokenTwo(token);
-                }
-                setIsOpenTwo(false);
-                // Fetch new prices after token selection
-                fetchPrices(tokenOne.address, token.address);
-                setQuote(null);
-              }}
-            >
-              <img src={token.img} alt={token.ticker} className="tokenLogo" />
-              <div className="tokenChoiceNames">
-                <div className="tokenName">{token.name}</div>
-                <div className="tokenTicker">{token.ticker}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </Modal>
+      />
 
       {/* MUI Snackbar for notifications */}
       <Snackbar

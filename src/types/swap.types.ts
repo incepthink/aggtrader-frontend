@@ -1,6 +1,8 @@
-// types/swap.types.ts
+// types/swapTypes.ts
+import { type Address } from "viem";
+
 export interface Token {
-  address: `0x${string}`;
+  address: Address;
   name: string;
   ticker: string;
   img: string;
@@ -15,13 +17,13 @@ export interface PriceData {
 }
 
 export interface TxDetails {
-  to: `0x${string}` | null;
+  to: Address | null;
   data: `0x${string}` | null;
   value: bigint | null;
 }
 
 export interface TokenInfo {
-  address: `0x${string}`;
+  address: string;
   symbol: string;
   name: string;
   decimals: number;
@@ -51,9 +53,10 @@ export interface TokenSwaps {
 }
 
 export interface QuoteResponse {
-  srcToken: TokenInfo;
-  dstToken: TokenInfo;
-  dstAmount: string;
-  protocols: TokenSwaps[];
+  toAmount: string;
+  estimatedGas?: number;
   gas?: number;
+  protocols?: any[];
 }
+
+export type SnackbarSeverity = "success" | "error" | "warning" | "info";

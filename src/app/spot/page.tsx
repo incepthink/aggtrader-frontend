@@ -1,5 +1,6 @@
 import GlowBox from "@/components/common/ui/GlowBox";
-import ChartSpot, { ChartHeader } from "@/components/spot/ChartSpot";
+import ChartSpot from "@/components/spot/ChartSpot";
+import ChartHeader from "@/components/spot/ChartHeader";
 import OneInchSwap from "@/components/spot/OneInchSwap";
 import TokenBalancesCard from "@/components/spot/TokenBalancesCard";
 import TokenSelect from "@/components/spot/TokenSelect";
