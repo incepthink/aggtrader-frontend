@@ -333,7 +333,7 @@ export const ohlcUtils = {
 
   // Check if data is from 1inch charts API
   isOneInchData: (metadata: OHLCMetadata): boolean => {
-    return metadata.dexId === "1inch" && metadata.dataSource === "api";
+    return metadata.dataSource === "api";
   },
 
   // Get data reliability score

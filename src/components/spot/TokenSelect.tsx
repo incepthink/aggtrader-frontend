@@ -4,11 +4,11 @@ import React from "react";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 
 const TokenSelect = () => {
-  const { tokenOne, openModal } = useSpotStore();
+  const { tokenOne, openModalOne } = useSpotStore();
 
   return (
     <button
-      onClick={openModal}
+      onClick={openModalOne}
       className="neon-bg px-5 py-3 rounded-md flex items-center gap-4 cursor-pointer border-0 "
     >
       <div className="w-8">

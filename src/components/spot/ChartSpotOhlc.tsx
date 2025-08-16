@@ -82,7 +82,7 @@ const createTokenFromSpotToken = (spotToken: any): PortfolioToken | null => {
     value_usd: 0,
     abs_profit_usd: 0,
     roi: 0,
-    status: "active",
+    status: 1,
   };
 };
 
@@ -487,9 +487,9 @@ const LightweightOHLCChart = () => {
                       }`}
                     >
                       {priceStats.priceChange.percentage >= 0 ? (
-                        <TrendingUp size={16} />
+                        <TrendingUp />
                       ) : (
-                        <TrendingDown size={16} />
+                        <TrendingDown />
                       )}
                       {priceStats.priceChange.percentage >= 0 ? "+" : ""}
                       {priceStats.priceChange.percentage.toFixed(2)}%

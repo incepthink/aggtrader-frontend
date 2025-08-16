@@ -336,7 +336,7 @@ export function useEthereumOHLCData({
       : null;
 
   return {
-    data,
+    data: data || null,
     isLoading,
     error: formattedError,
     isSupported,

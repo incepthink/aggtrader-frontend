@@ -317,7 +317,7 @@ export const sushiSwapOHLCUtils = {
 
   // Check if data is from SushiSwap subgraph
   isSushiSwapData: (metadata: SushiSwapOHLCMetadata): boolean => {
-    return metadata.dexId === "sushiswap" && metadata.dataSource === "subgraph";
+    return metadata.dataSource === "subgraph";
   },
 
   // Get data reliability score

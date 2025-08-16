@@ -15,14 +15,6 @@ import EthereumCandlestickChart from "@/components/spot/EthereumCandlestickChart
 
 import { useTokensBackend } from "@/hooks/useTokensBackend";
 
-// Add this component to your app root (layout.tsx or _app.tsx)
-export const TokenPrefetcher = () => {
-  // Prefetch tokens for common chains when app loads
-  useTokensBackend(1); // Ethereum
-
-  return null; // This component doesn't render anything
-};
-
 const page = () => {
   return (
     <Container
