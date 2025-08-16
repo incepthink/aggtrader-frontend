@@ -7,9 +7,12 @@ type spotStore = {
   setTokenOne: (token: Token) => void;
   setTokenTwo: (token: Token) => void;
 
-  modalOpen: boolean;
-  openModal: () => void;
-  closeModal: () => void;
+  modalOpenOne: boolean;
+  modalOpenTwo: boolean;
+  openModalOne: () => void;
+  openModalTwo: () => void;
+  closeModalOne: () => void;
+  closeModalTwo: () => void;
 };
 
 export const useSpotStore = create<spotStore>((set) => ({
@@ -21,7 +24,10 @@ export const useSpotStore = create<spotStore>((set) => ({
   setTokenTwo: (token: Token) => {
     set(() => ({ tokenTwo: token }));
   },
-  modalOpen: false,
-  openModal: () => set({ modalOpen: true }),
-  closeModal: () => set({ modalOpen: false }),
+  modalOpenOne: false,
+  modalOpenTwo: false,
+  openModalOne: () => set({ modalOpenOne: true }),
+  openModalTwo: () => set({ modalOpenTwo: true }),
+  closeModalOne: () => set({ modalOpenOne: false }),
+  closeModalTwo: () => set({ modalOpenTwo: false }),
 }));

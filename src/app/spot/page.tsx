@@ -1,3 +1,5 @@
+"use client";
+
 import GlowBox from "@/components/common/ui/GlowBox";
 import ChartSpot from "@/components/spot/ChartSpot";
 import ChartHeader from "@/components/spot/ChartHeader";
@@ -7,6 +9,19 @@ import TokenSelect from "@/components/spot/TokenSelect";
 import { TokenSelectModal } from "@/components/spot/TokenSelectModal";
 import { Box, Container, Stack } from "@mui/material";
 import React from "react";
+import ChartSpotOhlc from "@/components/spot/ChartSpotOhlc";
+import SushiSwapCandlestickChart from "@/components/spot/SushiSwapCandlestickChart";
+import EthereumCandlestickChart from "@/components/spot/EthereumCandlestickChart";
+
+import { useTokensBackend } from "@/hooks/useTokensBackend";
+
+// Add this component to your app root (layout.tsx or _app.tsx)
+export const TokenPrefetcher = () => {
+  // Prefetch tokens for common chains when app loads
+  useTokensBackend(1); // Ethereum
+
+  return null; // This component doesn't render anything
+};
 
 const page = () => {
   return (
@@ -92,7 +107,7 @@ const page = () => {
                   p: { xs: 0, md: 2 }, // No padding on mobile, normal padding on medium screens and up
                 }}
               >
-                <ChartSpot />
+                <EthereumCandlestickChart />
               </GlowBox>
             </Box>
           </Box>

@@ -37,7 +37,8 @@ function OneInchSwap() {
   const tokenTwo = useSpotStore((s) => s.tokenTwo);
   const setTokenOne = useSpotStore((s) => s.setTokenOne);
   const setTokenTwo = useSpotStore((s) => s.setTokenTwo);
-  const openModal = useSpotStore((s) => s.openModal);
+  const openModalOne = useSpotStore((s) => s.openModalOne);
+  const openModalTwo = useSpotStore((s) => s.openModalTwo);
 
   /* --------- local component state --------- */
   const [tokenOneAmount, setT1Amount] = useState("");
@@ -370,7 +371,7 @@ function OneInchSwap() {
           {/* token selectors */}
           <TokenSelector
             token={tokenOne}
-            onClick={openModal}
+            onClick={openModalOne}
             showMaxButton={true}
             onMaxClick={setMaxBal}
             position="top"
@@ -378,7 +379,7 @@ function OneInchSwap() {
 
           <TokenSelector
             token={tokenTwo}
-            onClick={() => setIsOpenTwo(true)}
+            onClick={openModalTwo}
             showMaxButton={true}
             onMaxClick={setMaxBal}
             position="bottom"
@@ -422,13 +423,7 @@ function OneInchSwap() {
       </div>
 
       {/* Token Two Selection Modal */}
-      <TokenSelectionModal
-        isOpen={isOpenTwo}
-        onClose={() => setIsOpenTwo(false)}
-        onTokenSelect={handleTokenTwoSelect}
-        currentTokenOne={tokenOne}
-        title="Select a token"
-      />
+      <TokenSelectionModal />
 
       {/* MUI Snackbar for notifications */}
       <Snackbar
