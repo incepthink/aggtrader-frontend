@@ -284,7 +284,7 @@ function OneInchSwap() {
 
           {/* token selectors */}
           <div className="assetOneContainer">
-            <div className="assetOne" onClick={openModal}>
+            <div className="assetOne" onClick={() => openModal("tokenOne")}>
               <img
                 src={tokenOne.img}
                 alt="assetOneLogo"

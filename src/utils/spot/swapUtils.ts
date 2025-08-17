@@ -1,6 +1,6 @@
 // utils/swapUtils.ts
 import type { PortfolioToken } from "@/hooks/usePortfolioDetailed";
-import type { Token } from "@/types/swap.types";
+import type { Token } from "@/hooks/sushiswap/useSwapPrices";
 
 // Helper function to create PortfolioToken from swap token
 export const createPortfolioTokenFromSwapToken = (
