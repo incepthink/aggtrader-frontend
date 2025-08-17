@@ -165,6 +165,12 @@ export const ChartHeader = () => {
 
 // Clean Chart Component with conditional header
 const ChartSpot = () => {
+  return (
+    <div className="w-full h-full flex justify-center items-center">
+      <p>COMING SOON</p>
+    </div>
+  );
+
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const isTablet = useMediaQuery(theme.breakpoints.down("md"));

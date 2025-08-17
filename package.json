@@ -37,6 +37,7 @@
     "react-dom": "^19.0.0",
     "react-minimal-pie-chart": "^9.1.0",
     "recharts": "^2.15.3",
+    "sushi": "^6.0.8",
     "viem": "^2.31.3",
     "wagmi": "^2.15.6",
     "zustand": "^5.0.5"

@@ -31,7 +31,7 @@ const MaxButton = ({ token, setToken }: any) => {
   return (
     <div className="max-btn">
       <span>Balance: </span>
-      <span>{parseFloat(maxHuman).toFixed(5)}</span>
+      <span>{parseFloat(maxHuman).toFixed(8)}</span>
       <span onClick={handleMaxClick} className="max">
         Max
       </span>

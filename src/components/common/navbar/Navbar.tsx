@@ -5,10 +5,12 @@ import React, { useState } from "react";
 import NavLink from "./Navlink";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { Menu, Close } from "@mui/icons-material";
+import { NetworkSelector } from "./NetworkSelector";
+import { Typography } from "@mui/material";
 
 const navItems = [
   {
-    href: ["https://sushi.aggtrade.xyz/ethereum/swap"],
+    href: ["/spot"],
     label: "Spot",
   },
   { href: ["/lend/earn", "/lend/borrow"], label: "Earn/Borrow" },
@@ -128,13 +130,17 @@ export default function Navbar() {
           ))}
         </ul>
 
-        {/* Desktop Connect Button */}
-        <div className="hidden lg:block">
+        {/* Desktop Network Selector and Connect Button */}
+        <div className="hidden lg:flex items-center gap-3">
+          <NetworkSelector variant="navbar" size="small" />
           <GradientConnectButton />
         </div>
 
         {/* Mobile Menu Button and Connect Button */}
         <div className="lg:hidden flex items-center gap-2">
+          <div className="hidden sm:block">
+            <NetworkSelector variant="navbar" size="small" />
+          </div>
           <GradientConnectButton />
           <button
             onClick={toggleMenu}
@@ -174,6 +180,19 @@ export default function Navbar() {
             <Close sx={{ fontSize: 24 }} />
           </button>
         </div>
+
+        {/* Network Selector in Mobile Menu */}
+        <div className="p-4 border-b border-gray-700">
+          <Typography
+            variant="body2"
+            className="text-gray-400 mb-2"
+            sx={{ fontSize: "0.875rem" }}
+          >
+            Network
+          </Typography>
+          <NetworkSelector variant="standalone" size="medium" />
+        </div>
+
         <ul className="flex flex-col p-4 gap-4">
           {navItems.map(({ href, label }) => (
             <li key={href[0]}>

@@ -1,6 +1,8 @@
+import { ChainSync } from "@/components/common/ChainSync";
 import GlowBox from "@/components/common/ui/GlowBox";
 import ChartSpot, { ChartHeader } from "@/components/spot/ChartSpot";
 import OneInchSwap from "@/components/spot/OneInchSwap";
+import SushiClassicSwap from "@/components/spot/SushiClassicSwap";
 import TokenBalancesCard from "@/components/spot/TokenBalancesCard";
 import TokenSelect from "@/components/spot/TokenSelect";
 import { TokenSelectModal } from "@/components/spot/TokenSelectModal";
@@ -17,6 +19,7 @@ const page = () => {
         maxWidth: { xs: "100%", lg: "1400px", xl: "1600px" }, // Limit max width on large screens
       }}
     >
+      <ChainSync />
       <TokenSelectModal />
       <Stack spacing={{ xs: 2, sm: 2 }}>
         {" "}
@@ -114,7 +117,7 @@ const page = () => {
                 overflow: "hidden", // Prevent overflow
               }}
             >
-              <OneInchSwap />
+              <SushiClassicSwap />
             </GlowBox>
           </Box>
         </Stack>
