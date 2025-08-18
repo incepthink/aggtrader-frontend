@@ -1,6 +1,7 @@
 import { ChainSync } from "@/components/common/ChainSync";
 import GlowBox from "@/components/common/ui/GlowBox";
 import ChartSpot, { ChartHeader } from "@/components/spot/ChartSpot";
+import EthereumPoolCandlestickChart from "@/components/spot/EthereumPoolCandlestickChart";
 import OneInchSwap from "@/components/spot/OneInchSwap";
 import SushiClassicSwap from "@/components/spot/SushiClassicSwap";
 import TokenBalancesCard from "@/components/spot/TokenBalancesCard";
@@ -94,7 +95,7 @@ const page = () => {
                   p: { xs: 0, md: 2 }, // No padding on mobile, normal padding on medium screens and up
                 }}
               >
-                <ChartSpot />
+                <EthereumPoolCandlestickChart />
               </GlowBox>
             </Box>
           </Box>
