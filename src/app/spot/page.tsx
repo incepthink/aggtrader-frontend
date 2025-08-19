@@ -1,16 +1,22 @@
+"use client";
+
 import { ChainSync } from "@/components/common/ChainSync";
 import GlowBox from "@/components/common/ui/GlowBox";
+import KatanaCandlestickChart from "@/components/spot/chart/katana/KatanaCandlestickChart";
 import ChartSpot, { ChartHeader } from "@/components/spot/ChartSpot";
 import EthereumPoolCandlestickChart from "@/components/spot/EthereumPoolCandlestickChart";
 import OneInchSwap from "@/components/spot/OneInchSwap";
 import SushiClassicSwap from "@/components/spot/SushiClassicSwap";
-import TokenBalancesCard from "@/components/spot/TokenBalancesCard";
+import TokenBalancesCard from "@/components/spot/tokenBalance/TokenBalancesCard";
 import TokenSelect from "@/components/spot/TokenSelect";
 import { TokenSelectModal } from "@/components/spot/TokenSelectModal";
+import { useSpotStore } from "@/store/spotStore";
 import { Box, Container, Stack } from "@mui/material";
 import React from "react";
 
 const page = () => {
+  const { chainId } = useSpotStore();
+
   return (
     <Container
       maxWidth="xl"
@@ -95,7 +101,8 @@ const page = () => {
                   p: { xs: 0, md: 2 }, // No padding on mobile, normal padding on medium screens and up
                 }}
               >
-                <EthereumPoolCandlestickChart />
+                {chainId === 1 && <EthereumPoolCandlestickChart />}
+                {chainId === 747474 && <KatanaCandlestickChart />}
               </GlowBox>
             </Box>
           </Box>

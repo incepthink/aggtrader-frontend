@@ -99,13 +99,13 @@ export function useEthereumPoolOHLC({
 
         const params = new URLSearchParams({
           tokenAddress: tokenAddress.toLowerCase(),
-          resolution,
+          resolution: "hour",
           days: days.toString(),
           ...(forceRefresh && { force: "true" }),
         });
 
         const response = await axios.get<OHLCResponse>(
-          `${BACKEND_URL}/api/ohlc/ethereum/pool?${params.toString()}`,
+          `${BACKEND_URL}/api/ohlc/ethereum/token?${params.toString()}`,
           {
             signal: abortControllerRef.current.signal,
             timeout: 30000, // 30 second timeout
@@ -179,7 +179,7 @@ export function useEthereumPoolOHLC({
       });
 
       await axios.delete(
-        `${BACKEND_URL}/api/ohlc/ethereum/pool/cache?${params.toString()}`,
+        `${BACKEND_URL}/api/ohlc/ethereum/token/cache?${params.toString()}`,
         { timeout: 10000 }
       );
 
