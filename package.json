@@ -31,6 +31,7 @@
     "antd": "^5.26.3",
     "axios": "1.6.7",
     "date-fns": "^4.1.0",
+    "dayjs": "^1.11.13",
     "ethers": "^5.8.0",
     "graphql": "^16.11.0",
     "lightweight-charts": "^4.2.3",
