@@ -1,3 +1,5 @@
+"use client"
+
 import BorrowSummary from "@/components/lend-morpho/borrow/BorrowSummary";
 import MarketsTable from "@/components/lend-morpho/borrow/marketTable/MarketsTable";
 import ResponsiveMarketsTable from "@/components/lend-morpho/borrow/marketTable/ResponsiveMarketsTable";
