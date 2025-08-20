@@ -64,6 +64,10 @@ export const useChartData = ({
   // Debug logging
   console.log('useChartData:', { tokenAddress, chainId, resolution, isKatanaChain });
 
+  if (tokenAddress === "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee") {
+    tokenAddress = "0xee7d8bcfb72bc1880d0cf19822eb0a2e6577ab62"
+  }
+
   // Katana Swap OHLC Data Hook (NEW - replaces useKatanaOHLCData)
   const {
     data: ohlcData,

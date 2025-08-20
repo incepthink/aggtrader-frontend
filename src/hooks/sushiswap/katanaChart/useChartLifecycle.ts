@@ -159,21 +159,21 @@ export const useChartLifecycle = ({
       console.log('Setting chart data:', newData);
       candlestickSeriesRef.current.setData(newData);
 
-      // Set default zoom to first 3 days if this is initial load
+      // Set default zoom to last 3 days if this is initial load
       if (newData.length > 0) {
         setTimeout(() => {
           if (chartRef.current) {
-            const firstTime = newData[0].time as number;
-            const threeDaysInSeconds = 3 * 24 * 60 * 60;
-            const endTime = (firstTime + threeDaysInSeconds) as UTCTimestamp;
             const lastTime = newData[newData.length - 1].time as number;
-            const actualEndTime = Math.min(endTime as number, lastTime) as UTCTimestamp;
+            const threeDaysInSeconds = 3 * 24 * 60 * 60;
+            const startTime = (lastTime - threeDaysInSeconds) as UTCTimestamp;
+            const firstTime = newData[0].time as number;
+            const actualStartTime = Math.max(startTime as number, firstTime) as UTCTimestamp;
 
             try {
-              console.log('Setting visible range:', { from: firstTime, to: actualEndTime });
+              console.log('Setting visible range:', { from: actualStartTime, to: lastTime });
               chartRef.current.timeScale().setVisibleRange({
-                from: firstTime as UTCTimestamp,
-                to: actualEndTime,
+                from: actualStartTime,
+                to: lastTime as UTCTimestamp,
               });
             } catch (err) {
               console.warn('Failed to set initial time range:', err);
