@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useKatanaBalance } from "./useKatanaBalance";
 import { getTokenInfoBySymbol } from "@/utils/katanaTokens";
 import { BACKEND_URL } from "@/utils/constants";
@@ -20,6 +20,7 @@ export interface KatanaPortfolioData {
   totalValue: number;
   isLoading: boolean;
   error: string | null;
+  refresh: () => void; // Added refresh function
 }
 
 export function useKatanaPortfolio(
@@ -29,12 +30,23 @@ export function useKatanaPortfolio(
     balances,
     loading: balancesLoading,
     error: balancesError,
+    refetch: refetchBalances, // Get refetch from useKatanaBalance
   } = useKatanaBalance(address, BACKEND_URL);
+
   const [portfolioTokens, setPortfolioTokens] = useState<
     KatanaPortfolioToken[]
   >([]);
   const [pricesLoading, setPricesLoading] = useState(false);
   const [pricesError, setPricesError] = useState<string | null>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  // Refresh function that triggers both balance and price refetch
+  const refresh = useCallback(() => {
+    if (refetchBalances) {
+      refetchBalances(); // Refetch balances
+    }
+    setRefreshTrigger((prev) => prev + 1); // Trigger price refetch
+  }, [refetchBalances]);
 
   // Get prices for all tokens with balances
   useEffect(() => {
@@ -67,7 +79,7 @@ export function useKatanaPortfolio(
             const response = await fetch(
               `${BACKEND_URL}/api/price/katana?tokenAddress=${encodeURIComponent(
                 priceAddress
-              )}`
+              )}&_t=${Date.now()}` // Add cache busting parameter
             );
 
             const priceData = await response.json();
@@ -130,7 +142,7 @@ export function useKatanaPortfolio(
     };
 
     fetchPrices();
-  }, [balances, BACKEND_URL]);
+  }, [balances, BACKEND_URL, refreshTrigger]); // Added refreshTrigger dependency
 
   const totalValue = useMemo(() => {
     return portfolioTokens.reduce((total, token) => total + token.value, 0);
@@ -144,5 +156,6 @@ export function useKatanaPortfolio(
     totalValue,
     isLoading,
     error,
+    refresh, // Return the refresh function
   };
 }
