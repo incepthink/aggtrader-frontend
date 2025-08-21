@@ -115,7 +115,7 @@ const ChartContainer: React.FC<ChartContainerProps> = ({
   }, [resolution]);
 
   return (
-    <div className="w-full h-full pt-16">
+    <div className="w-full h-full">
       <div
         ref={chartContainerRef}
         className="w-full h-full bg-[#0d1117] rounded-lg"

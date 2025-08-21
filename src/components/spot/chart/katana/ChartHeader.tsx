@@ -1,7 +1,9 @@
+// aggtrade chart header
 import React, { useState } from 'react';
 import { CircularProgress, IconButton } from '@mui/material';
 import { Refresh } from '@mui/icons-material';
 import { katanaOHLCUtils } from '@/hooks/sushiswap/katanaChart/useKatanaSwapOHLC';
+import TimeframeSelector, { TimeframeOption } from './TimeframeSelector';
 
 export function formatCompact(input: number | string, maxDecimals = 2): string {
   let n = typeof input === 'string' ? parseFloat(input) : input;
@@ -30,7 +32,7 @@ function trimZeros(x: string): string {
   return x.replace(/\.0+$|(\.\d*?[1-9])0+$/, '$1');
 }
 
-export type TimeframeOption = '1m' | '5m' | '15m' | '30m' | '1h' | '4h' | '1d' | '1w';
+export type { TimeframeOption } from './TimeframeSelector';
 
 type MetricDisplayMode = 'usd' | 'percentage';
 
@@ -58,6 +60,7 @@ interface ChartHeaderProps {
   onTimeframeChange: (timeframe: TimeframeOption) => void;
   isProcessingTimeframe: boolean;
   timeframeMetrics: TimeframeMetrics | null;
+  isOverlay?: boolean; // New prop to control overlay vs standalone mode
 }
 
 const ChartHeader: React.FC<ChartHeaderProps> = ({
@@ -73,19 +76,11 @@ const ChartHeader: React.FC<ChartHeaderProps> = ({
   onTimeframeChange,
   isProcessingTimeframe,
   timeframeMetrics,
+  isOverlay = true, // Default to overlay mode for backward compatibility
 }) => {
-  const timeframeOptions: TimeframeOption[] = ['1m', '5m', '15m', '30m', '1h', '4h', '1d', '1w'];
-
   // Toggle states for metrics display
   const [priceDisplayMode, setPriceDisplayMode] = useState<MetricDisplayMode>('percentage');
   const [volumeDisplayMode, setVolumeDisplayMode] = useState<MetricDisplayMode>('usd');
-
-  // Handle timeframe button clicks
-  const handleTimeframeClick = (timeframe: TimeframeOption) => {
-    if (timeframe !== selectedTimeframe && !isProcessingTimeframe) {
-      onTimeframeChange(timeframe);
-    }
-  };
 
   // Check if we have valid timeframe data
   const hasValidTimeframeData = !!timeframeMetrics && timeframeMetrics.timeframe === selectedTimeframe;
@@ -141,126 +136,55 @@ const ChartHeader: React.FC<ChartHeaderProps> = ({
 
   const refreshDisabled = isLoading || isProcessingTimeframe;
 
+  // Determine wrapper classes based on overlay mode
+  const wrapperClasses = isOverlay 
+    ? "absolute top-2 left-2 right-2 md:top-3 md:left-4 md:right-4 z-10"
+    : "w-full";
+
   return (
-    <div className="absolute top-3 left-4 right-4 flex justify-between items-start z-10">
-      {/* Left Side - Token Info */}
-      <div className="flex items-center gap-3">
-        {tokenOne?.img && (
-          <img
-            src={tokenOne.img}
-            alt={tokenOne.ticker}
-            className="w-8 h-8 rounded-full"
-          />
-        )}
-        <div>
-          <p className="text-lg font-semibold text-white">
-            {tokenOne?.ticker || 'Token'}
-          </p>
+    <div className={wrapperClasses}>
+      {/* Mobile/Tablet Standalone Layout */}
+      <div className={`${isOverlay ? 'block md:hidden' : 'block lg:hidden'} space-y-3 ${!isOverlay ? 'p-3' : ''}`}>
+        {/* Top Row - Token Info and Refresh */}
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-[#00F5E0] font-semibold">
-              {priceLoading ? (
-                <CircularProgress size={16} sx={{ color: '#00F5E0' }} />
-              ) : currentPrice ? (
-                `$${katanaOHLCUtils.formatPrice(currentPrice)}`
-              ) : (
-                '$0.00'
-              )}
-            </span>
-            <span
-              className={`text-sm ${
-                priceChange.percentage >= 0 ? 'text-green-400' : 'text-red-400'
-              }`}
-            >
-              {priceChange.percentage >= 0 ? '+' : ''}
-              {priceChange.percentage.toFixed(2)}%
-            </span>
-            {priceHasError && (
-              <span className="text-xs text-red-400">Price Error</span>
+            {tokenOne?.img && (
+              <img
+                src={tokenOne.img}
+                alt={tokenOne.ticker}
+                className="w-6 h-6 md:w-8 md:h-8 rounded-full"
+              />
             )}
-          </div>
-        </div>
-      </div>
-
-      {/* Right Side - Controls and Metrics */}
-      <div className="flex gap-8">
-        {/* Timeframe Buttons Row */}
-        <div className="flex items-end gap-2">
-          <div className="flex gap-1">
-            {timeframeOptions.map((timeframe) => (
-              <button
-                key={timeframe}
-                onClick={() => handleTimeframeClick(timeframe)}
-                disabled={isProcessingTimeframe}
-                className={`
-                  px-2 py-1 text-sm font-medium rounded transition-all duration-200
-                  ${
-                    selectedTimeframe === timeframe
-                      ? 'bg-transparent text-[#00F5E0] shadow-md'
-                      : 'bg-transparent text-gray-300 hover:bg-gray-600 hover:text-white'
-                  }
-                  ${
-                    isProcessingTimeframe
-                      ? 'opacity-50 cursor-not-allowed'
-                      : 'cursor-pointer'
-                  }
-                `}
-              >
-                {isProcessingTimeframe && selectedTimeframe === timeframe ? (
-                  <div className="flex items-center gap-1">
-                    <CircularProgress size={10} sx={{ color: 'white' }} />
-                    <span>{timeframe}</span>
-                  </div>
-                ) : (
-                  timeframe
+            <div>
+              <p className="text-base md:text-lg font-semibold text-white">
+                {tokenOne?.ticker || 'Token'}
+              </p>
+              <div className="flex items-center gap-2">
+                <span className="text-[#00F5E0] font-semibold text-sm">
+                  {priceLoading ? (
+                    <CircularProgress size={14} sx={{ color: '#00F5E0' }} />
+                  ) : currentPrice ? (
+                    `$${katanaOHLCUtils.formatPrice(currentPrice)}`
+                  ) : (
+                    '$0.00'
+                  )}
+                </span>
+                <span
+                  className={`text-xs ${
+                    priceChange.percentage >= 0 ? 'text-green-400' : 'text-red-400'
+                  }`}
+                >
+                  {priceChange.percentage >= 0 ? '+' : ''}
+                  {priceChange.percentage.toFixed(2)}%
+                </span>
+                {priceHasError && (
+                  <span className="text-xs text-red-400">Error</span>
                 )}
-              </button>
-            ))}
+              </div>
+            </div>
           </div>
-        </div>
-
-        {/* Metrics Row */}
-        <div className="flex items-center gap-6">
-          {/* Price Change */}
-          <div className="flex flex-col items-center">
-            <p className="text-xs text-gray-400 mb-1">Price ({selectedTimeframe})</p>
-            <button
-              onClick={() => setPriceDisplayMode(prev => (prev === 'usd' ? 'percentage' : 'usd'))}
-              className={`text-sm font-medium hover:opacity-80 transition-opacity cursor-pointer ${getPriceChangeColor()}`}
-              disabled={!hasValidTimeframeData}
-            >
-              {renderPriceChange()}
-            </button>
-          </div>
-
-          {/* Volume Change */}
-          <div className="flex flex-col items-center">
-            <p className="text-xs text-gray-400 mb-1">Volume ({selectedTimeframe})</p>
-            <button
-              onClick={() => setVolumeDisplayMode(prev => (prev === 'usd' ? 'percentage' : 'usd'))}
-              className={`text-sm font-medium hover:opacity-80 transition-opacity cursor-pointer ${getVolumeChangeColor()}`}
-              disabled={!hasValidTimeframeData}
-            >
-              {renderVolumeChange()}
-            </button>
-          </div>
-
-          {/* Total Volume */}
-          <div className="flex flex-col items-center">
-            <p className="text-xs text-gray-400 mb-1">Total Vol</p>
-            <p className="text-sm text-white font-medium">
-              {hasValidTimeframeData ? `$${formatCompact(timeframeMetrics!.totalVolume)}` : '--'}
-            </p>
-          </div>
-
-          {/* Pool TVL */}
-          <div className="flex flex-col items-center">
-            <p className="text-xs text-gray-400 mb-1">Pool TVL</p>
-            <p className="text-sm text-white font-medium">
-              ${formatCompact(ohlcData?.metadata?.totalValueLockedUSD || 0)}
-            </p>
-          </div>
-
-          {/* Refresh Icon (no border, always visible; lower opacity when disabled) */}
+          
+          {/* Refresh Button */}
           <IconButton
             onClick={onRefresh}
             size="small"
@@ -271,13 +195,172 @@ const ChartHeader: React.FC<ChartHeaderProps> = ({
               color: '#00F5E0',
               p: 0.5,
               '&.Mui-disabled': {
-                color: '#00F5E0', // keep the same color when disabled
-                opacity: 0.45,    // make it visibly disabled
+                color: '#00F5E0',
+                opacity: 0.45,
               },
             }}
           >
-            <Refresh sx={{ fontSize: 20 }} />
+            <Refresh sx={{ fontSize: 18 }} />
           </IconButton>
+        </div>
+
+        {/* Metrics Grid - 2x2 layout on mobile */}
+        <div className="grid grid-cols-2 gap-3">
+          {/* Price Change */}
+          <div className="flex flex-col">
+            <p className="text-xs text-gray-400 mb-1">Price ({selectedTimeframe})</p>
+            <button
+              onClick={() => setPriceDisplayMode(prev => (prev === 'usd' ? 'percentage' : 'usd'))}
+              className={`text-xs font-medium hover:opacity-80 transition-opacity cursor-pointer text-left ${getPriceChangeColor()}`}
+              disabled={!hasValidTimeframeData}
+            >
+              {renderPriceChange()}
+            </button>
+          </div>
+
+          {/* Volume Change */}
+          <div className="flex flex-col">
+            <p className="text-xs text-gray-400 mb-1">Volume ({selectedTimeframe})</p>
+            <button
+              onClick={() => setVolumeDisplayMode(prev => (prev === 'usd' ? 'percentage' : 'usd'))}
+              className={`text-xs font-medium hover:opacity-80 transition-opacity cursor-pointer text-left ${getVolumeChangeColor()}`}
+              disabled={!hasValidTimeframeData}
+            >
+              {renderVolumeChange()}
+            </button>
+          </div>
+
+          {/* Total Volume */}
+          <div className="flex flex-col">
+            <p className="text-xs text-gray-400 mb-1">Total Vol</p>
+            <p className="text-xs text-white font-medium">
+              {hasValidTimeframeData ? `$${formatCompact(ohlcData?.metadata?.volumeUSD || 0)}` : '--'}
+            </p>
+          </div>
+
+          {/* Pool TVL */}
+          <div className="flex flex-col">
+            <p className="text-xs text-gray-400 mb-1">Pool TVL</p>
+            <p className="text-xs text-white font-medium">
+              ${formatCompact(ohlcData?.metadata?.totalValueLockedUSD || 0)}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Desktop Layout - Only show as overlay */}
+      <div className={`${isOverlay ? 'hidden md:flex' : 'hidden lg:flex'} justify-between items-start`}>
+        {/* Left Side - Token Info */}
+        <div className="flex items-center gap-3">
+          {tokenOne?.img && (
+            <img
+              src={tokenOne.img}
+              alt={tokenOne.ticker}
+              className="w-8 h-8 rounded-full"
+            />
+          )}
+          <div>
+            <p className="text-lg font-semibold text-white">
+              {tokenOne?.ticker || 'Token'}
+            </p>
+            <div className="flex items-center gap-2">
+              <span className="text-[#00F5E0] font-semibold">
+                {priceLoading ? (
+                  <CircularProgress size={16} sx={{ color: '#00F5E0' }} />
+                ) : currentPrice ? (
+                  `$${katanaOHLCUtils.formatPrice(currentPrice)}`
+                ) : (
+                  '$0.00'
+                )}
+              </span>
+              <span
+                className={`text-sm ${
+                  priceChange.percentage >= 0 ? 'text-green-400' : 'text-red-400'
+                }`}
+              >
+                {priceChange.percentage >= 0 ? '+' : ''}
+                {priceChange.percentage.toFixed(2)}%
+              </span>
+              {priceHasError && (
+                <span className="text-xs text-red-400">Price Error</span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Right Side - Controls and Metrics */}
+        <div className="flex gap-8">
+          {/* Timeframe Buttons Row */}
+          <div className="flex items-end gap-2">
+            <TimeframeSelector
+              selectedTimeframe={selectedTimeframe}
+              onTimeframeChange={onTimeframeChange}
+              isProcessingTimeframe={isProcessingTimeframe}
+              variant="desktop"
+            />
+          </div>
+
+          {/* Metrics Row */}
+          <div className="flex items-center gap-6">
+            {/* Price Change */}
+            <div className="flex flex-col items-center">
+              <p className="text-xs text-gray-400 mb-1">Price ({selectedTimeframe})</p>
+              <button
+                onClick={() => setPriceDisplayMode(prev => (prev === 'usd' ? 'percentage' : 'usd'))}
+                className={`text-sm font-medium hover:opacity-80 transition-opacity cursor-pointer ${getPriceChangeColor()}`}
+                disabled={!hasValidTimeframeData}
+              >
+                {renderPriceChange()}
+              </button>
+            </div>
+
+            {/* Volume Change */}
+            <div className="flex flex-col items-center">
+              <p className="text-xs text-gray-400 mb-1">Volume ({selectedTimeframe})</p>
+              <button
+                onClick={() => setVolumeDisplayMode(prev => (prev === 'usd' ? 'percentage' : 'usd'))}
+                className={`text-sm font-medium hover:opacity-80 transition-opacity cursor-pointer ${getVolumeChangeColor()}`}
+                disabled={!hasValidTimeframeData}
+              >
+                {renderVolumeChange()}
+              </button>
+            </div>
+
+            {/* Total Volume */}
+            <div className="flex flex-col items-center">
+              <p className="text-xs text-gray-400 mb-1">Total Vol</p>
+              <p className="text-sm text-white font-medium">
+                {hasValidTimeframeData ? `$${formatCompact(ohlcData?.metadata?.volumeUSD || 0)}` : '--'}
+              </p>
+            </div>
+
+            {/* Pool TVL */}
+            <div className="flex flex-col items-center">
+              <p className="text-xs text-gray-400 mb-1">Pool TVL</p>
+              <p className="text-sm text-white font-medium">
+                ${formatCompact(ohlcData?.metadata?.totalValueLockedUSD || 0)}
+              </p>
+            </div>
+
+            {/* Refresh Icon */}
+            <IconButton
+              onClick={onRefresh}
+              size="small"
+              disableRipple
+              disabled={refreshDisabled}
+              aria-label="Refresh"
+              sx={{
+                color: '#00F5E0',
+                p: 0.5,
+                '&.Mui-disabled': {
+                  color: '#00F5E0',
+                  opacity: 0.45,
+                },
+              }}
+            >
+              <Refresh sx={{ fontSize: 20 }} />
+            </IconButton>
+          </div>
         </div>
       </div>
     </div>

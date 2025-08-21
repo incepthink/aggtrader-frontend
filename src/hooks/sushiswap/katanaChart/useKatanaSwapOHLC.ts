@@ -537,6 +537,8 @@ export function useKatanaSwapOHLC({
     await new Promise(resolve => setTimeout(resolve, 100));
 
     try {
+      console.log("RAW SWAP", rawSwapData);
+      
       const timeframeMinutes = getTimeframeMinutes(timeframe);
       const ohlcChart = generateOHLCFromSwaps(rawSwapData.swaps, timeframeMinutes);
       

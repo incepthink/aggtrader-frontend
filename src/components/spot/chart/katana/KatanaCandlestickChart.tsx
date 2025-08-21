@@ -1,6 +1,9 @@
+// aggtrade candle stick
+
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import { Box } from "@mui/material";
 import { useSpotStore } from "@/store/spotStore";
 import { useChartData } from "@/hooks/sushiswap/katanaChart/useChartData";
 import ChartHeader from "./ChartHeader";
@@ -8,6 +11,8 @@ import ChartContainer from "./ChartContainer";
 import ChartStatusIndicators from "./ChartStatusIndicators";
 import ChartDebug from "./ChartDebug";
 import ChartErrorBoundary from "./ChartErrorBoundary";
+import GlowBox from "@/components/common/ui/GlowBox";
+import TimeframeSelector from "./TimeframeSelector";
 
 const KatanaCandlestickChart = () => {
   // Get tokenOne from the store
@@ -129,43 +134,120 @@ const KatanaCandlestickChart = () => {
     );
   }
 
+  // Common header props
+  const headerProps = {
+    tokenOne,
+    currentPrice,
+    priceLoading,
+    priceHasError,
+    priceChange,
+    ohlcData,
+    isLoading,
+    onRefresh: handleRefresh,
+    selectedTimeframe: currentTimeframe,
+    onTimeframeChange: changeTimeframe,
+    isProcessingTimeframe,
+    timeframeMetrics,
+  };
+
   return (
-    <div key={renderKey} className="w-full h-full relative p-4">
-      <ChartHeader
-        tokenOne={tokenOne}
-        currentPrice={currentPrice}
-        priceLoading={priceLoading}
-        priceHasError={priceHasError}
-        priceChange={priceChange}
-        ohlcData={ohlcData}
-        isLoading={isLoading}
-        onRefresh={handleRefresh}
-        selectedTimeframe={currentTimeframe}
-        onTimeframeChange={changeTimeframe}
-        isProcessingTimeframe={isProcessingTimeframe}
-        timeframeMetrics={timeframeMetrics}
-      />
+    <>
+      {/* Chart Header - Only show outside on mobile/tablet */}
+       <div
+      className="block lg:hidden mb-4 mt-8"
+      >
+        <GlowBox
+          sx={{
+            p: 2, // Remove default padding since ChartHeader handles its own
+            overflow: "hidden",
+          }}
+        >
+          <ChartHeader
+            {...headerProps}
+            isOverlay={false} // Standalone mode for mobile/tablet
+          />
+        </GlowBox>
+      </div>
 
-      <ChartContainer
-        tokenAddress={tokenAddress}
-        isKatanaChain={isKatanaChain}
-        chartData={chartData}
-        renderKey={renderKey}
-        resolution={resolution}
-        onChartReady={handleChartReady}
-        onError={handleChartError}
-      />
+      {/* Chart Container with GlowBox */}
+      <Box
+        sx={{
+          maxHeight: {
+            xs: "400px",
+            sm: "500px",
+            md: "600px",
+            lg: "600px",
+            xl: "700px",
+          },
+          height: {
+            xs: "450px",
+            sm: "450px",
+            md: "550px",
+            lg: "550px",
+            xl: "560px",
+          },
+          overflow: "hidden",
+        }}
+      >
+        <GlowBox
+          sx={{
+            height: "100%",
+            maxHeight: "100%",
+            position: "relative",
+            backgroundImage:
+              "radial-gradient(circle, rgba(255,255,255,0.2) 1px, transparent 1px)",
+            backgroundSize: { xs: "20px 20px", sm: "30px 30px" },
+            overflow: "hidden",
+            p: { xs: 1, md: 2 }, // No padding on mobile, normal padding on medium screens and up
+            
+          }}
+        >
+          <div key={renderKey} className="w-full h-full relative">
+            {/* TimeframeSelector - Mobile positioned at top of chart */}
+            <div className="block lg:hidden absolute top-2 left-2 right-2 z-20">
+              <TimeframeSelector
+                selectedTimeframe={currentTimeframe}
+                onTimeframeChange={changeTimeframe}
+                isProcessingTimeframe={isProcessingTimeframe}
+                variant="mobile"
+              />
+            </div>
 
-      <ChartStatusIndicators
-        chartReady={chartReady}
-        chartDataLength={chartData.length}
-        renderKey={renderKey}
-        priceLoading={priceLoading}
-        currentPrice={currentPrice}
-        high={high}
-        low={low}
-      />
-    </div>
+            {/* Chart Header - Overlay mode for desktop only */}
+            <div className="hidden lg:block">
+              <ChartHeader
+                {...headerProps}
+                isOverlay={true} // Overlay mode for desktop
+              />
+            </div>
+
+            {/* Chart Container - Remove mobile padding to fit inside GlowBox */}
+            <div className="w-full h-full lg:pt-16 pt-8">
+              <ChartContainer
+               
+                tokenAddress={tokenAddress}
+                isKatanaChain={isKatanaChain}
+                chartData={chartData}
+                renderKey={renderKey}
+                resolution={resolution}
+                onChartReady={handleChartReady}
+                onError={handleChartError}
+              />
+            </div>
+
+            <ChartStatusIndicators
+              chartReady={chartReady}
+              chartDataLength={chartData.length}
+              renderKey={renderKey}
+              priceLoading={priceLoading}
+              currentPrice={currentPrice}
+              high={high}
+              low={low}
+            />
+          </div>
+        </GlowBox>
+      </Box>
+    </>
   );
 };
 

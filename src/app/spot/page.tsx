@@ -50,61 +50,11 @@ const page = () => {
               gap: { xs: 1, sm: 2 },
             }}
           >
-            {/* Chart Header - Only show outside on mobile/tablet */}
-            <Box
-              sx={{
-                display: { md: "block", lg: "none" },
-                mb: { xs: 0, md: 1, lg: 0 },
-              }}
-            >
-              <Box sx={{ display: { xs: "block", md: "none" }, mt: 2, mb: 1 }}>
-                <GlowBox
-                  sx={{
-                    p: 0, // Remove default padding
-                    overflow: "hidden",
-                  }}
-                >
-                  <ChartHeader />
-                </GlowBox>
-              </Box>
-            </Box>
 
-            {/* Chart Container */}
-            <Box
-              sx={{
-                maxHeight: {
-                  xs: "400px",
-                  sm: "500px",
-                  md: "600px",
-                  lg: "600px",
-                  xl: "700px",
-                },
-                height: {
-                  xs: "350px",
-                  sm: "450px",
-                  md: "550px",
-                  lg: "550px",
-                  xl: "560px",
-                },
-                overflow: "hidden",
-              }}
-            >
-              <GlowBox
-                sx={{
-                  height: "100%",
-                  maxHeight: "100%",
-                  position: "relative",
-                  backgroundImage:
-                    "radial-gradient(circle, rgba(255,255,255,0.2) 1px, transparent 1px)",
-                  backgroundSize: { xs: "20px 20px", sm: "30px 30px" },
-                  overflow: "hidden",
-                  p: { xs: 0, md: 2 }, // No padding on mobile, normal padding on medium screens and up
-                }}
-              >
-                {chainId === 1 && <EthereumPoolCandlestickChart />}
-                {chainId === 747474 && <KatanaCandlestickChart />}
-              </GlowBox>
-            </Box>
+
+            {/* Chart Components - Now handle their own containers and styling */}
+            {chainId === 1 && <EthereumPoolCandlestickChart />}
+            {chainId === 747474 && <KatanaCandlestickChart />}
           </Box>
 
           {/* Swap Section */}
