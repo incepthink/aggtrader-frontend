@@ -105,7 +105,7 @@ export function useEthereumPoolOHLC({
         });
 
         const response = await axios.get<OHLCResponse>(
-          `${BACKEND_URL}/api/ohlc/ethereum/token?${params.toString()}`,
+          `${BACKEND_URL}/api/ohlc/ethereum/swaps?${params.toString()}`,
           {
             signal: abortControllerRef.current.signal,
             timeout: 30000, // 30 second timeout

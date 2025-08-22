@@ -1,4 +1,4 @@
-// components/TokenBalancesCard.tsx - Updated with Katana support and spotStore
+// components/TokenBalancesCard.tsx - Fixed with proper entry price initialization
 "use client";
 
 import { CircularProgress } from "@mui/material";
@@ -11,7 +11,7 @@ import {
   type KatanaPortfolioToken,
 } from "@/hooks/useKatanaPortfolio";
 import { useAccount } from "wagmi";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useEntryPrices } from "@/hooks/sushiswap/useEntryPrices";
 import { useBatchPriceBackend } from "@/hooks/sushiswap/usePriceBackend";
 import { useSpotStore } from "@/store/spotStore";
@@ -172,6 +172,7 @@ export default function TokenBalancesCard() {
   });
 
   const [isRefetching, setIsRefetching] = useState(false);
+  const [entryPricesInitialized, setEntryPricesInitialized] = useState(false);
 
   // Handle refetch with loading state
   const handleRefetch = async () => {
@@ -275,6 +276,38 @@ export default function TokenBalancesCard() {
       })
     : [];
 
+  // Initialize entry prices when data is available and prices are loaded
+  useEffect(() => {
+    if (
+      normalizedData.length > 0 && 
+      !entryPricesInitialized && 
+      !isPriceLoading &&
+      address
+    ) {
+      console.log('Initializing entry prices for first time load...');
+      
+      // Initialize entry prices with current prices for tokens that don't have custom entry prices
+      normalizedData.forEach((token) => {
+        const tokenKey = `${token.chain_id}-${token.contract_address || token.address}`;
+        const currentEntryPrice = getEntryPrice(tokenKey, token.price_to_usd);
+        
+        // If the entry price equals the current price, it means it's using the fallback
+        // and we haven't set a custom entry price yet
+        if (!isCustomPrice(tokenKey)) {
+          console.log(`Setting initial entry price for ${token.symbol}: $${token.price_to_usd}`);
+          updateEntryPrice(tokenKey, token.price_to_usd);
+        }
+      });
+      
+      setEntryPricesInitialized(true);
+    }
+  }, [normalizedData, entryPricesInitialized, isPriceLoading, address, getEntryPrice, isCustomPrice, updateEntryPrice]);
+
+  // Reset initialization flag when address changes
+  useEffect(() => {
+    setEntryPricesInitialized(false);
+  }, [address, chainId]);
+
   // Calculate price change (placeholder - would need historical data)
   const getTokenChange24h = (token: CombinedToken): number | null => {
     // Note: Sushi API doesn't provide 24h change in the current endpoint
@@ -301,14 +334,31 @@ export default function TokenBalancesCard() {
       const investedValue = entryPrice * token.amount;
       const tokenPnL = currentValue - investedValue;
 
-      customTotalPnL += tokenPnL;
-      totalInvested += investedValue;
-      customTotalValue += currentValue;
+      // Add safety checks to prevent NaN values
+      if (isFinite(tokenPnL) && isFinite(investedValue) && isFinite(currentValue)) {
+        customTotalPnL += tokenPnL;
+        totalInvested += investedValue;
+        customTotalValue += currentValue;
+      } else {
+        console.warn(`Invalid calculation for ${token.symbol}:`, {
+          entryPrice,
+          currentPrice,
+          amount: token.amount,
+          tokenPnL,
+          investedValue,
+          currentValue
+        });
+      }
     });
 
     const customTotalROI =
       totalInvested > 0 ? customTotalPnL / totalInvested : 0;
-    return { customTotalPnL, customTotalROI, customTotalValue };
+    
+    return { 
+      customTotalPnL: isFinite(customTotalPnL) ? customTotalPnL : 0, 
+      customTotalROI: isFinite(customTotalROI) ? customTotalROI : 0, 
+      customTotalValue: isFinite(customTotalValue) ? customTotalValue : 0 
+    };
   };
 
   const portfolioTotals = calculateUpdatedPortfolioTotals();
@@ -413,6 +463,11 @@ export default function TokenBalancesCard() {
             {priceError && (
               <span className="text-red-400 text-xs">• Price fetch error</span>
             )}
+            {!entryPricesInitialized && normalizedData.length > 0 && (
+              <span className="text-blue-400 text-xs">
+                • Initializing entry prices...
+              </span>
+            )}
           </div>
         </div>
 
@@ -462,10 +517,12 @@ export default function TokenBalancesCard() {
                       className={`w-2 h-2 rounded-full ${
                         isPriceLoading
                           ? "bg-yellow-400 animate-pulse"
-                          : "bg-green-400"
+                          : entryPricesInitialized
+                          ? "bg-green-400"
+                          : "bg-blue-400 animate-pulse"
                       }`}
                     ></div>
-                    {isPriceLoading ? "Updating..." : "Live prices"}
+                    {isPriceLoading ? "Updating..." : entryPricesInitialized ? "Live prices" : "Initializing..."}
                   </span>
                 </div>
               )}

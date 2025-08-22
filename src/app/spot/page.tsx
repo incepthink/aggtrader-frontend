@@ -2,6 +2,7 @@
 
 import { ChainSync } from "@/components/common/ChainSync";
 import GlowBox from "@/components/common/ui/GlowBox";
+import OneInchCandlestickChart from "@/components/spot/chart/1inch/OneInchCandlestickChart";
 import KatanaCandlestickChart from "@/components/spot/chart/katana/KatanaCandlestickChart";
 import ChartSpot, { ChartHeader } from "@/components/spot/ChartSpot";
 import EthereumPoolCandlestickChart from "@/components/spot/EthereumPoolCandlestickChart";
@@ -53,7 +54,7 @@ const page = () => {
 
 
             {/* Chart Components - Now handle their own containers and styling */}
-            {chainId === 1 && <EthereumPoolCandlestickChart />}
+            {chainId === 1 && <OneInchCandlestickChart />}
             {chainId === 747474 && <KatanaCandlestickChart />}
           </Box>
 
