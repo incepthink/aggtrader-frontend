@@ -22,72 +22,77 @@ const page = () => {
     <Container
       maxWidth="xl"
       sx={{
-        px: { xs: 1, sm: 2, md: 3 }, // Responsive padding
-        py: { xs: 1, sm: 2 }, // Responsive vertical padding
-        maxWidth: { xs: "100%", lg: "1400px", xl: "1600px" }, // Limit max width on large screens
+        px: { xs: 1, sm: 2, md: 3 },
+        py: { xs: 1, sm: 2 },
+        maxWidth: { xs: "100%", lg: "1400px", xl: "1600px" },
       }}
     >
       <ChainSync />
       <TokenSelectModal />
       <Stack spacing={{ xs: 2, sm: 2 }}>
-        {" "}
-        {/* Responsive spacing */}
         <Box>
           <TokenSelect />
         </Box>
+
         {/* Main Content Area - Responsive Layout */}
         <Stack
-          direction={{ xs: "column", lg: "row" }} // Stack vertically on mobile, horizontally on large screens
+          direction={{ xs: "column", lg: "row" }}
           spacing={{ xs: 1, sm: 2 }}
           alignItems="stretch"
+          sx={{
+            // Prevent the row from having equal heights
+            alignItems: { xs: "stretch", lg: "flex-start" },
+          }}
         >
           {/* Chart Section */}
           <Box
             sx={{
               flex: { lg: 2 },
-              order: { xs: 2, lg: 1 }, // Chart comes second on mobile, first on desktop
+              order: { xs: 2, lg: 1 },
               display: "flex",
               flexDirection: "column",
               gap: { xs: 1, sm: 2 },
             }}
           >
-
-
-            {/* Chart Components - Now handle their own containers and styling */}
+            {/* Chart Components */}
             {chainId === 1 && <OneInchCandlestickChart />}
             {chainId === 747474 && <KatanaCandlestickChart />}
           </Box>
 
-          {/* Swap Section */}
+          {/* Swap Section - Fixed height issue */}
           <Box
             sx={{
               flex: { lg: 1 },
-              order: { xs: 1, lg: 2 }, // Swap comes first on mobile, second on desktop
-              minWidth: { xs: "auto", lg: "550px" }, // Responsive height
-              maxWidth: { lg: "400px", xl: "450px" }, // Limit max width of swap panel
-              overflow: "hidden", // Prevent content from spilling out
+              order: { xs: 1, lg: 2 },
+              minWidth: { xs: "auto", lg: "350px" },
+              maxWidth: { lg: "400px", xl: "450px" },
+              // Remove height matching - let content determine height
+              height: "auto", // Changed from matching chart height
+              overflow: "visible", // Changed from hidden
             }}
           >
             <GlowBox
               sx={{
-                height: "100%",
-                maxHeight: "100%", // Ensure GlowBox respects parent height
-                minHeight: { xs: "400px", sm: "450px" }, // Ensure adequate height on mobile
-                overflow: "hidden", // Prevent overflow
+                // Remove height constraints that were matching the chart
+                height: "auto", // Let content determine height
+                minHeight: { xs: "400px", sm: "600px" }, // Minimum height for usability
+                maxHeight: "none", // Remove max height restriction
+                overflow: "visible", // Allow content to flow naturally
+                p: { xs: 1.5, sm: 2, md: 2.5 }, // Better padding for content
               }}
             >
               <SushiClassicSwap />
             </GlowBox>
           </Box>
         </Stack>
+
         {/* Token Balances Section */}
         <Box>
           <GlowBox
             sx={{
-              minHeight: { xs: "200px", sm: "250px" }, // Responsive minimum height
+              minHeight: { xs: "200px", sm: "250px" },
               "& .MuiBox-root": {
-                // Style nested boxes if needed
-                overflow: "auto", // Handle overflow on small screens
+                overflow: "auto",
               },
             }}
           >

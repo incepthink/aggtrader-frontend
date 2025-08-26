@@ -86,7 +86,7 @@ const ChartContainer: React.FC<ChartContainerProps> = ({
       const timer = setTimeout(() => {
         console.log('Updating chart with data after initialization...');
         updateChartData(chartData);
-      }, 100); // Increased delay slightly
+      }, 100);
       
       return () => clearTimeout(timer);
     }
@@ -115,13 +115,30 @@ const ChartContainer: React.FC<ChartContainerProps> = ({
   }, [resolution]);
 
   return (
-    <div className="w-full h-full">
+    <div 
+      style={{
+        width: '100%',
+        height: '100%',
+        position: 'relative',
+        overflow: 'hidden',
+        // Ensure the container can be properly measured
+        minWidth: 0,
+        minHeight: 0,
+      }}
+    >
       <div
         ref={chartContainerRef}
-        className="w-full h-full bg-[#0d1117] rounded-lg"
         style={{
-          minHeight: '400px',
+          width: '100%',
+          height: '100%',
+          backgroundColor: '#0d1117',
+          borderRadius: '8px',
           position: 'relative',
+          // Remove any fixed dimensions that could interfere with responsiveness
+          minWidth: '200px', // Minimum usable chart width
+          minHeight: '200px', // Minimum usable chart height
+          // Ensure the chart container takes full available space
+          boxSizing: 'border-box',
         }}
       />
     </div>

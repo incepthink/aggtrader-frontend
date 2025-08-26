@@ -5,21 +5,18 @@ import { BACKEND_URL } from '@/utils/constants';
 // Types
 export type TimeframeOption = '1m' | '5m' | '15m' | '30m' | '1h' | '4h' | '1d' | '1w';
 
-interface SwapData {
+interface SwapDataWithSqrt {
   id: string;
   timestamp: number;
-  tokenPriceUSD: number;
+  poolPrice: number; // Calculated from sqrtPriceX96
   tokenVolumeUSD: number;
   totalVolumeUSD: number;
-  pool: {
-    id: string;
-    token0: any;
-    token1: any;
-  };
+  sqrtPriceX96: string;
+  tick: number;
 }
 
 interface SwapResponse {
-  swaps: SwapData[];
+  swaps: SwapDataWithSqrt[];
   metadata: {
     token: {
       address: string;
@@ -35,6 +32,7 @@ interface SwapResponse {
       feeTier: string;
       totalValueLockedUSD: number;
       volumeUSD: number;
+      currentPoolPrice: number;
     };
     isToken0: boolean;
     quoteToken: any;
@@ -58,10 +56,11 @@ interface ApiResponse {
   count: number;
   poolId: string;
   poolTVL: string;
+  currentPoolPrice: number;
   chain: string;
 }
 
-interface UseKatanaSwapOHLCProps {
+interface UseKatanaSqrtPriceOHLCProps {
   tokenAddress: string;
   resolution: 'hour' | 'day';
   days: number;
@@ -82,8 +81,7 @@ interface OHLCData {
     dataSource: string;
     chain: string;
     dexId: string;
-    poolToken0?: string;
-    poolToken1?: string;
+    currentPoolPrice: number;
   };
   // New timeframe-specific metrics
   timeframeMetrics: {
@@ -102,7 +100,7 @@ interface OHLCData {
 }
 
 // OHLC Utils (matching the original structure)
-export const katanaOHLCUtils = {
+export const katanaSqrtPriceOHLCUtils = {
   formatPrice: (price: number): string => {
     if (price === 0) return '0.00';
     if (price < 0.01) return price.toFixed(6);
@@ -139,18 +137,18 @@ function getTimeframeMinutes(timeframe: TimeframeOption): number {
 }
 
 /**
- * Group swaps by time windows and generate OHLC with price continuity
+ * Group swaps by time windows and generate OHLC using sqrtPrice-based poolPrice
  */
-function generateOHLCFromSwaps(swaps: SwapData[], timeframeMinutes: number): CandlestickData[] {
+function generateOHLCFromSqrtPriceSwaps(swaps: SwapDataWithSqrt[], timeframeMinutes: number): CandlestickData[] {
   if (!swaps || swaps.length === 0) {
-    console.log('No swaps data to process');
+    console.log('No sqrt price swaps data to process');
     return [];
   }
 
-  console.log(`Generating OHLC from ${swaps.length} swaps with ${timeframeMinutes}min timeframe`);
+  console.log(`Generating OHLC from ${swaps.length} sqrt price swaps with ${timeframeMinutes}min timeframe`);
 
   const timeframeMs = timeframeMinutes * 60 * 1000;
-  const groupedSwaps = new Map<number, SwapData[]>();
+  const groupedSwaps = new Map<number, SwapDataWithSqrt[]>();
 
   // Group swaps by time windows
   for (const swap of swaps) {
@@ -164,60 +162,35 @@ function generateOHLCFromSwaps(swaps: SwapData[], timeframeMinutes: number): Can
 
   console.log(`Grouped swaps into ${groupedSwaps.size} time windows`);
 
-  // Sort time windows to process in chronological order
-  const sortedWindows = Array.from(groupedSwaps.entries()).sort((a, b) => a[0] - b[0]);
-
-  // Convert each window to OHLC with price continuity
+  // Convert each window to OHLC
   const ohlcData: CandlestickData[] = [];
-  let previousClose: number | null = null;
 
-  for (const [windowStart, windowSwaps] of sortedWindows) {
+  for (const [windowStart, windowSwaps] of groupedSwaps) {
     // Sort swaps by timestamp within the window
     windowSwaps.sort((a, b) => a.timestamp - b.timestamp);
 
+    // Use poolPrice (calculated from sqrtPriceX96) instead of tokenPriceUSD
     const prices = windowSwaps
-      .map(swap => swap.tokenPriceUSD)
+      .map(swap => swap.poolPrice)
       .filter(price => price > 0);
 
     if (prices.length === 0) continue;
 
-    // Determine open price with continuity logic
-    let openPrice: number;
-    if (previousClose === null) {
-      // First candle: use actual first trade price
-      openPrice = prices[0];
-    } else {
-      // Subsequent candles: open at previous candle's close for continuity
-      openPrice = previousClose;
-    }
-
-    const closePrice = prices[prices.length - 1]; // Last price in window
-    const highPrice = Math.max(...prices);       // Highest price in window
-    const lowPrice = Math.min(...prices);        // Lowest price in window
-
-    // Ensure high includes the open price (in case open > all trade prices)
-    const adjustedHigh = Math.max(highPrice, openPrice);
-    // Ensure low includes the open price (in case open < all trade prices)  
-    const adjustedLow = Math.min(lowPrice, openPrice);
-
     const ohlcPoint: CandlestickData = {
       time: Math.floor(windowStart / 1000) as UTCTimestamp, // Convert to seconds
-      open: openPrice,
-      high: adjustedHigh,
-      low: adjustedLow,
-      close: closePrice,
+      open: prices[0],                    // First pool price in window
+      high: Math.max(...prices),          // Highest pool price in window
+      low: Math.min(...prices),           // Lowest pool price in window
+      close: prices[prices.length - 1],   // Last pool price in window
     };
 
     ohlcData.push(ohlcPoint);
-    
-    // Update previous close for next iteration
-    previousClose = closePrice;
   }
 
-  // Sort by timestamp (should already be sorted, but ensure it)
+  // Sort by timestamp
   ohlcData.sort((a, b) => (a.time as number) - (b.time as number));
 
-  console.log(`Generated ${ohlcData.length} OHLC points with price continuity`);
+  console.log(`Generated ${ohlcData.length} OHLC points from sqrt prices`);
   
   if (ohlcData.length > 0) {
     console.log('First OHLC point:', ohlcData[0]);
@@ -228,10 +201,10 @@ function generateOHLCFromSwaps(swaps: SwapData[], timeframeMinutes: number): Can
 }
 
 /**
- * Calculate timeframe-specific metrics (price change, volume change) - PROPERLY FIXED VERSION
+ * Calculate timeframe-specific metrics using poolPrice instead of tokenPriceUSD
  */
 function calculateTimeframeMetrics(
-  swaps: SwapData[], 
+  swaps: SwapDataWithSqrt[], 
   ohlcData: CandlestickData[],
   timeframe: TimeframeOption
 ): {
@@ -255,14 +228,13 @@ function calculateTimeframeMetrics(
     };
   }
 
-  console.log(`[Metrics Calculation] Calculating for timeframe: ${timeframe}`);
+  console.log(`[SqrtPrice Metrics] Calculating for timeframe: ${timeframe}`);
 
   // Get the timeframe duration in milliseconds
   const timeframeMinutes = getTimeframeMinutes(timeframe);
   const timeframeMs = timeframeMinutes * 60 * 1000;
 
   // Calculate how many recent periods to include based on timeframe
-  // For shorter timeframes, we want more recent periods for meaningful data
   let periodsToInclude: number;
   switch (timeframe) {
     case '1m':
@@ -296,20 +268,13 @@ function calculateTimeframeMetrics(
   // Get the most recent OHLC data for this timeframe
   const recentOHLCData = ohlcData.slice(-periodsToInclude);
   
-  console.log(`[Metrics Calculation] Using recent data:`, {
+  console.log(`[SqrtPrice Metrics] Using recent data:`, {
     totalOHLCPoints: ohlcData.length,
     periodsToInclude,
     recentOHLCCount: recentOHLCData.length,
     timeframeMinutes,
-    firstRecentTime: recentOHLCData[0] ? new Date((recentOHLCData[0].time as number) * 1000).toISOString() : 'none',
-    lastRecentTime: recentOHLCData[recentOHLCData.length - 1] ? new Date((recentOHLCData[recentOHLCData.length - 1].time as number) * 1000).toISOString() : 'none'
   });
 
-  // Filter swaps to only those within the recent OHLC timeframe
-  const recentStartTime = (recentOHLCData[0]?.time as number) * 1000; // Convert to milliseconds
-  const recentEndTime = (recentOHLCData[recentOHLCData.length - 1]?.time as number) * 1000;
-  
-  // For volume calculations, we want to focus on just the LAST timeframe period, not the entire recent period
   // Get the most recent single timeframe period
   const lastOHLC = recentOHLCData[recentOHLCData.length - 1];
   const lastPeriodStart = (lastOHLC?.time as number) * 1000;
@@ -320,14 +285,10 @@ function calculateTimeframeMetrics(
     swap.timestamp >= lastPeriodStart && swap.timestamp < lastPeriodEnd
   );
 
-  console.log(`[Metrics Calculation] Filtered swaps for most recent ${timeframe} period:`, {
+  console.log(`[SqrtPrice Metrics] Filtered swaps for most recent ${timeframe} period:`, {
     originalCount: swaps.length,
     lastPeriodCount: lastPeriodSwaps.length,
-    lastPeriodTimeRange: {
-      start: new Date(lastPeriodStart).toISOString(),
-      end: new Date(lastPeriodEnd).toISOString(),
-      durationMinutes: timeframeMinutes
-    }
+    timeframeMinutes: timeframeMinutes
   });
 
   // Price change calculation from recent OHLC data
@@ -343,19 +304,13 @@ function calculateTimeframeMetrics(
   // Volume change calculation - compare current single timeframe with previous single timeframe
   let volumeAbsolute = 0;
   let volumePercentage = 0;
-  let previousPeriodSwaps: SwapData[] | null = null;
 
-  // For volume change, compare the last timeframe period with the immediately previous timeframe period
   if (recentOHLCData.length >= 2) {
-    // Get the previous OHLC period
     const previousOHLC = recentOHLCData[recentOHLCData.length - 2];
-    
-    // Calculate time range for the previous timeframe period
     const previousPeriodStart = (previousOHLC.time as number) * 1000;
     const previousPeriodEnd = previousPeriodStart + timeframeMs;
     
-    // Filter swaps for the previous timeframe period
-    previousPeriodSwaps = swaps.filter(swap => 
+    const previousPeriodSwaps = swaps.filter(swap => 
       swap.timestamp >= previousPeriodStart && swap.timestamp < previousPeriodEnd
     );
     
@@ -363,44 +318,15 @@ function calculateTimeframeMetrics(
     
     volumeAbsolute = totalVolume - previousPeriodVolume;
     volumePercentage = previousPeriodVolume > 0 ? (volumeAbsolute / previousPeriodVolume) * 100 : 0;
-    
-    console.log(`[Metrics Calculation] Volume comparison for single ${timeframe} periods:`, {
-      timeframeMs,
-      currentPeriod: { 
-        start: new Date(lastPeriodStart).toISOString(), 
-        end: new Date(lastPeriodEnd).toISOString(), 
-        volume: totalVolume,
-        swaps: lastPeriodSwaps.length
-      },
-      previousPeriod: { 
-        start: new Date(previousPeriodStart).toISOString(), 
-        end: new Date(previousPeriodEnd).toISOString(), 
-        volume: previousPeriodVolume,
-        swaps: previousPeriodSwaps.length
-      },
-      change: { absolute: volumeAbsolute, percentage: volumePercentage }
-    });
   }
 
-  // If we have very few swaps, fallback to OHLC-only calculation
-  if (lastPeriodSwaps.length < 1) {
-    console.log(`[Metrics Calculation] Too few swaps in last period (${lastPeriodSwaps.length}), using fallback calculation`);
-    
-    return {
-      priceChange: { absolute: priceAbsolute, percentage: pricePercentage },
-      volumeChange: { absolute: volumeAbsolute, percentage: volumePercentage },
-      totalVolume: totalVolume,
-      avgPrice: lastPrice,
-    };
-  }
-
-  // Volume-weighted average price from last period swaps
+  // Volume-weighted average price from last period swaps using poolPrice
   let totalWeightedPrice = 0;
   let totalVolumeForAvg = 0;
   
   for (const swap of lastPeriodSwaps) {
-    if (swap.tokenVolumeUSD > 0) {
-      totalWeightedPrice += swap.tokenPriceUSD * swap.tokenVolumeUSD;
+    if (swap.tokenVolumeUSD > 0 && swap.poolPrice > 0) {
+      totalWeightedPrice += swap.poolPrice * swap.tokenVolumeUSD;
       totalVolumeForAvg += swap.tokenVolumeUSD;
     }
   }
@@ -420,18 +346,11 @@ function calculateTimeframeMetrics(
     avgPrice: avgPrice,
   };
 
-  console.log(`[Metrics Calculation] Final result for ${timeframe}:`, {
-    periodsIncluded: periodsToInclude,
+  console.log(`[SqrtPrice Metrics] Final result for ${timeframe}:`, {
     priceChange: result.priceChange,
     volumeChange: result.volumeChange,
     totalVolume: result.totalVolume,
     avgPrice: result.avgPrice,
-    dataPoints: { 
-      lastPeriodSwaps: lastPeriodSwaps.length, 
-      recentOHLC: recentOHLCData.length,
-      previousPeriodSwaps: previousPeriodSwaps?.length || 0,
-      timeframeMinutes: timeframeMinutes
-    }
   });
 
   return result;
@@ -479,16 +398,16 @@ function fillOHLCGaps(ohlcData: CandlestickData[], timeframeMinutes: number): Ca
 }
 
 /**
- * Hook to fetch swap data and convert to OHLC with dynamic timeframe support
+ * Hook to fetch sqrt price-based swap data and convert to OHLC with dynamic timeframe support
  */
-export function useKatanaSwapOHLC({
+export function useKatanaSqrtPriceOHLC({
   tokenAddress,
   resolution = 'hour',
   days = 30,
   autoRefresh = false,
   refreshInterval = 300000, // 5 minutes
   enabled = true,
-}: UseKatanaSwapOHLCProps) {
+}: UseKatanaSqrtPriceOHLCProps) {
   const [rawSwapData, setRawSwapData] = useState<SwapResponse | null>(null);
   const [data, setData] = useState<OHLCData | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -497,16 +416,16 @@ export function useKatanaSwapOHLC({
   const [isProcessingTimeframe, setIsProcessingTimeframe] = useState<boolean>(false);
   const [currentTimeframe, setCurrentTimeframe] = useState<TimeframeOption>('1h');
 
-  console.log('useKatanaSwapOHLC:', { tokenAddress, resolution, days, enabled });
+  console.log('useKatanaSqrtPriceOHLC:', { tokenAddress, resolution, days, enabled });
 
-  // Fetch function for raw swap data
+  // Fetch function for raw sqrt price swap data
   const fetchSwapData = useCallback(async () => {
     if (!enabled || !tokenAddress) {
       console.log('Fetch disabled or no token address');
       return;
     }
 
-    console.log('Fetching swap data for token:', tokenAddress);
+    console.log('Fetching sqrt price swap data for token:', tokenAddress);
     setIsLoading(true);
     setError(null);
 
@@ -516,7 +435,7 @@ export function useKatanaSwapOHLC({
         days: days.toString(),
       });
 
-      const response = await fetch(`${BACKEND_URL}/api/ohlc/katana/pool?${params}`, {
+      const response = await fetch(`${BACKEND_URL}/api/ohlc/katana/sqrtprice?${params}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -530,20 +449,22 @@ export function useKatanaSwapOHLC({
       const result: ApiResponse = await response.json();
       
       if (result.status !== 'success') {
-        throw new Error(result.data as any || 'Failed to fetch swap data');
+        throw new Error(result.data as any || 'Failed to fetch sqrt price data');
       }
 
-      console.log('Swap data fetched successfully:', {
+      console.log('Sqrt price swap data fetched successfully:', {
+        result,
         swapsCount: result.data.swaps.length,
         poolTVL: result.poolTVL,
+        currentPoolPrice: result.currentPoolPrice,
         token: result.data.metadata.token.symbol,
       });
 
       setRawSwapData(result.data);
       setIsSupported(true);
     } catch (err: any) {
-      console.error('Error fetching swap data:', err);
-      setError(err.message || 'Failed to fetch swap data');
+      console.error('Error fetching sqrt price swap data:', err);
+      setError(err.message || 'Failed to fetch sqrt price swap data');
       setIsSupported(false);
       setRawSwapData(null);
     } finally {
@@ -551,10 +472,10 @@ export function useKatanaSwapOHLC({
     }
   }, [tokenAddress, days, enabled]);
 
-  // Process OHLC data from raw swaps when timeframe changes
+  // Process OHLC data from raw sqrt price swaps when timeframe changes
   const processOHLCData = useCallback(async (timeframe: TimeframeOption) => {
     if (!rawSwapData?.swaps) {
-      console.log('No raw swap data available for processing');
+      console.log('No raw sqrt price swap data available for processing');
       return;
     }
 
@@ -565,19 +486,19 @@ export function useKatanaSwapOHLC({
     await new Promise(resolve => setTimeout(resolve, 100));
 
     try {
-      console.log("RAW SWAP", rawSwapData);
+      console.log("RAW SQRT PRICE SWAP DATA", rawSwapData);
       
       const timeframeMinutes = getTimeframeMinutes(timeframe);
-      const ohlcChart = generateOHLCFromSwaps(rawSwapData.swaps, timeframeMinutes);
+      const ohlcChart = generateOHLCFromSqrtPriceSwaps(rawSwapData.swaps, timeframeMinutes);
       
-      // Fill gaps for better chart continuity - enable for all timeframes to ensure continuity
-      const shouldFillGaps = false; // Enable gap filling for continuous charts
+      // Fill gaps for better chart continuity (but be conservative with short timeframes)
+      const shouldFillGaps = timeframeMinutes >= 60; // Only fill gaps for 1h+ timeframes
       const filledChart = shouldFillGaps ? fillOHLCGaps(ohlcChart, timeframeMinutes) : ohlcChart;
 
-      // Calculate timeframe-specific metrics - THIS IS THE KEY FIX
+      // Calculate timeframe-specific metrics using sqrt price data
       const timeframeMetrics = calculateTimeframeMetrics(
         rawSwapData.swaps, 
-        filledChart, // Use the processed OHLC chart, not the raw swaps
+        filledChart, // Use the processed OHLC chart
         timeframe
       );
 
@@ -590,14 +511,13 @@ export function useKatanaSwapOHLC({
           totalValueLockedUSD: rawSwapData.metadata.pool.totalValueLockedUSD,
           volumeUSD: rawSwapData.metadata.pool.volumeUSD,
           poolCount: 1,
-          poolToken0: rawSwapData.metadata.pool.token0,
-          poolToken1: rawSwapData.metadata.pool.token1,
           txCount: rawSwapData.metadata.totalSwaps,
           priceUSD: lastPrice,
           currency: 'USD',
-          dataSource: 'subgraph-swaps',
+          dataSource: 'subgraph-sqrt-swaps',
           chain: 'katana',
           dexId: 'katana-sushiswap',
+          currentPoolPrice: rawSwapData.metadata.pool.currentPoolPrice,
         },
         timeframeMetrics: {
           ...timeframeMetrics,
@@ -608,8 +528,8 @@ export function useKatanaSwapOHLC({
       setData(ohlcData);
       setCurrentTimeframe(timeframe);
     } catch (err: any) {
-      console.error('Error processing OHLC data:', err);
-      setError(err.message || 'Failed to process OHLC data');
+      console.error('Error processing sqrt price OHLC data:', err);
+      setError(err.message || 'Failed to process sqrt price OHLC data');
     } finally {
       setIsProcessingTimeframe(false);
     }
@@ -618,7 +538,7 @@ export function useKatanaSwapOHLC({
   // Reset data when token changes
   useEffect(() => {
     if (enabled && tokenAddress) {
-      console.log('Token address changed, resetting data and fetching...');
+      console.log('Token address changed, resetting sqrt price data and fetching...');
       setRawSwapData(null);
       setData(null);
       setError(null);
@@ -644,7 +564,7 @@ export function useKatanaSwapOHLC({
     if (!autoRefresh || !enabled) return;
 
     const interval = setInterval(() => {
-      console.log('Auto refreshing swap data...');
+      console.log('Auto refreshing sqrt price swap data...');
       fetchSwapData();
     }, refreshInterval);
 
@@ -653,14 +573,14 @@ export function useKatanaSwapOHLC({
 
   // Manual refetch function
   const refetch = useCallback(() => {
-    console.log('Manual refetch requested');
+    console.log('Manual refetch requested for sqrt price data');
     return fetchSwapData();
   }, [fetchSwapData]);
 
   // Change timeframe function
   const changeTimeframe = useCallback((timeframe: TimeframeOption) => {
     if (timeframe !== currentTimeframe && !isProcessingTimeframe && rawSwapData) {
-      console.log(`Changing timeframe to: ${timeframe}`);
+      console.log(`Changing timeframe to: ${timeframe} for sqrt price data`);
       processOHLCData(timeframe);
     }
   }, [currentTimeframe, isProcessingTimeframe, processOHLCData, rawSwapData]);
@@ -679,4 +599,4 @@ export function useKatanaSwapOHLC({
 }
 
 // Export the hook as default for backwards compatibility
-export default useKatanaSwapOHLC;
+export default useKatanaSqrtPriceOHLC;

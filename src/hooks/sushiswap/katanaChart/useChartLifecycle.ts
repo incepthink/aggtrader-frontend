@@ -18,14 +18,23 @@ export const useChartLifecycle = ({
   const chartRef = useRef<IChartApi | null>(null);
   const candlestickSeriesRef = useRef<any>(null);
   const containerObserverRef = useRef<ResizeObserver | null>(null);
+  const resizeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Clean up chart function
   const cleanupChart = useCallback(() => {
+    // Clear resize timeout
+    if (resizeTimeoutRef.current) {
+      clearTimeout(resizeTimeoutRef.current);
+      resizeTimeoutRef.current = null;
+    }
+
+    // Disconnect resize observer
     if (containerObserverRef.current) {
       containerObserverRef.current.disconnect();
       containerObserverRef.current = null;
     }
 
+    // Remove chart
     if (chartRef.current) {
       try {
         chartRef.current.remove();
@@ -37,6 +46,34 @@ export const useChartLifecycle = ({
     }
     onChartReady(false);
   }, [onChartReady]);
+
+  // Debounced resize handler
+  const handleResize = useCallback(() => {
+    if (resizeTimeoutRef.current) {
+      clearTimeout(resizeTimeoutRef.current);
+    }
+
+    resizeTimeoutRef.current = setTimeout(() => {
+      if (chartRef.current && chartContainerRef.current) {
+        const rect = chartContainerRef.current.getBoundingClientRect();
+        const newWidth = Math.floor(rect.width);
+        const newHeight = Math.floor(rect.height);
+        
+        // Only resize if dimensions are valid and have changed meaningfully
+        if (newWidth > 0 && newHeight > 0) {
+          try {
+            chartRef.current.applyOptions({
+              width: newWidth,
+              height: newHeight,
+            });
+            console.log('Chart resized to:', { width: newWidth, height: newHeight });
+          } catch (err) {
+            console.error('Error resizing chart:', err);
+          }
+        }
+      }
+    }, 100); // Debounce resize by 100ms
+  }, []);
 
   // Initialize chart function
   const initializeChart = useCallback(() => {
@@ -57,22 +94,34 @@ export const useChartLifecycle = ({
         const rect = container.getBoundingClientRect();
         console.log('Container dimensions:', rect);
 
-        if (rect.width === 0 || rect.height === 0) {
-          setTimeout(checkAndCreateChart, 50);
+        // Make sure container has meaningful dimensions
+        if (rect.width < 100 || rect.height < 100) {
+          console.log('Container too small, retrying...', rect);
+          setTimeout(checkAndCreateChart, 100);
           return;
         }
 
         try {
-          console.log('Creating chart...');
-          // Create chart
+          console.log('Creating chart with dimensions:', { width: rect.width, height: rect.height });
+          
+          // Create chart with responsive dimensions
           const chart = createChart(container, {
             layout: {
               background: { color: '#0d1117' },
               textColor: '#DDD',
+              fontFamily: 'system-ui, -apple-system, sans-serif',
             },
             grid: {
-              vertLines: { color: '#1e222d' },
-              horzLines: { color: '#1e222d' },
+              vertLines: { 
+                color: '#1e222d',
+                style: 1,
+                visible: true,
+              },
+              horzLines: { 
+                color: '#1e222d',
+                style: 1,
+                visible: true,
+              },
             },
             width: Math.floor(rect.width),
             height: Math.floor(rect.height),
@@ -80,11 +129,18 @@ export const useChartLifecycle = ({
               timeVisible: true,
               secondsVisible: false,
               borderColor: '#1e222d',
+              fixLeftEdge: false,
+              fixRightEdge: false,
+              lockVisibleTimeRangeOnResize: true,
             },
             rightPriceScale: {
               borderColor: '#2B2B43',
               textColor: '#d1d4dc',
               autoScale: true,
+              scaleMargins: {
+                top: 0.1,
+                bottom: 0.1,
+              },
             },
             crosshair: {
               vertLine: {
@@ -98,6 +154,24 @@ export const useChartLifecycle = ({
                 style: 1,
               },
             },
+            handleScroll: {
+              mouseWheel: true,
+              pressedMouseMove: true,
+              horzTouchDrag: true,
+              vertTouchDrag: true,
+            },
+            handleScale: {
+              axisPressedMouseMove: {
+                time: true,
+                price: true,
+              },
+              axisDoubleClickReset: {
+                time: true,
+                price: true,
+              },
+              mouseWheel: true,
+              pinch: true,
+            },
           });
 
           // Add candlestick series
@@ -107,23 +181,25 @@ export const useChartLifecycle = ({
             borderVisible: false,
             wickUpColor: '#22c55e',
             wickDownColor: '#ef4444',
+            priceFormat: {
+              type: 'price',
+              precision: 2,
+              minMove: 0.01,
+            },
           });
 
           chartRef.current = chart;
           candlestickSeriesRef.current = candlestickSeries;
 
-          // Set up resize observer
-          containerObserverRef.current = new ResizeObserver(() => {
-            if (chartRef.current && chartContainerRef.current) {
-              const newRect = chartContainerRef.current.getBoundingClientRect();
-              chartRef.current.applyOptions({
-                width: Math.floor(newRect.width),
-                height: Math.floor(newRect.height),
-              });
-            }
-          });
+          // Set up resize observer with debouncing
+          if (window.ResizeObserver) {
+            containerObserverRef.current = new ResizeObserver(handleResize);
+            containerObserverRef.current.observe(container);
+          }
 
-          containerObserverRef.current.observe(container);
+          // Fallback for browsers without ResizeObserver
+          window.addEventListener('resize', handleResize);
+
           console.log('Chart created successfully');
           onChartReady(true);
 
@@ -133,12 +209,14 @@ export const useChartLifecycle = ({
         }
       };
 
-      checkAndCreateChart();
+      // Initial check with a slight delay to ensure DOM is ready
+      setTimeout(checkAndCreateChart, 50);
+
     } catch (err) {
       console.error('Error initializing chart:', err);
       onError(`Chart initialization error: ${err}`);
     }
-  }, [tokenAddress, isKatanaChain, onChartReady, onError]);
+  }, [tokenAddress, isKatanaChain, onChartReady, onError, handleResize]);
 
   // Update chart data
   const updateChartData = useCallback((newData: CandlestickData[]) => {
@@ -156,31 +234,39 @@ export const useChartLifecycle = ({
         return;
       }
 
-      console.log('Setting chart data:', newData);
-      candlestickSeriesRef.current.setData(newData);
+      // Sort data by time to ensure proper order
+      const sortedData = [...newData].sort((a, b) => (a.time as number) - (b.time as number));
+      
+      console.log('Setting chart data:', sortedData.length, 'candles');
+      candlestickSeriesRef.current.setData(sortedData);
 
-      // Set default zoom to last 3 days if this is initial load
-      if (newData.length > 0) {
+      // Set initial visible range to show recent data
+      if (sortedData.length > 0) {
         setTimeout(() => {
           if (chartRef.current) {
-            const lastTime = newData[newData.length - 1].time as number;
-            const threeDaysInSeconds = 3 * 24 * 60 * 60;
-            const startTime = (lastTime - threeDaysInSeconds) as UTCTimestamp;
-            const firstTime = newData[0].time as number;
-            const actualStartTime = Math.max(startTime as number, firstTime) as UTCTimestamp;
-
             try {
-              console.log('Setting visible range:', { from: actualStartTime, to: lastTime });
+              const lastTime = sortedData[sortedData.length - 1].time as number;
+              const firstTime = sortedData[0].time as number;
+              
+              // Show last 3 days or all data if less than 3 days
+              const threeDaysInSeconds = 3 * 24 * 60 * 60;
+              const startTime = Math.max(lastTime - threeDaysInSeconds, firstTime) as UTCTimestamp;
+              
+              console.log('Setting visible range:', { 
+                from: new Date(startTime * 1000).toISOString(), 
+                to: new Date((lastTime as number) * 1000).toISOString() 
+              });
+              
               chartRef.current.timeScale().setVisibleRange({
-                from: actualStartTime,
+                from: startTime,
                 to: lastTime as UTCTimestamp,
               });
             } catch (err) {
-              console.warn('Failed to set initial time range:', err);
+              console.warn('Failed to set initial time range, using fit content:', err);
               chartRef.current.timeScale().fitContent();
             }
           }
-        }, 100);
+        }, 150);
       }
     } catch (err) {
       console.error('Error updating chart data:', err);

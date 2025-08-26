@@ -2,6 +2,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 import { Address } from "viem";
+import { fetchTokenPriceFromSushiV3, fetchTokenPairPriceFromSushiV3 } from "../../utils/spot/sushiswapV3Fallback";
 
 // Supported chains type - using chainId numbers for Sushi API
 export type SupportedChain = 1 | 747474; // Ethereum mainnet | Katana
@@ -21,7 +22,7 @@ export interface UsePriceBackendOptions {
 // Sushi API URL
 const SUSHI_API_BASE = "https://api.sushi.com/price/v1";
 
-// Main fetch function for single token
+// Main fetch function for single token with fallback
 const fetchTokenPriceSushi = async (
   tokenAddress: Address,
   chainId: number
@@ -40,9 +41,29 @@ const fetchTokenPriceSushi = async (
 
     // Sushi API returns an object with token address as key and price as value
     // const price = data[tokenAddress.toLowerCase()]
+
+    if (!data) {
+       if (chainId === 747474) {
+      console.log("Using SushiSwap V3 contract fallback for Katana...");
+      try {
+        const fallbackPrice = await fetchTokenPriceFromSushiV3(tokenAddress);
+        console.log("FALLBACK", fallbackPrice);
+        
+        if (fallbackPrice !== null) {
+          console.log("Successfully fetched price from SushiV3 fallback:", fallbackPrice);
+          return fallbackPrice;
+        }
+      } catch (fallbackError) {
+        console.error("SushiV3 fallback also failed:", fallbackError);
+      }
+    }
+    }
     return data || null;
   } catch (error) {
     console.error("Failed to fetch token price from Sushi API:", error);
+
+    // Fallback for Katana (chainId 747474) - use SushiSwap V3 contract
+   
 
     if (axios.isAxiosError(error)) {
       if (error.response?.status === 404) {
@@ -134,7 +155,7 @@ export function usePriceBackend(
   };
 }
 
-// Hook for comparing two specific tokens (now fetches both separately)
+// Updated hook for comparing two specific tokens with fallback
 export function usePriceComparison(
   addressOne: Address | undefined,
   addressTwo: Address | undefined,
@@ -150,12 +171,36 @@ export function usePriceComparison(
 
   const queryKey = ["sushiTokenComparison", addressOne, addressTwo, chainId];
 
-  // Fetch both tokens separately
+  // Fetch both tokens with potential fallback for Katana
   const fetchBothPrices = async () => {
     if (!addressOne || !addressTwo) {
       throw new Error("Both token addresses are required");
     }
 
+    // For Katana, try direct pair price first, then fallback to individual prices
+    if (chainId === 747474) {
+      try {
+        console.log("Trying SushiV3 pair price for Katana...");
+        const pairRatio = await fetchTokenPairPriceFromSushiV3(addressOne, addressTwo);
+        if (pairRatio !== null) {
+          // If we got a direct pair price, we still need individual USD prices
+          const [priceOne, priceTwo] = await Promise.all([
+            fetchTokenPriceSushi(addressOne, chainId),
+            fetchTokenPriceSushi(addressTwo, chainId),
+          ]);
+          
+          return {
+            tokenOne: priceOne,
+            tokenTwo: priceTwo,
+            ratio: pairRatio, // Use the more accurate direct pair ratio
+          };
+        }
+      } catch (error) {
+        console.warn("Direct pair price failed, falling back to individual prices:", error);
+      }
+    }
+
+    // Fallback to individual token prices
     const [priceOne, priceTwo] = await Promise.all([
       fetchTokenPriceSushi(addressOne, chainId),
       fetchTokenPriceSushi(addressTwo, chainId),
@@ -229,7 +274,7 @@ export function usePriceComparison(
   };
 }
 
-// Hook for manual price fetching (without automatic polling)
+// Hook for manual price fetching (without automatic polling) - updated with fallback
 export function usePriceBackendManual() {
   const queryClient = useQueryClient();
 
@@ -268,7 +313,7 @@ export function usePriceBackendManual() {
   };
 }
 
-// Hook for batch price fetching
+// Hook for batch price fetching - updated with fallback
 export function useBatchPriceBackend(
   tokenPairs: Array<{
     addressOne: Address;
@@ -337,7 +382,7 @@ export function useBatchPriceBackend(
   };
 }
 
-// Hook for multi-chain token comparison
+// Hook for multi-chain token comparison - updated with fallback
 export function useMultiChainPriceComparison(
   address: Address | undefined,
   compareToAddress?: Address, // Not used with Sushi API

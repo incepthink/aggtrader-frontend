@@ -1,5 +1,3 @@
-// aggtrade candle stick
-
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
@@ -23,10 +21,49 @@ const KatanaCandlestickChart = () => {
   const [chartReady, setChartReady] = useState(false);
   const [renderKey, setRenderKey] = useState(0);
   const [chartError, setChartError] = useState<string | null>(null);
+  const [isDesktopSize, setIsDesktopSize] = useState(false);
   
   // Refs to prevent loops
   const lastTokenAddress = useRef<string | null>(null);
   const lastChainId = useRef<number>(chainId);
+  const resizeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Custom breakpoint handling for 1560px
+  useEffect(() => {
+    const checkSize = () => {
+      const newIsDesktop = window.innerWidth >= 1560;
+      if (newIsDesktop !== isDesktopSize) {
+        setIsDesktopSize(newIsDesktop);
+      }
+    };
+
+    // Set initial size
+    checkSize();
+
+    // Handle window resize with debouncing
+    const handleResize = () => {
+      // Clear existing timeout
+      if (resizeTimeoutRef.current) {
+        clearTimeout(resizeTimeoutRef.current);
+      }
+
+      // Set new timeout
+      resizeTimeoutRef.current = setTimeout(() => {
+        checkSize();
+        // Force chart re-render after resize
+        setRenderKey((prev) => prev + 1);
+      }, 300); // Debounce resize events
+    };
+
+    window.addEventListener('resize', handleResize);
+    
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      if (resizeTimeoutRef.current) {
+        clearTimeout(resizeTimeoutRef.current);
+      }
+    };
+  }, [isDesktopSize]);
 
   // Get token address with native token handling
   const getTokenAddress = (token: any) => {
@@ -152,79 +189,114 @@ const KatanaCandlestickChart = () => {
 
   return (
     <>
-      {/* Chart Header - Only show outside on mobile/tablet */}
-       <div
-      className="block lg:hidden mb-4 mt-8"
-      >
-        <GlowBox
+      {/* Chart Header - Only show outside on screens < 1560px, NO margin-top unless < lg */}
+      {!isDesktopSize && (
+        <Box
           sx={{
-            p: 2, // Remove default padding since ChartHeader handles its own
-            overflow: "hidden",
+            mb: 2, // Reduced margin bottom
+            // Only add margin-top for screens smaller than lg (1200px)
+            mt: { xs: 4, sm: 4, md: 4, lg: 0 }, // mt only for xs/sm/md, not lg+
           }}
         >
-          <ChartHeader
-            {...headerProps}
-            isOverlay={false} // Standalone mode for mobile/tablet
-          />
-        </GlowBox>
-      </div>
+          <GlowBox
+            sx={{
+              p: 2,
+              overflow: "hidden",
+            }}
+          >
+            <ChartHeader
+              {...headerProps}
+              isOverlay={false}
+            />
+          </GlowBox>
+        </Box>
+      )}
 
-      {/* Chart Container with GlowBox */}
+      {/* Chart Container with GlowBox - Made fully responsive */}
       <Box
         sx={{
-          maxHeight: {
-            xs: "400px",
-            sm: "500px",
-            md: "600px",
-            lg: "600px",
-            xl: "700px",
-          },
+          width: "100%",
+          maxWidth: "100%",
           height: {
-            xs: "450px",
-            sm: "450px",
-            md: "550px",
+            xs: "400px",
+            sm: "450px", 
+            md: "500px",
             lg: "550px",
-            xl: "560px",
+            xl: "600px",
+          },
+          minHeight: {
+            xs: "350px",
+            sm: "400px",
           },
           overflow: "hidden",
         }}
       >
         <GlowBox
           sx={{
+            width: "100%",
             height: "100%",
-            maxHeight: "100%",
+            maxWidth: "100%",
             position: "relative",
             backgroundImage:
               "radial-gradient(circle, rgba(255,255,255,0.2) 1px, transparent 1px)",
             backgroundSize: { xs: "20px 20px", sm: "30px 30px" },
             overflow: "hidden",
-            p: { xs: 1, md: 2 }, // No padding on mobile, normal padding on medium screens and up
-            
+            p: { xs: 1, md: 2 },
+            boxSizing: "border-box",
           }}
         >
-          <div key={renderKey} className="w-full h-full relative">
-            {/* TimeframeSelector - Mobile positioned at top of chart */}
-            <div className="block lg:hidden absolute top-2 left-2 right-2 z-20">
-              <TimeframeSelector
-                selectedTimeframe={currentTimeframe}
-                onTimeframeChange={changeTimeframe}
-                isProcessingTimeframe={isProcessingTimeframe}
-                variant="mobile"
-              />
-            </div>
+          <Box
+            key={renderKey} 
+            sx={{
+              width: "100%",
+              height: "100%",
+              position: "relative",
+              overflow: "hidden",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+            {/* TimeframeSelector - Mobile positioned at top of chart for screens < 1560px */}
+            {!isDesktopSize && (
+              <Box
+                sx={{
+                  position: "absolute",
+                  top: 8,
+                  left: 8,
+                  right: 8,
+                  zIndex: 20,
+                }}
+              >
+                <TimeframeSelector
+                  selectedTimeframe={currentTimeframe}
+                  onTimeframeChange={changeTimeframe}
+                  isProcessingTimeframe={isProcessingTimeframe}
+                  variant="mobile"
+                />
+              </Box>
+            )}
 
-            {/* Chart Header - Overlay mode for desktop only */}
-            <div className="hidden lg:block">
-              <ChartHeader
-                {...headerProps}
-                isOverlay={true} // Overlay mode for desktop
-              />
-            </div>
+            {/* Chart Header - Overlay mode for desktop (screens >= 1560px) only */}
+            {isDesktopSize && (
+              <Box>
+                <ChartHeader
+                  {...headerProps}
+                  isOverlay={true}
+                />
+              </Box>
+            )}
 
-            {/* Chart Container - Remove mobile padding to fit inside GlowBox */}
-            <div className="w-full h-full lg:pt-16 pt-8">
+            {/* Chart Container - Takes remaining space */}
+            <Box
+              sx={{
+                width: "100%",
+                flex: 1,
+                minHeight: 0,
+                pt: isDesktopSize ? "64px" : "32px",
+                overflow: "hidden",
+              }}
+            >
               <ChartContainer
-               
                 tokenAddress={tokenAddress}
                 isKatanaChain={isKatanaChain}
                 chartData={chartData}
@@ -233,7 +305,7 @@ const KatanaCandlestickChart = () => {
                 onChartReady={handleChartReady}
                 onError={handleChartError}
               />
-            </div>
+            </Box>
 
             <ChartStatusIndicators
               chartReady={chartReady}
@@ -244,7 +316,7 @@ const KatanaCandlestickChart = () => {
               high={high}
               low={low}
             />
-          </div>
+          </Box>
         </GlowBox>
       </Box>
     </>

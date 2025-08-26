@@ -1,7 +1,9 @@
 import { useMemo, useRef } from 'react';
-import { useKatanaSwapOHLC, TimeframeOption } from '@/hooks/sushiswap/katanaChart/useKatanaSwapOHLC'; // Updated import
+// CHANGE THIS LINE: Replace the import
+import { useKatanaSqrtPriceOHLC, TimeframeOption } from '@/hooks/sushiswap/katanaChart/useKatanaSqrtPriceOHLC'; // Updated import
 import { usePriceBackend } from '@/hooks/sushiswap/usePriceBackend';
 import { CandlestickData, UTCTimestamp } from 'lightweight-charts';
+import useKatanaSwapOHLC from './useKatanaSwapOHLC';
 
 interface UseChartDataProps {
   tokenAddress: string | null;
@@ -68,7 +70,8 @@ export const useChartData = ({
     tokenAddress = "0xee7d8bcfb72bc1880d0cf19822eb0a2e6577ab62"
   }
 
-  // Katana Swap OHLC Data Hook (NEW - replaces useKatanaOHLCData)
+  // CHANGE THIS LINE: Replace the hook call
+  // Katana SqrtPrice OHLC Data Hook (NEW - uses accurate pool pricing)
   const {
     data: ohlcData,
     isLoading: ohlcLoading,
@@ -88,7 +91,7 @@ export const useChartData = ({
   });
 
   // Debug OHLC data
-  console.log('OHLC Data from swaps:', { ohlcData, ohlcLoading, ohlcError, isSupported });
+  console.log('OHLC Data from sqrt prices:', { ohlcData, ohlcLoading, ohlcError, isSupported });
 
   // Current price from Sushi API
   const {
@@ -110,6 +113,16 @@ export const useChartData = ({
 
   // Debug price data
   console.log('Price Data:', { currentPrice, priceLoading, priceHasError });
+  
+  // If we have pool price from sqrt data, log comparison
+  // if (ohlcData?.metadata?.currentPoolPrice && currentPrice) {
+  //   console.log('Price comparison:', {
+  //     sushiApiPrice: currentPrice,
+  //     poolPrice: ohlcData.metadata.currentPoolPrice,
+  //     difference: Math.abs(currentPrice - ohlcData.metadata.currentPoolPrice),
+  //     percentageDiff: Math.abs(currentPrice - ohlcData.metadata.currentPoolPrice) / currentPrice * 100
+  //   });
+  // }
 
   // Process OHLC data for chart with memoization
   const chartData = useMemo((): CandlestickData[] => {
@@ -132,7 +145,7 @@ export const useChartData = ({
     }
 
     try {
-      // The new hook already returns properly formatted CandlestickData
+      // The sqrt price hook already returns properly formatted CandlestickData with accurate pricing
       const processed = ohlcData.chart.filter((point) => {
         const isValid = (
           point.time &&
@@ -151,10 +164,15 @@ export const useChartData = ({
         return isValid;
       });
 
-      console.log('Processed chart data:', processed.length, 'points');
+      console.log('Processed sqrt price chart data:', processed.length, 'points');
       if (processed.length > 0) {
-        console.log('First point:', processed[0]);
-        console.log('Last point:', processed[processed.length - 1]);
+        console.log('First sqrt price point:', processed[0]);
+        console.log('Last sqrt price point:', processed[processed.length - 1]);
+        console.log('Price range:', {
+          min: Math.min(...processed.map(p => p.low)),
+          max: Math.max(...processed.map(p => p.high)),
+          latest: processed[processed.length - 1].close
+        });
       }
 
       // Cache the processed data
@@ -163,7 +181,7 @@ export const useChartData = ({
 
       return processed;
     } catch (err) {
-      console.error('Error processing chart data:', err);
+      console.error('Error processing sqrt price chart data:', err);
       throw new Error(`Data processing error: ${err}`);
     }
   }, [ohlcData, isKatanaChain]);
@@ -204,7 +222,7 @@ export const useChartData = ({
   }, [chartData]);
 
   const refetchAll = () => {
-    console.log('Refetching all data...');
+    console.log('Refetching all sqrt price data...');
     // Clear cache when refetching
     lastProcessedData.current = null;
     lastProcessedCount.current = 0;

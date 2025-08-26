@@ -260,7 +260,7 @@ function SushiClassicSwap() {
   return (
     <>
       <div className="tradeBox p-4">
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex justify-between items-center mb-6 lg:mb-8">
           <h4 className="text-xl">Classic Swap</h4>
           <SwapSettings
             slippage={slippage}
@@ -277,6 +277,7 @@ function SushiClassicSwap() {
         <div className="inputs">
           {/* sell */}
           <SwapInput
+        
             value={tokenOneAmount}
             onChange={changeSellAmount}
             disabled={isLoadingPrices}
@@ -287,7 +288,7 @@ function SushiClassicSwap() {
           />
 
           {/* switch */}
-          <div className="switch-container">
+          <div className="switch-container py-0 lg:py-2">
             <div className="line" />
             <div className="switchButton" onClick={switchTokens}>
               <SwapVertIcon sx={{ fontSize: 28 }} />
