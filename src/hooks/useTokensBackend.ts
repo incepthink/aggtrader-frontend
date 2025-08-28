@@ -19,15 +19,35 @@ interface TokenResponse {
   };
 }
 
-interface KatanaTokenListResponse {
-  tokens: {
-    chainId: number;
-    symbol: string;
-    name: string;
-    address: string;
-    decimals: number;
-    logoURI?: string;
-  }[];
+interface KatanaTokenResponse {
+  status: string;
+  data: {
+    tokens: {
+      id: number;
+      address: string;
+      symbol: string;
+      name: string;
+      decimals: number;
+      total_supply: string | null;
+      pool_count: number;
+      tradable: boolean;
+      chain_id: number;
+      logo_uri: string | null;
+      created_at: string;
+      updated_at: string;
+    }[];
+    metadata: {
+      count: number;
+      chain: string;
+      filters: {
+        tradable: boolean;
+        search: string | null;
+        minPools: number | null;
+      };
+    };
+  };
+  source: string;
+  chain: string;
 }
 
 export interface TokenData {
@@ -59,26 +79,27 @@ export function useTokensBackend(chainId: number) {
         let tokensData: TokenData[] = [];
 
         if (chainId === KATANA_CHAIN_ID) {
-          // Fetch from Katana tokenlist
-          const response = await axios.get<KatanaTokenListResponse>(
-            "https://raw.githubusercontent.com/katana-network/tokenlist/main/tokenlist.json"
+          // Fetch from backend database API
+          const response = await axios.get<KatanaTokenResponse>(
+            `${BACKEND_URL}/api/katana/tokens/db`,
+            {
+              params: { tradable: true },
+            }
           );
 
-          tokensData = response.data.tokens
-            .filter((token) => token.chainId === chainId)
-            .map((token) => ({
-              chainId: token.chainId,
-              symbol: token.symbol,
-              name: token.name,
-              address: token.address,
-              decimals: token.decimals,
-              logoURI: token.logoURI || "", // Provide fallback for optional logoURI
-              // Katana tokens don't have these fields, so we'll set defaults
-              providers: [],
-              eip2612: false,
-              isFoT: false,
-              tags: [],
-            }));
+          tokensData = response.data.data.tokens.map((token) => ({
+            chainId: token.chain_id,
+            symbol: token.symbol,
+            name: token.name,
+            address: token.address,
+            decimals: token.decimals,
+            logoURI: token.logo_uri || "", // Handle null logo_uri
+            // Set defaults for fields not present in database
+            providers: [],
+            eip2612: false,
+            isFoT: false,
+            tags: [],
+          }));
 
           console.log("KATANA", tokensData);
         } else {

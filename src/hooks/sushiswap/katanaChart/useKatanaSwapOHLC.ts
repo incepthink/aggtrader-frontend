@@ -514,6 +514,7 @@ export function useKatanaSwapOHLC({
       const params = new URLSearchParams({
         tokenAddress: tokenAddress,
         days: days.toString(),
+        force: "true"
       });
 
       const response = await fetch(`${BACKEND_URL}/api/ohlc/katana/pool?${params}`, {

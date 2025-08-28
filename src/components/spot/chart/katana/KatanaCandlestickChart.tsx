@@ -193,7 +193,6 @@ const KatanaCandlestickChart = () => {
       {!isDesktopSize && (
         <Box
           sx={{
-            mb: 2, // Reduced margin bottom
             // Only add margin-top for screens smaller than lg (1200px)
             mt: { xs: 4, sm: 4, md: 4, lg: 0 }, // mt only for xs/sm/md, not lg+
           }}
@@ -237,9 +236,6 @@ const KatanaCandlestickChart = () => {
             height: "100%",
             maxWidth: "100%",
             position: "relative",
-            backgroundImage:
-              "radial-gradient(circle, rgba(255,255,255,0.2) 1px, transparent 1px)",
-            backgroundSize: { xs: "20px 20px", sm: "30px 30px" },
             overflow: "hidden",
             p: { xs: 1, md: 2 },
             boxSizing: "border-box",
@@ -292,7 +288,7 @@ const KatanaCandlestickChart = () => {
                 width: "100%",
                 flex: 1,
                 minHeight: 0,
-                pt: isDesktopSize ? "64px" : "32px",
+                pt: isDesktopSize ? "64px" : "38px",
                 overflow: "hidden",
               }}
             >

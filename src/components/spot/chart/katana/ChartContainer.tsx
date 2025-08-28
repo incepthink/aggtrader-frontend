@@ -25,6 +25,8 @@ const ChartContainer: React.FC<ChartContainerProps> = ({
   const currentRenderKey = useRef<number>(renderKey);
   const [isChartInitialized, setIsChartInitialized] = useState(false);
 
+  let minMove = chartData[0].open < 0.1 ? 0.00001 : 0.01
+
   const {
     chartContainerRef,
     initializeChart,
@@ -32,6 +34,7 @@ const ChartContainer: React.FC<ChartContainerProps> = ({
     updateChartData,
   } = useChartLifecycle({
     tokenAddress,
+    minMove,
     isKatanaChain,
     onChartReady: (ready) => {
       setIsChartInitialized(ready);

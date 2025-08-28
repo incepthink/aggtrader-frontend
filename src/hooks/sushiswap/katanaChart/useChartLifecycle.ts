@@ -3,6 +3,7 @@ import { createChart, IChartApi, CandlestickData, UTCTimestamp } from 'lightweig
 
 interface UseChartLifecycleProps {
   tokenAddress: string | null;
+  minMove: number;
   isKatanaChain: boolean;
   onChartReady: (ready: boolean) => void;
   onError: (error: string) => void;
@@ -10,6 +11,7 @@ interface UseChartLifecycleProps {
 
 export const useChartLifecycle = ({
   tokenAddress,
+  minMove,
   isKatanaChain,
   onChartReady,
   onError,
@@ -183,8 +185,8 @@ export const useChartLifecycle = ({
             wickDownColor: '#ef4444',
             priceFormat: {
               type: 'price',
-              precision: 2,
-              minMove: 0.01,
+              precision: minMove === 0.01 ? 2 : 6,
+              minMove: minMove,
             },
           });
 

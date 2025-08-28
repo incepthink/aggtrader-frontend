@@ -173,6 +173,9 @@ const ChartHeader: React.FC<ChartHeaderProps> = ({
     ? "absolute top-2 left-2 right-2 md:top-3 md:left-4 md:right-4 z-10"
     : "w-full";
 
+
+    console.log(ohlcData.metadata.poolToken0.id.toLowerCase() === tokenOne?.address.toLowerCase(),ohlcData.metadata.poolToken1.symbol, ohlcData.metadata.poolToken0.symbol, "Token");
+    
   return (
     <div className={wrapperClasses}>
       {/* Mobile/Tablet Layout - Show when NOT desktop size OR not overlay */}
@@ -190,7 +193,7 @@ const ChartHeader: React.FC<ChartHeaderProps> = ({
               )}
               <div>
                 <p className="text-base md:text-lg font-semibold text-white">
-                  {tokenOne?.ticker || 'Token'}
+                  {tokenOne?.ticker || 'Token'} / {ohlcData.metadata.poolToken0.id.toLowerCase() === tokenOne?.address.toLowerCase() ? ohlcData.metadata.poolToken1.symbol : ohlcData.metadata.poolToken0.symbol || "Token"}
                 </p>
                 <div className="flex items-center gap-2">
                   <span className="text-[#00F5E0] font-semibold text-sm">
@@ -286,7 +289,7 @@ const ChartHeader: React.FC<ChartHeaderProps> = ({
       {shouldShowDesktopLayout && (
         <div className="flex justify-between items-start">
           {/* Left Side - Token Info */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 -mt-1.5">
             {tokenOne?.img && (
               <img
                 src={tokenOne.img}
@@ -296,7 +299,7 @@ const ChartHeader: React.FC<ChartHeaderProps> = ({
             )}
             <div>
               <p className="text-lg font-semibold text-white">
-                {tokenOne?.ticker || 'Token'}
+                {tokenOne?.ticker || 'Token'} / {ohlcData.metadata.poolToken0.id.toLowerCase() === tokenOne?.address.toLowerCase() ? ohlcData.metadata.poolToken1.symbol : ohlcData.metadata.poolToken0.symbol || "Token"}
               </p>
               <div className="flex items-center gap-2">
                 <span className="text-[#00F5E0] font-semibold">
