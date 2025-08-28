@@ -1,18 +1,19 @@
+// components/chart/EthereumCandlestickChart.tsx (NEW FILE)
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Box } from "@mui/material";
 import { useSpotStore } from "@/store/spotStore";
-import { useChartData } from "@/hooks/sushiswap/katanaChart/useChartData";
-import ChartHeader from "./ChartHeader";
+import { useEthereumChartData } from "@/hooks/sushiswap/ethereumChart/useEthereumChartData";
+import EthereumChartHeader from "./EthereumChartHeader";
 import ChartContainer from "../ChartContainer";
-import ChartStatusIndicators from "./ChartStatusIndicators";
-import ChartDebug from "./ChartDebug";
-import ChartErrorBoundary from "./ChartErrorBoundary";
+import EthereumChartStatusIndicators from "./EthereumChartStatusIndicators";
+import EthereumChartDebug from "./EthereumChartDebug";
+import EthereumChartErrorBoundary from "./EthereumChartErrorBoundary";
 import GlowBox from "@/components/common/ui/GlowBox";
 import TimeframeSelector from "../TimeframeSelector";
 
-const KatanaCandlestickChart = () => {
+const EthereumCandlestickChart = () => {
   // Get tokenOne from the store
   const { tokenOne, chainId } = useSpotStore();
 
@@ -65,17 +66,17 @@ const KatanaCandlestickChart = () => {
     };
   }, [isDesktopSize]);
 
-  // Get token address with native token handling
+  // Get token address with native token handling for Ethereum
   const getTokenAddress = (token: any) => {
     if (!token) return null;
     if (token.isNative) {
-      return "0xEE7D8BCFb72bC1880D0Cf19822eB0A2e6577aB62"; // WRON on Katana
+      return "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"; // WETH on Ethereum
     }
     return token.address;
   };
 
   const tokenAddress = getTokenAddress(tokenOne);
-  const isKatanaChain = chainId === 747474;
+  const isEthereumChain = chainId === 1;
 
   // Only force re-render when token actually changes
   useEffect(() => {
@@ -113,11 +114,10 @@ const KatanaCandlestickChart = () => {
     changeTimeframe,
     isProcessingTimeframe,
     timeframeMetrics,
-  } = useChartData({
+  } = useEthereumChartData({
     tokenAddress,
     chainId,
     resolution,
-    isKatanaChain,
   });
 
   // Handle chart ready state
@@ -147,17 +147,17 @@ const KatanaCandlestickChart = () => {
 
   // Check for error states that should show error boundary
   const hasError = chartError || error || !isSupported || 
-    (!isKatanaChain || !tokenOne || 
+    (!isEthereumChain || !tokenOne || 
     ((isLoading || priceLoading) && chartData.length === 0) || 
     chartData.length === 0);
 
   if (hasError) {
     return (
-      <ChartErrorBoundary
+      <EthereumChartErrorBoundary
         chainId={chainId}
         tokenOne={tokenOne}
         tokenAddress={tokenAddress}
-        isKatanaChain={isKatanaChain}
+        isEthereumChain={isEthereumChain}
         chartError={chartError}
         error={error}
         isSupported={isSupported}
@@ -203,7 +203,7 @@ const KatanaCandlestickChart = () => {
               overflow: "hidden",
             }}
           >
-            <ChartHeader
+            <EthereumChartHeader
               {...headerProps}
               isOverlay={false}
             />
@@ -275,7 +275,7 @@ const KatanaCandlestickChart = () => {
             {/* Chart Header - Overlay mode for desktop (screens >= 1560px) only */}
             {isDesktopSize && (
               <Box>
-                <ChartHeader
+                <EthereumChartHeader
                   {...headerProps}
                   isOverlay={true}
                 />
@@ -294,16 +294,17 @@ const KatanaCandlestickChart = () => {
             >
               <ChartContainer
                 tokenAddress={tokenAddress}
-                enabled={isKatanaChain}
+                enabled={isEthereumChain}
                 chartData={chartData}
                 renderKey={renderKey}
                 resolution={resolution}
                 onChartReady={handleChartReady}
                 onError={handleChartError}
+                chainType="ethereum"
               />
             </Box>
 
-            <ChartStatusIndicators
+            {/* <EthereumChartStatusIndicators
               chartReady={chartReady}
               chartDataLength={chartData.length}
               renderKey={renderKey}
@@ -311,7 +312,7 @@ const KatanaCandlestickChart = () => {
               currentPrice={currentPrice}
               high={high}
               low={low}
-            />
+            /> */}
           </Box>
         </GlowBox>
       </Box>
@@ -319,4 +320,4 @@ const KatanaCandlestickChart = () => {
   );
 };
 
-export default KatanaCandlestickChart;
+export default EthereumCandlestickChart;

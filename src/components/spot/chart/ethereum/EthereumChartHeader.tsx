@@ -1,8 +1,8 @@
-// aggtrade chart header
+// components/chart/EthereumChartHeader.tsx (NEW FILE)
 import React, { useState, useEffect } from 'react';
 import { CircularProgress, IconButton } from '@mui/material';
 import { Refresh } from '@mui/icons-material';
-import { katanaOHLCUtils } from '@/hooks/sushiswap/katanaChart/useKatanaSwapOHLC';
+import { ethereumOHLCUtils } from '@/hooks/sushiswap/ethereumChart/useEthereumSwapOHLC';
 import TimeframeSelector, { TimeframeOption } from '../TimeframeSelector';
 
 export function formatCompact(input: number | string, maxDecimals = 2): string {
@@ -32,8 +32,6 @@ function trimZeros(x: string): string {
   return x.replace(/\.0+$|(\.\d*?[1-9])0+$/, '$1');
 }
 
-export type { TimeframeOption } from '../TimeframeSelector';
-
 type MetricDisplayMode = 'usd' | 'percentage';
 
 interface TimeframeMetrics {
@@ -44,7 +42,7 @@ interface TimeframeMetrics {
   timeframe: TimeframeOption;
 }
 
-interface ChartHeaderProps {
+interface EthereumChartHeaderProps {
   tokenOne: any;
   currentPrice: number | null;
   priceLoading: boolean;
@@ -63,7 +61,7 @@ interface ChartHeaderProps {
   isOverlay?: boolean;
 }
 
-const ChartHeader: React.FC<ChartHeaderProps> = ({
+const EthereumChartHeader: React.FC<EthereumChartHeaderProps> = ({
   tokenOne,
   currentPrice,
   priceLoading,
@@ -123,7 +121,7 @@ const ChartHeader: React.FC<ChartHeaderProps> = ({
     if (priceDisplayMode === 'usd') {
       const value = tfPriceChange.absolute;
       const sign = value >= 0 ? '+' : '';
-      return `${sign}$${formatCompact(Math.abs(value))}`;
+      return `${sign}${formatCompact(Math.abs(value))}`;
     } else {
       const value = tfPriceChange.percentage;
       const sign = value >= 0 ? '+' : '';
@@ -142,7 +140,7 @@ const ChartHeader: React.FC<ChartHeaderProps> = ({
     if (volumeDisplayMode === 'usd') {
       const value = volumeChange.absolute;
       const sign = value >= 0 ? '+' : '';
-      return `${sign}$${formatCompact(Math.abs(value))}`;
+      return `${sign}${formatCompact(Math.abs(value))}`;
     } else {
       const value = volumeChange.percentage;
       const sign = value >= 0 ? '+' : '';
@@ -173,8 +171,22 @@ const ChartHeader: React.FC<ChartHeaderProps> = ({
     ? "absolute top-2 left-2 right-2 md:top-3 md:left-4 md:right-4 z-10"
     : "w-full";
 
+  // Get quote token symbol - handle Ethereum V2 pair structure
+  const getQuoteTokenSymbol = () => {
+    if (!ohlcData?.metadata?.pair) return "Token";
+    
+    const { token0, token1 } = ohlcData.metadata.pair;
+    const isToken0 = token0.id.toLowerCase() === tokenOne?.address?.toLowerCase();
+    
+    return isToken0 ? token1.symbol : token0.symbol;
+  };
 
-    console.log(ohlcData.metadata.poolToken0.id.toLowerCase() === tokenOne?.address.toLowerCase(),ohlcData.metadata.poolToken1.symbol, ohlcData.metadata.poolToken0.symbol, "Token");
+  console.log('[ETHEREUM] Header data:', {
+    pairToken0: ohlcData?.metadata?.pair?.token0?.symbol,
+    pairToken1: ohlcData?.metadata?.pair?.token1?.symbol,
+    tokenOneAddress: tokenOne?.address?.toLowerCase(),
+    isToken0Match: ohlcData?.metadata?.pair?.token0?.id?.toLowerCase() === tokenOne?.address?.toLowerCase()
+  });
     
   return (
     <div className={wrapperClasses}>
@@ -193,14 +205,14 @@ const ChartHeader: React.FC<ChartHeaderProps> = ({
               )}
               <div>
                 <p className="text-base md:text-lg font-semibold text-white">
-                  {tokenOne?.ticker || 'Token'} / {ohlcData.metadata.poolToken0.id.toLowerCase() === tokenOne?.address.toLowerCase() ? ohlcData.metadata.poolToken1.symbol : ohlcData.metadata.poolToken0.symbol || "Token"}
+                  {tokenOne?.ticker || 'Token'} / {getQuoteTokenSymbol()}
                 </p>
                 <div className="flex items-center gap-2">
                   <span className="text-[#00F5E0] font-semibold text-sm">
                     {priceLoading ? (
                       <CircularProgress size={14} sx={{ color: '#00F5E0' }} />
                     ) : currentPrice ? (
-                      `$${katanaOHLCUtils.formatPrice(currentPrice)}`
+                      `${ethereumOHLCUtils.formatPrice(currentPrice)}`
                     ) : (
                       '$0.00'
                     )}
@@ -270,15 +282,15 @@ const ChartHeader: React.FC<ChartHeaderProps> = ({
             <div className="flex flex-col">
               <p className="text-xs text-gray-400 mb-1">Total Vol</p>
               <p className="text-xs text-white font-medium">
-                {hasValidTimeframeData ? `$${formatCompact(ohlcData?.metadata?.volumeUSD || 0)}` : '--'}
+                {hasValidTimeframeData ? `${formatCompact(ohlcData?.metadata?.volumeUSD || 0)}` : '--'}
               </p>
             </div>
 
-            {/* Pool TVL */}
+            {/* Pair Reserve USD */}
             <div className="flex flex-col">
-              <p className="text-xs text-gray-400 mb-1">Pool TVL</p>
+              <p className="text-xs text-gray-400 mb-1">Pair Reserve</p>
               <p className="text-xs text-white font-medium">
-                ${formatCompact(ohlcData?.metadata?.totalValueLockedUSD || 0)}
+                ${formatCompact(ohlcData?.metadata?.reserveUSD || 0)}
               </p>
             </div>
           </div>
@@ -299,14 +311,14 @@ const ChartHeader: React.FC<ChartHeaderProps> = ({
             )}
             <div>
               <p className="text-lg font-semibold text-white">
-                {tokenOne?.ticker || 'Token'} / {ohlcData.metadata.poolToken0.id.toLowerCase() === tokenOne?.address.toLowerCase() ? ohlcData.metadata.poolToken1.symbol : ohlcData.metadata.poolToken0.symbol || "Token"}
+                {tokenOne?.ticker || 'Token'} / {getQuoteTokenSymbol()}
               </p>
               <div className="flex items-center gap-2">
                 <span className="text-[#00F5E0] font-semibold">
                   {priceLoading ? (
                     <CircularProgress size={16} sx={{ color: '#00F5E0' }} />
                   ) : currentPrice ? (
-                    `$${katanaOHLCUtils.formatPrice(currentPrice)}`
+                    `${ethereumOHLCUtils.formatPrice(currentPrice)}`
                   ) : (
                     '$0.00'
                   )}
@@ -368,15 +380,15 @@ const ChartHeader: React.FC<ChartHeaderProps> = ({
               <div className="flex flex-col items-center">
                 <p className="text-xs text-gray-400 mb-1">Total Vol</p>
                 <p className="text-sm text-white font-medium">
-                  {hasValidTimeframeData ? `$${formatCompact(ohlcData?.metadata?.volumeUSD || 0)}` : '--'}
+                  {hasValidTimeframeData ? `${formatCompact(ohlcData?.metadata?.volumeUSD || 0)}` : '--'}
                 </p>
               </div>
 
-              {/* Pool TVL */}
+              {/* Pair Reserve USD */}
               <div className="flex flex-col items-center">
-                <p className="text-xs text-gray-400 mb-1">Pool TVL</p>
+                <p className="text-xs text-gray-400 mb-1">Pair Reserve</p>
                 <p className="text-sm text-white font-medium">
-                  ${formatCompact(ohlcData?.metadata?.totalValueLockedUSD || 0)}
+                  ${formatCompact(ohlcData?.metadata?.reserveUSD || 0)}
                 </p>
               </div>
 
@@ -406,4 +418,4 @@ const ChartHeader: React.FC<ChartHeaderProps> = ({
   );
 };
 
-export default ChartHeader;
+export default EthereumChartHeader;

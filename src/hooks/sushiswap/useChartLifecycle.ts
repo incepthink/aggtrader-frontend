@@ -1,10 +1,11 @@
+// hooks/sushiswap/useChartLifecycle.ts (MODIFIED)
 import { useRef, useCallback, MutableRefObject } from 'react';
 import { createChart, IChartApi, CandlestickData, UTCTimestamp } from 'lightweight-charts';
 
 interface UseChartLifecycleProps {
   tokenAddress: string | null;
   minMove: number;
-  isKatanaChain: boolean;
+  enabled: boolean; // CHANGED: from isKatanaChain to generic enabled
   onChartReady: (ready: boolean) => void;
   onError: (error: string) => void;
 }
@@ -12,7 +13,7 @@ interface UseChartLifecycleProps {
 export const useChartLifecycle = ({
   tokenAddress,
   minMove,
-  isKatanaChain,
+  enabled, // CHANGED: generic enabled prop
   onChartReady,
   onError,
 }: UseChartLifecycleProps) => {
@@ -79,9 +80,9 @@ export const useChartLifecycle = ({
 
   // Initialize chart function
   const initializeChart = useCallback(() => {
-    console.log('initializeChart called:', { tokenAddress, isKatanaChain });
+    console.log('initializeChart called:', { tokenAddress, enabled }); // CHANGED: logging
     
-    if (!chartContainerRef.current || !tokenAddress || !isKatanaChain) {
+    if (!chartContainerRef.current || !tokenAddress || !enabled) { // CHANGED: use enabled
       console.log('Initialization conditions not met');
       return;
     }
@@ -218,7 +219,7 @@ export const useChartLifecycle = ({
       console.error('Error initializing chart:', err);
       onError(`Chart initialization error: ${err}`);
     }
-  }, [tokenAddress, isKatanaChain, onChartReady, onError, handleResize]);
+  }, [tokenAddress, enabled, onChartReady, onError, handleResize]); // CHANGED: dependencies
 
   // Update chart data
   const updateChartData = useCallback((newData: CandlestickData[]) => {
