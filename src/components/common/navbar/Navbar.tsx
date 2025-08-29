@@ -116,8 +116,11 @@ export default function Navbar() {
               className="w-full h-full object-cover"
             />
           </div>
-          <h2 className="text-xl md:text-2xl font-semibold text-white cursor-pointer">
-            AggTrade
+          <h2 className="text-xl md:text-2xl font-semibold text-white cursor-pointer flex justify-center gap-2">
+            AggTrade{" "}
+            <span className="bg-yellow-500 text-black rounded-full py-0.5 my-auto px-1 text-[8px]">
+              BETA
+            </span>
           </h2>
         </a>
 
