@@ -23,7 +23,7 @@ const EthereumCandlestickChart = () => {
   const [renderKey, setRenderKey] = useState(0);
   const [chartError, setChartError] = useState<string | null>(null);
   const [isDesktopSize, setIsDesktopSize] = useState(false);
-  
+
   // Refs to prevent loops
   const lastTokenAddress = useRef<string | null>(null);
   const lastChainId = useRef<number>(chainId);
@@ -56,10 +56,10 @@ const EthereumCandlestickChart = () => {
       }, 300); // Debounce resize events
     };
 
-    window.addEventListener('resize', handleResize);
-    
+    window.addEventListener("resize", handleResize);
+
     return () => {
-      window.removeEventListener('resize', handleResize);
+      window.removeEventListener("resize", handleResize);
       if (resizeTimeoutRef.current) {
         clearTimeout(resizeTimeoutRef.current);
       }
@@ -81,7 +81,7 @@ const EthereumCandlestickChart = () => {
   // Only force re-render when token actually changes
   useEffect(() => {
     if (
-      tokenAddress !== lastTokenAddress.current || 
+      tokenAddress !== lastTokenAddress.current ||
       chainId !== lastChainId.current
     ) {
       lastTokenAddress.current = tokenAddress;
@@ -146,28 +146,42 @@ const EthereumCandlestickChart = () => {
   }, [refetchAll]);
 
   // Check for error states that should show error boundary
-  const hasError = chartError || error || !isSupported || 
-    (!isEthereumChain || !tokenOne || 
-    ((isLoading || priceLoading) && chartData.length === 0) || 
-    chartData.length === 0);
+  const hasError =
+    chartError ||
+    error ||
+    !isSupported ||
+    !isEthereumChain ||
+    !tokenOne ||
+    ((isLoading || priceLoading) && chartData.length === 0) ||
+    chartData.length === 0;
 
   if (hasError) {
     return (
-      <EthereumChartErrorBoundary
-        chainId={chainId}
-        tokenOne={tokenOne}
-        tokenAddress={tokenAddress}
-        isEthereumChain={isEthereumChain}
-        chartError={chartError}
-        error={error}
-        isSupported={isSupported}
-        isLoading={isLoading}
-        priceLoading={priceLoading}
-        chartDataLength={chartData.length}
-        onRetry={handleRetry}
-        onRefetch={refetchOHLC}
-        onForceRefresh={handleForceRefresh}
-      />
+      <div className="h-[600px]">
+        <GlowBox
+          sx={{
+            p: 2,
+            overflow: "hidden",
+            height: "100%",
+          }}
+        >
+          <EthereumChartErrorBoundary
+            chainId={chainId}
+            tokenOne={tokenOne}
+            tokenAddress={tokenAddress}
+            isEthereumChain={isEthereumChain}
+            chartError={chartError}
+            error={error}
+            isSupported={isSupported}
+            isLoading={isLoading}
+            priceLoading={priceLoading}
+            chartDataLength={chartData.length}
+            onRetry={handleRetry}
+            onRefetch={refetchOHLC}
+            onForceRefresh={handleForceRefresh}
+          />
+        </GlowBox>
+      </div>
     );
   }
 
@@ -203,10 +217,7 @@ const EthereumCandlestickChart = () => {
               overflow: "hidden",
             }}
           >
-            <EthereumChartHeader
-              {...headerProps}
-              isOverlay={false}
-            />
+            <EthereumChartHeader {...headerProps} isOverlay={false} />
           </GlowBox>
         </Box>
       )}
@@ -218,7 +229,7 @@ const EthereumCandlestickChart = () => {
           maxWidth: "100%",
           height: {
             xs: "400px",
-            sm: "450px", 
+            sm: "450px",
             md: "500px",
             lg: "550px",
             xl: "600px",
@@ -242,7 +253,7 @@ const EthereumCandlestickChart = () => {
           }}
         >
           <Box
-            key={renderKey} 
+            key={renderKey}
             sx={{
               width: "100%",
               height: "100%",
@@ -275,10 +286,7 @@ const EthereumCandlestickChart = () => {
             {/* Chart Header - Overlay mode for desktop (screens >= 1560px) only */}
             {isDesktopSize && (
               <Box>
-                <EthereumChartHeader
-                  {...headerProps}
-                  isOverlay={true}
-                />
+                <EthereumChartHeader {...headerProps} isOverlay={true} />
               </Box>
             )}
 

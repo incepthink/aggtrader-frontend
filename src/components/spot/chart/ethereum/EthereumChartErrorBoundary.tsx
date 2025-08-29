@@ -1,7 +1,8 @@
 // components/chart/EthereumChartErrorBoundary.tsx (NEW FILE)
-import React from 'react';
-import { Button, CircularProgress } from '@mui/material';
-import { Refresh } from '@mui/icons-material';
+import React from "react";
+import { Button, CircularProgress } from "@mui/material";
+import { Refresh } from "@mui/icons-material";
+import GlowBox from "@/components/common/ui/GlowBox";
 
 interface EthereumChartErrorBoundaryProps {
   chainId: number;
@@ -43,7 +44,7 @@ const EthereumChartErrorBoundary: React.FC<EthereumChartErrorBoundaryProps> = ({
             Ethereum charts are only available on Ethereum network
           </div>
           <div className="text-xs text-gray-500">
-            Current chain: {chainId === 747474 ? 'Katana' : `Chain ${chainId}`}
+            Current chain: {chainId === 747474 ? "Katana" : `Chain ${chainId}`}
           </div>
         </div>
       </div>
@@ -54,7 +55,9 @@ const EthereumChartErrorBoundary: React.FC<EthereumChartErrorBoundaryProps> = ({
   if (!tokenOne) {
     return (
       <div className="w-full h-full flex justify-center items-center">
-        <div className="text-gray-400">Select a token to view Ethereum chart</div>
+        <div className="text-gray-400">
+          Select a token to view Ethereum chart
+        </div>
       </div>
     );
   }
@@ -69,7 +72,7 @@ const EthereumChartErrorBoundary: React.FC<EthereumChartErrorBoundaryProps> = ({
             onClick={onRetry}
             size="small"
             startIcon={<Refresh />}
-            sx={{ color: '#00b4ff' }}
+            sx={{ color: "#00b4ff" }}
           >
             Retry
           </Button>
@@ -84,13 +87,13 @@ const EthereumChartErrorBoundary: React.FC<EthereumChartErrorBoundaryProps> = ({
       <div className="w-full h-full flex justify-center items-center">
         <div className="text-center">
           <div className="text-red-400 mb-2">
-            {error || 'No trading data available on Ethereum SushiSwap V2'}
+            {error || "No trading data available on Ethereum SushiSwap V2"}
           </div>
           <Button
             onClick={onRefetch}
             size="small"
             startIcon={<Refresh />}
-            sx={{ color: '#00b4ff' }}
+            sx={{ color: "#00b4ff" }}
           >
             Retry
           </Button>
@@ -104,9 +107,9 @@ const EthereumChartErrorBoundary: React.FC<EthereumChartErrorBoundaryProps> = ({
     return (
       <div className="w-full h-full flex justify-center items-center">
         <div className="flex flex-col items-center gap-3">
-          <CircularProgress size={40} sx={{ color: '#00b4ff' }} />
+          <CircularProgress size={40} sx={{ color: "#00b4ff" }} />
           <div className="text-gray-400 text-sm">
-            Loading Ethereum {isLoading ? 'chart' : 'price'} data...
+            Loading Ethereum {isLoading ? "chart" : "price"} data...
           </div>
         </div>
       </div>
@@ -127,7 +130,7 @@ const EthereumChartErrorBoundary: React.FC<EthereumChartErrorBoundaryProps> = ({
           <Button
             onClick={onForceRefresh}
             size="small"
-            sx={{ color: '#00b4ff', mt: 1 }}
+            sx={{ color: "#00b4ff", mt: 1 }}
           >
             Force Refresh
           </Button>
