@@ -8,6 +8,7 @@ import MuiThemeProvider from "@/components/providers/MuiThemeProvider";
 import { ConditionalMorphoNavbar } from "@/components/common/navbar/ConditionalMorphoNavbar";
 import { Toolbar } from "@mui/material";
 import { ChainProvider } from "@/context/ChainContext";
+import { GoogleAnalytics } from "@next/third-parties/google";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -51,6 +52,8 @@ export default function RootLayout({
             </ChainProvider>
           </MuiThemeProvider>
         </WagmiWalletProvider>
+
+        <GoogleAnalytics gaId="G-RGY5G35G2R" />
       </body>
     </html>
   );
