@@ -29,9 +29,15 @@ const fetchTokenPriceSushi = async (
 ): Promise<number | null> => {
   console.log("ADDRESS SUSHI::", tokenAddress);
 
+  if (chainId === 747474 && tokenAddress === "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee") {
+     tokenAddress = "0xee7d8bcfb72bc1880d0cf19822eb0a2e6577ab62"
+  } else if (chainId === 1 && tokenAddress === "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee") {
+    tokenAddress = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
+  }
+
   try {
     const { data } = await axios.get(
-      `${SUSHI_API_BASE}/${chainId}/${tokenAddress}`,
+      `${SUSHI_API_BASE}/${chainId}/${tokenAddress.toLowerCase()}`,
       {
         timeout: 10000, // 10 second timeout
       }

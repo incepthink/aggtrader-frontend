@@ -7,6 +7,8 @@ import EthereumCandlestickChart from "@/components/spot/chart/ethereum/EthereumC
 import KatanaCandlestickChart from "@/components/spot/chart/katana/KatanaCandlestickChart";
 import ChartSpot, { ChartHeader } from "@/components/spot/ChartSpot";
 import EthereumPoolCandlestickChart from "@/components/spot/EthereumPoolCandlestickChart";
+import { LimitWidget } from "@/components/spot/limit-widget/LimitWidget";
+import { SwapModeButtons } from "@/components/spot/limit-widget/SwapModeButtons";
 import OneInchSwap from "@/components/spot/OneInchSwap";
 import SushiClassicSwap from "@/components/spot/SushiClassicSwap";
 import TokenBalancesCard from "@/components/spot/tokenBalance/TokenBalancesCard";
@@ -14,16 +16,17 @@ import TokenSelect from "@/components/spot/TokenSelect";
 import { TokenSelectModal } from "@/components/spot/TokenSelectModal";
 import { useSpotStore } from "@/store/spotStore";
 import { Box, Container, Stack } from "@mui/material";
-import React from "react";
+import React, { useState } from "react";
 
 const page = () => {
   const { chainId } = useSpotStore();
+  const [activeTab, setActiveTab] = useState<"swap" | "limit">("swap");
 
   return (
     <Container
       maxWidth="xl"
       sx={{
-        px: { xs: 1, sm: 2, md: 3 },
+        px: "0px !important",
         py: { xs: 1, sm: 2 },
         maxWidth: { xs: "100%", lg: "1400px", xl: "1600px" },
       }}
@@ -82,7 +85,15 @@ const page = () => {
                 p: { xs: 1.5, sm: 2, md: 2.5 }, // Better padding for content
               }}
             >
-              <SushiClassicSwap />
+              {/* Mode selector */}
+              <div className="w-full px-2">
+                <SwapModeButtons
+                  setActiveTab={setActiveTab}
+                  activeTab={activeTab}
+                />
+              </div>{" "}
+              {activeTab === "swap" && <SushiClassicSwap />}
+              {activeTab === "limit" && <LimitWidget />}
             </GlowBox>
           </Box>
         </Stack>

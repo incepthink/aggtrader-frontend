@@ -9,6 +9,7 @@ import { ConditionalMorphoNavbar } from "@/components/common/navbar/ConditionalM
 import { Toolbar } from "@mui/material";
 import { ChainProvider } from "@/context/ChainContext";
 import { GoogleAnalytics } from "@next/third-parties/google";
+import { DerivedStateTwapProvider } from "@/store/limit-order/derivedstate-twap-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -37,18 +38,20 @@ export default function RootLayout({
         <WagmiWalletProvider>
           <MuiThemeProvider>
             <ChainProvider defaultChain="ETHEREUM">
-              {/* Background */}
-              <div className="fixed inset-0 -z-10 overflow-hidden">
-                <img
-                  src="/ellipse-home.png"
-                  className="w-full h-full object-cover"
-                  alt=""
-                />
-              </div>
-              {/* Main UI */}
-              <Navbar />
-              <ConditionalMorphoNavbar />
-              {children}
+              <DerivedStateTwapProvider isLimitOrder={true}>
+                {/* Background */}
+                <div className="fixed inset-0 -z-10 overflow-hidden">
+                  <img
+                    src="/ellipse-home.png"
+                    className="w-full h-full object-cover"
+                    alt=""
+                  />
+                </div>
+                {/* Main UI */}
+                <Navbar />
+                <ConditionalMorphoNavbar />
+                {children}
+              </DerivedStateTwapProvider>
             </ChainProvider>
           </MuiThemeProvider>
         </WagmiWalletProvider>
