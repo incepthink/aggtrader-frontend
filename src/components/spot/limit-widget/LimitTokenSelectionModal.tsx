@@ -38,29 +38,29 @@ import {
 import { convertTokenDataToToken } from "@/store/limit-order/utils/simpleCurrency";
 import type { Token } from "@/store/limit-order/utils/token.types";
 import { isNativeToken } from "@/store/limit-order/utils/token.types";
+import { useSpotStore } from "@/store/spotStore";
 
 // Priority tokens that should appear first
 const PRIORITY_TOKENS = ["ETH", "WETH", "USDC", "USDT", "WBTC", "BNB", "MATIC"];
-
-interface LimitTokenSelectionModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSelect: (token: Token) => void;
-  selectedToken?: Token;
-  otherToken?: Token;
-  chainId: number;
-  title?: string;
-}
 
 // Component to handle individual token balance fetching with proper native/ERC20 logic
 const TokenItemWithBalance: FC<{
   tokenData: TokenData;
   isSelected: boolean;
-  isDisabled: boolean;
+  isOtherToken: boolean;
   onClick: () => void;
   address?: `0x${string}`;
   chainId: number;
-}> = ({ tokenData, isSelected, isDisabled, onClick, address, chainId }) => {
+  modalTokenPosition: "tokenOne" | "tokenTwo" | undefined;
+}> = ({
+  tokenData,
+  isSelected,
+  isOtherToken,
+  onClick,
+  address,
+  chainId,
+  modalTokenPosition,
+}) => {
   // Convert to Token for native detection
   const token = useMemo(() => convertTokenDataToToken(tokenData), [tokenData]);
 
@@ -102,10 +102,13 @@ const TokenItemWithBalance: FC<{
     });
   }, [balance]);
 
+  const isPriority = PRIORITY_TOKENS.includes(
+    tokenData.symbol?.toUpperCase() || ""
+  );
+
   return (
     <ListItemButton
       onClick={onClick}
-      disabled={isDisabled}
       sx={{
         py: 1.5,
         px: 2,
@@ -140,18 +143,12 @@ const TokenItemWithBalance: FC<{
               variant="body1"
               sx={{
                 color: "white",
-                fontWeight: PRIORITY_TOKENS.includes(
-                  tokenData.symbol?.toUpperCase() || ""
-                )
-                  ? 600
-                  : 400,
+                fontWeight: isPriority ? 600 : 400,
               }}
             >
               {tokenData.symbol}
             </Typography>
-            {PRIORITY_TOKENS.includes(
-              tokenData.symbol?.toUpperCase() || ""
-            ) && (
+            {isPriority && (
               <Chip
                 label="Popular"
                 size="small"
@@ -170,6 +167,22 @@ const TokenItemWithBalance: FC<{
                 sx={{
                   bgcolor: "rgba(0, 245, 224, 0.3)",
                   color: "#00F5E0",
+                  fontSize: "0.7rem",
+                  height: 20,
+                }}
+              />
+            )}
+            {isOtherToken && (
+              <Chip
+                label={
+                  modalTokenPosition === "tokenOne"
+                    ? "Currently buying"
+                    : "Currently selling"
+                }
+                size="small"
+                sx={{
+                  bgcolor: "rgba(255, 165, 0, 0.2)",
+                  color: "#FFA500",
                   fontSize: "0.7rem",
                   height: 20,
                 }}
@@ -204,6 +217,17 @@ const TokenItemWithBalance: FC<{
   );
 };
 
+interface LimitTokenSelectionModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSelect: (token: Token) => void;
+  selectedToken?: Token;
+  otherToken?: Token;
+  chainId: number;
+  title?: string;
+  modalTokenPosition?: "tokenOne" | "tokenTwo";
+}
+
 export const LimitTokenSelectionModal: FC<LimitTokenSelectionModalProps> = ({
   isOpen,
   onClose,
@@ -212,10 +236,14 @@ export const LimitTokenSelectionModal: FC<LimitTokenSelectionModalProps> = ({
   otherToken,
   chainId,
   title = "Select a token",
+  modalTokenPosition,
 }) => {
   const { address } = useAccount();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<"popular" | "all">("popular");
+
+  // ALWAYS use spot store for setting tokens (same as SushiClassicSwap)
+  const { setTokenOne, setTokenTwo } = useSpotStore();
 
   // Fetch tokens using the backend hook
   const { tokens: rawTokens, isLoading, isError } = useTokensBackend(chainId);
@@ -280,10 +308,40 @@ export const LimitTokenSelectionModal: FC<LimitTokenSelectionModalProps> = ({
   const handleSelect = useCallback(
     (tokenData: TokenData) => {
       const selectedTokenObj = convertTokenDataToToken(tokenData);
+
+      // Call the original onSelect callback (for limit order component state)
       onSelect(selectedTokenObj);
+
+      // MAIN FIX: Convert to spot store format (same as SushiClassicSwap)
+      const spotStoreToken = {
+        name: selectedTokenObj.name,
+        ticker: selectedTokenObj.ticker,
+        img: selectedTokenObj.img,
+        address: selectedTokenObj.address,
+        decimals: selectedTokenObj.decimals,
+        chainId: selectedTokenObj.chainId,
+      };
+
+      // ALWAYS update the store regardless of modalTokenPosition
+      // This ensures the chart always gets updated like in SushiClassicSwap
+      if (modalTokenPosition === "tokenOne") {
+        console.log("Setting tokenOne in store:", spotStoreToken);
+        setTokenOne(spotStoreToken);
+      } else if (modalTokenPosition === "tokenTwo") {
+        console.log("Setting tokenTwo in store:", spotStoreToken);
+        setTokenTwo(spotStoreToken);
+      } else {
+        // If no position specified, default to tokenOne (for chart display)
+        console.log(
+          "No position specified, defaulting to tokenOne:",
+          spotStoreToken
+        );
+        setTokenOne(spotStoreToken);
+      }
+
       onClose();
     },
-    [onSelect, onClose]
+    [onSelect, onClose, modalTokenPosition, setTokenOne, setTokenTwo]
   );
 
   const handleClose = useCallback(() => {
@@ -502,10 +560,11 @@ export const LimitTokenSelectionModal: FC<LimitTokenSelectionModalProps> = ({
                         <TokenItemWithBalance
                           tokenData={token}
                           isSelected={isCurrentlySelected}
-                          isDisabled={isOtherToken}
+                          isOtherToken={isOtherToken}
                           onClick={() => handleSelect(token)}
                           address={address}
                           chainId={chainId}
+                          modalTokenPosition={modalTokenPosition}
                         />
                       </ListItem>
                     );

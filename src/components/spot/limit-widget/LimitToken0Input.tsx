@@ -1,10 +1,12 @@
+// components/limit-widget/LimitToken0Input.tsx
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect } from "react";
 import { useDerivedStateTwap } from "@/store/limit-order/derivedstate-twap-provider";
 import { formatUnits } from "viem/utils";
 import { useAccount, useBalance } from "wagmi";
 import { LimitTokenSelectionModal } from "./LimitTokenSelectionModal";
+import { useTokenSelectModal } from "@/context/TokenSelectModalContext";
 import type { Token } from "@/store/limit-order/utils/token.types";
 
 export const LimitToken0Input = () => {
@@ -15,7 +17,15 @@ export const LimitToken0Input = () => {
   } = useDerivedStateTwap();
 
   const { address, isConnecting, isReconnecting } = useAccount();
-  const [isTokenSelectorOpen, setIsTokenSelectorOpen] = useState(false);
+
+  // Use context instead of local state
+  const {
+    isLimitTokenModalOpen,
+    limitModalPosition,
+    openLimitTokenModal,
+    closeLimitTokenModal,
+  } = useTokenSelectModal();
+
   console.log("TOKEN0INPUT", token0);
 
   // Get balance for the selected token with better error handling
@@ -87,6 +97,10 @@ export const LimitToken0Input = () => {
   const hasBalance = balance && balance.value > BigInt(0);
   const isWalletLoading = isConnecting || isReconnecting || isBalanceLoading;
 
+  // Check if this component should show the modal
+  const shouldShowModal =
+    isLimitTokenModalOpen && limitModalPosition === "token0";
+
   return (
     <>
       <div className="relative border border-[#00FFE9] rounded-xl p-4">
@@ -112,7 +126,7 @@ export const LimitToken0Input = () => {
 
           {/* Token Selector */}
           <button
-            onClick={() => setIsTokenSelectorOpen(true)}
+            onClick={() => openLimitTokenModal("token0")}
             disabled={isLoading}
             className="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors disabled:opacity-50"
           >
@@ -187,16 +201,17 @@ export const LimitToken0Input = () => {
         )}
       </div>
 
-      {/* Token Selection Modal */}
-      {token0 && token1 && (
+      {/* Token Selection Modal - Only show when this component should handle it */}
+      {token0 && token1 && shouldShowModal && (
         <LimitTokenSelectionModal
-          isOpen={isTokenSelectorOpen}
-          onClose={() => setIsTokenSelectorOpen(false)}
+          isOpen={shouldShowModal}
+          onClose={closeLimitTokenModal}
           onSelect={handleTokenSelect}
           selectedToken={token0}
           otherToken={token1}
           chainId={chainId}
           title="Select token to sell"
+          modalTokenPosition="tokenOne"
         />
       )}
     </>
