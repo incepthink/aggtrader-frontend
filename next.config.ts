@@ -15,7 +15,16 @@ const nextConfig: NextConfig = {
     }
     return config;
   },
-  // Add other Next.js config options here
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'assets.smold.app',
+        port: '',
+        pathname: '/api/token/**',
+      },
+    ],
+  },
   reactStrictMode: true,
 };
 
