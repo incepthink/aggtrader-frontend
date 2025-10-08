@@ -25,7 +25,7 @@ export function PortfolioCard() {
           Portfolio
         </Typography>
 
-        <Typography
+        {/* <Typography
           sx={{
             fontSize: { xs: "0.875rem", sm: "1rem" },
             color: "rgba(255, 255, 255, 0.7)",
@@ -35,10 +35,9 @@ export function PortfolioCard() {
         >
           Looks like you need to connect your wallet. And call your mum. Always
           important.
-        </Typography>
+        </Typography> */}
 
-        <Button
-          variant="contained"
+        <button
           onClick={() => {
             if (!isActive && address) {
               onSwitchChain(1);
@@ -46,23 +45,32 @@ export function PortfolioCard() {
               openLoginModal();
             }
           }}
-          sx={{
-            background: "linear-gradient(80deg, #D21162, #2C3DA6)",
-            color: "white",
-            fontWeight: 600,
-            px: { xs: 3, sm: 5 },
-            py: { xs: 1, sm: 1.5 },
-            fontSize: { xs: "0.875rem", sm: "1rem" },
-            borderRadius: 2,
-            textTransform: "none",
-            width: { xs: "100%", sm: "auto" },
-            "&:hover": {
-              background: "linear-gradient(80deg, #E01272, #3C4DB6)",
-            },
-          }}
+          className="connect-wallet-btn"
         >
           Connect Wallet
-        </Button>
+        </button>
+
+        <style jsx>{`
+          .connect-wallet-btn {
+            background: #050512;
+            color: white;
+            font-weight: 600;
+            padding: 8px 24px;
+            font-size: 0.875rem;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+          }
+
+          @media (min-width: 600px) {
+            .connect-wallet-btn {
+              padding: 12px 40px;
+              font-size: 1rem;
+              width: auto;
+            }
+          }
+        `}</style>
       </GlowBox>
     );
   }
