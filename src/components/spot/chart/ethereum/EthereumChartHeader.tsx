@@ -278,7 +278,7 @@ const EthereumChartHeader: React.FC<EthereumChartHeaderProps> = ({
                     prev === "usd" ? "percentage" : "usd"
                   )
                 }
-                className={`text-xs font-medium hover:opacity-80 transition-opacity cursor-pointer text-left ${getPriceChangeColor()}`}
+                className={`text-sm font-medium hover:opacity-80 transition-opacity cursor-pointer text-left ${getPriceChangeColor()}`}
                 disabled={!hasValidTimeframeData}
               >
                 {renderPriceChange()}
@@ -296,7 +296,7 @@ const EthereumChartHeader: React.FC<EthereumChartHeaderProps> = ({
                     prev === "usd" ? "percentage" : "usd"
                   )
                 }
-                className={`text-xs font-medium hover:opacity-80 transition-opacity cursor-pointer text-left ${getVolumeChangeColor()}`}
+                className={`text-sm font-medium hover:opacity-80 transition-opacity cursor-pointer text-left ${getVolumeChangeColor()}`}
                 disabled={!hasValidTimeframeData}
               >
                 {renderVolumeChange()}
@@ -306,7 +306,7 @@ const EthereumChartHeader: React.FC<EthereumChartHeaderProps> = ({
             {/* Total Volume */}
             <div className="flex flex-col">
               <p className="text-xs text-gray-400 mb-1">Total Vol</p>
-              <p className="text-xs text-white font-medium">
+              <p className="text-sm text-white font-medium">
                 {hasValidTimeframeData
                   ? `${formatCompact(ohlcData?.metadata?.volumeUSD || 0)}`
                   : "--"}
@@ -316,7 +316,7 @@ const EthereumChartHeader: React.FC<EthereumChartHeaderProps> = ({
             {/* Pair Reserve USD */}
             <div className="flex flex-col">
               <p className="text-xs text-gray-400 mb-1">Pair Reserve</p>
-              <p className="text-xs text-white font-medium">
+              <p className="text-sm text-white font-medium">
                 ${formatCompact(ohlcData?.metadata?.reserveUSD || 0)}
               </p>
             </div>

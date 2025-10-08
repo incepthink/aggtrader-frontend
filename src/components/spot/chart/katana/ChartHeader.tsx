@@ -1,22 +1,22 @@
 // aggtrade chart header
-import React, { useState, useEffect } from 'react';
-import { CircularProgress, IconButton } from '@mui/material';
-import { Refresh } from '@mui/icons-material';
-import { katanaOHLCUtils } from '@/hooks/sushiswap/katanaChart/useKatanaSwapOHLC';
-import TimeframeSelector, { TimeframeOption } from '../TimeframeSelector';
+import React, { useState, useEffect } from "react";
+import { CircularProgress, IconButton } from "@mui/material";
+import { Refresh } from "@mui/icons-material";
+import { katanaOHLCUtils } from "@/hooks/sushiswap/katanaChart/useKatanaSwapOHLC";
+import TimeframeSelector, { TimeframeOption } from "../TimeframeSelector";
 
 export function formatCompact(input: number | string, maxDecimals = 2): string {
-  let n = typeof input === 'string' ? parseFloat(input) : input;
-  if (!Number.isFinite(n)) return '–';
+  let n = typeof input === "string" ? parseFloat(input) : input;
+  if (!Number.isFinite(n)) return "–";
 
-  const sign = n < 0 ? '-' : '';
+  const sign = n < 0 ? "-" : "";
   n = Math.abs(n);
 
   const units = [
-    { v: 1e12, s: 'T' },
-    { v: 1e9, s: 'B' },
-    { v: 1e6, s: 'M' },
-    { v: 1e3, s: 'K' },
+    { v: 1e12, s: "T" },
+    { v: 1e9, s: "B" },
+    { v: 1e6, s: "M" },
+    { v: 1e3, s: "K" },
   ];
 
   for (const { v, s } of units) {
@@ -29,12 +29,12 @@ export function formatCompact(input: number | string, maxDecimals = 2): string {
 }
 
 function trimZeros(x: string): string {
-  return x.replace(/\.0+$|(\.\d*?[1-9])0+$/, '$1');
+  return x.replace(/\.0+$|(\.\d*?[1-9])0+$/, "$1");
 }
 
-export type { TimeframeOption } from '../TimeframeSelector';
+export type { TimeframeOption } from "../TimeframeSelector";
 
-type MetricDisplayMode = 'usd' | 'percentage';
+type MetricDisplayMode = "usd" | "percentage";
 
 interface TimeframeMetrics {
   priceChange: { absolute: number; percentage: number };
@@ -79,9 +79,11 @@ const ChartHeader: React.FC<ChartHeaderProps> = ({
   isOverlay = true,
 }) => {
   // Toggle states for metrics display
-  const [priceDisplayMode, setPriceDisplayMode] = useState<MetricDisplayMode>('percentage');
-  const [volumeDisplayMode, setVolumeDisplayMode] = useState<MetricDisplayMode>('usd');
-  
+  const [priceDisplayMode, setPriceDisplayMode] =
+    useState<MetricDisplayMode>("percentage");
+  const [volumeDisplayMode, setVolumeDisplayMode] =
+    useState<MetricDisplayMode>("usd");
+
   // Custom breakpoint state for 1560px
   const [isDesktopSize, setIsDesktopSize] = useState(false);
 
@@ -101,16 +103,17 @@ const ChartHeader: React.FC<ChartHeaderProps> = ({
       checkSize();
     };
 
-    window.addEventListener('resize', handleResize);
-    
+    window.addEventListener("resize", handleResize);
+
     // Cleanup
     return () => {
-      window.removeEventListener('resize', handleResize);
+      window.removeEventListener("resize", handleResize);
     };
   }, []);
 
   // Check if we have valid timeframe data
-  const hasValidTimeframeData = !!timeframeMetrics && timeframeMetrics.timeframe === selectedTimeframe;
+  const hasValidTimeframeData =
+    !!timeframeMetrics && timeframeMetrics.timeframe === selectedTimeframe;
 
   // Format price change display
   const renderPriceChange = () => {
@@ -120,13 +123,13 @@ const ChartHeader: React.FC<ChartHeaderProps> = ({
 
     const { priceChange: tfPriceChange } = timeframeMetrics!;
 
-    if (priceDisplayMode === 'usd') {
+    if (priceDisplayMode === "usd") {
       const value = tfPriceChange.absolute;
-      const sign = value >= 0 ? '+' : '';
+      const sign = value >= 0 ? "+" : "";
       return `${sign}$${formatCompact(Math.abs(value))}`;
     } else {
       const value = tfPriceChange.percentage;
-      const sign = value >= 0 ? '+' : '';
+      const sign = value >= 0 ? "+" : "";
       return `${sign}${value.toFixed(2)}%`;
     }
   };
@@ -139,26 +142,30 @@ const ChartHeader: React.FC<ChartHeaderProps> = ({
 
     const { volumeChange } = timeframeMetrics!;
 
-    if (volumeDisplayMode === 'usd') {
+    if (volumeDisplayMode === "usd") {
       const value = volumeChange.absolute;
-      const sign = value >= 0 ? '+' : '';
+      const sign = value >= 0 ? "+" : "";
       return `${sign}$${formatCompact(Math.abs(value))}`;
     } else {
       const value = volumeChange.percentage;
-      const sign = value >= 0 ? '+' : '';
+      const sign = value >= 0 ? "+" : "";
       return `${sign}${value.toFixed(2)}%`;
     }
   };
 
   // Colors
   const getPriceChangeColor = (): string => {
-    if (!hasValidTimeframeData) return 'text-gray-400';
-    return timeframeMetrics!.priceChange.percentage >= 0 ? 'text-green-400' : 'text-red-400';
+    if (!hasValidTimeframeData) return "text-gray-400";
+    return timeframeMetrics!.priceChange.percentage >= 0
+      ? "text-green-400"
+      : "text-red-400";
   };
 
   const getVolumeChangeColor = (): string => {
-    if (!hasValidTimeframeData) return 'text-gray-400';
-    return timeframeMetrics!.volumeChange.percentage >= 0 ? 'text-green-400' : 'text-red-400';
+    if (!hasValidTimeframeData) return "text-gray-400";
+    return timeframeMetrics!.volumeChange.percentage >= 0
+      ? "text-green-400"
+      : "text-red-400";
   };
 
   const refreshDisabled = isLoading || isProcessingTimeframe;
@@ -169,18 +176,23 @@ const ChartHeader: React.FC<ChartHeaderProps> = ({
   const shouldShowMobileLayout = !shouldShowDesktopLayout;
 
   // Determine wrapper classes based on overlay mode
-  const wrapperClasses = isOverlay 
+  const wrapperClasses = isOverlay
     ? "absolute top-2 left-2 right-2 md:top-3 md:left-4 md:right-4 z-10"
     : "w-full";
 
+  console.log(
+    ohlcData.metadata.poolToken0.id.toLowerCase() ===
+      tokenOne?.address.toLowerCase(),
+    ohlcData.metadata.poolToken1.symbol,
+    ohlcData.metadata.poolToken0.symbol,
+    "Token"
+  );
 
-    console.log(ohlcData.metadata.poolToken0.id.toLowerCase() === tokenOne?.address.toLowerCase(),ohlcData.metadata.poolToken1.symbol, ohlcData.metadata.poolToken0.symbol, "Token");
-    
   return (
     <div className={wrapperClasses}>
       {/* Mobile/Tablet Layout - Show when NOT desktop size OR not overlay */}
       {shouldShowMobileLayout && (
-        <div className={`space-y-3 ${!isOverlay ? 'p-3' : ''}`}>
+        <div className={`space-y-3 ${!isOverlay ? "p-3" : ""}`}>
           {/* Top Row - Token Info and Refresh */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -193,24 +205,30 @@ const ChartHeader: React.FC<ChartHeaderProps> = ({
               )}
               <div>
                 <p className="text-base md:text-lg font-semibold text-white">
-                  {tokenOne?.ticker || 'Token'} / {ohlcData.metadata.poolToken0.id.toLowerCase() === tokenOne?.address.toLowerCase() ? ohlcData.metadata.poolToken1.symbol : ohlcData.metadata.poolToken0.symbol || "Token"}
+                  {tokenOne?.ticker || "Token"} /{" "}
+                  {ohlcData.metadata.poolToken0.id.toLowerCase() ===
+                  tokenOne?.address.toLowerCase()
+                    ? ohlcData.metadata.poolToken1.symbol
+                    : ohlcData.metadata.poolToken0.symbol || "Token"}
                 </p>
                 <div className="flex items-center gap-2">
                   <span className="text-[#00F5E0] font-semibold text-sm">
                     {priceLoading ? (
-                      <CircularProgress size={14} sx={{ color: '#00F5E0' }} />
+                      <CircularProgress size={14} sx={{ color: "#00F5E0" }} />
                     ) : currentPrice ? (
                       `$${katanaOHLCUtils.formatPrice(currentPrice)}`
                     ) : (
-                      '$0.00'
+                      "$0.00"
                     )}
                   </span>
                   <span
                     className={`text-xs ${
-                      priceChange.percentage >= 0 ? 'text-green-400' : 'text-red-400'
+                      priceChange.percentage >= 0
+                        ? "text-green-400"
+                        : "text-red-400"
                     }`}
                   >
-                    {priceChange.percentage >= 0 ? '+' : ''}
+                    {priceChange.percentage >= 0 ? "+" : ""}
                     {priceChange.percentage.toFixed(2)}%
                   </span>
                   {priceHasError && (
@@ -219,7 +237,7 @@ const ChartHeader: React.FC<ChartHeaderProps> = ({
                 </div>
               </div>
             </div>
-            
+
             {/* Refresh Button */}
             <IconButton
               onClick={onRefresh}
@@ -228,10 +246,10 @@ const ChartHeader: React.FC<ChartHeaderProps> = ({
               disabled={refreshDisabled}
               aria-label="Refresh"
               sx={{
-                color: '#00F5E0',
+                color: "#00F5E0",
                 p: 0.5,
-                '&.Mui-disabled': {
-                  color: '#00F5E0',
+                "&.Mui-disabled": {
+                  color: "#00F5E0",
                   opacity: 0.45,
                 },
               }}
@@ -244,10 +262,16 @@ const ChartHeader: React.FC<ChartHeaderProps> = ({
           <div className="grid grid-cols-2 gap-3">
             {/* Price Change */}
             <div className="flex flex-col">
-              <p className="text-xs text-gray-400 mb-1">Price ({selectedTimeframe})</p>
+              <p className="text-sm text-gray-400 mb-1">
+                Price ({selectedTimeframe})
+              </p>
               <button
-                onClick={() => setPriceDisplayMode(prev => (prev === 'usd' ? 'percentage' : 'usd'))}
-                className={`text-xs font-medium hover:opacity-80 transition-opacity cursor-pointer text-left ${getPriceChangeColor()}`}
+                onClick={() =>
+                  setPriceDisplayMode((prev) =>
+                    prev === "usd" ? "percentage" : "usd"
+                  )
+                }
+                className={`text-sm font-medium hover:opacity-80 transition-opacity cursor-pointer text-left ${getPriceChangeColor()}`}
                 disabled={!hasValidTimeframeData}
               >
                 {renderPriceChange()}
@@ -256,10 +280,16 @@ const ChartHeader: React.FC<ChartHeaderProps> = ({
 
             {/* Volume Change */}
             <div className="flex flex-col">
-              <p className="text-xs text-gray-400 mb-1">Volume ({selectedTimeframe})</p>
+              <p className="text-xs text-gray-400 mb-1">
+                Volume ({selectedTimeframe})
+              </p>
               <button
-                onClick={() => setVolumeDisplayMode(prev => (prev === 'usd' ? 'percentage' : 'usd'))}
-                className={`text-xs font-medium hover:opacity-80 transition-opacity cursor-pointer text-left ${getVolumeChangeColor()}`}
+                onClick={() =>
+                  setVolumeDisplayMode((prev) =>
+                    prev === "usd" ? "percentage" : "usd"
+                  )
+                }
+                className={`text-sm font-medium hover:opacity-80 transition-opacity cursor-pointer text-left ${getVolumeChangeColor()}`}
                 disabled={!hasValidTimeframeData}
               >
                 {renderVolumeChange()}
@@ -269,16 +299,18 @@ const ChartHeader: React.FC<ChartHeaderProps> = ({
             {/* Total Volume */}
             <div className="flex flex-col">
               <p className="text-xs text-gray-400 mb-1">Total Vol</p>
-              <p className="text-xs text-white font-medium">
-                {hasValidTimeframeData ? `$${formatCompact(ohlcData?.metadata?.volumeUSD || 0)}` : '--'}
+              <p className="text-sm text-white font-medium">
+                {hasValidTimeframeData
+                  ? `${formatCompact(ohlcData?.metadata?.volumeUSD || 0)}`
+                  : "--"}
               </p>
             </div>
 
-            {/* Pool TVL */}
+            {/* Pair Reserve USD */}
             <div className="flex flex-col">
-              <p className="text-xs text-gray-400 mb-1">Pool TVL</p>
-              <p className="text-xs text-white font-medium">
-                ${formatCompact(ohlcData?.metadata?.totalValueLockedUSD || 0)}
+              <p className="text-xs text-gray-400 mb-1">Pair Reserve</p>
+              <p className="text-sm text-white font-medium">
+                ${formatCompact(ohlcData?.metadata?.reserveUSD || 0)}
               </p>
             </div>
           </div>
@@ -299,24 +331,30 @@ const ChartHeader: React.FC<ChartHeaderProps> = ({
             )}
             <div>
               <p className="text-lg font-semibold text-white">
-                {tokenOne?.ticker || 'Token'} / {ohlcData.metadata.poolToken0.id.toLowerCase() === tokenOne?.address.toLowerCase() ? ohlcData.metadata.poolToken1.symbol : ohlcData.metadata.poolToken0.symbol || "Token"}
+                {tokenOne?.ticker || "Token"} /{" "}
+                {ohlcData.metadata.poolToken0.id.toLowerCase() ===
+                tokenOne?.address.toLowerCase()
+                  ? ohlcData.metadata.poolToken1.symbol
+                  : ohlcData.metadata.poolToken0.symbol || "Token"}
               </p>
               <div className="flex items-center gap-2">
                 <span className="text-[#00F5E0] font-semibold">
                   {priceLoading ? (
-                    <CircularProgress size={16} sx={{ color: '#00F5E0' }} />
+                    <CircularProgress size={16} sx={{ color: "#00F5E0" }} />
                   ) : currentPrice ? (
                     `$${katanaOHLCUtils.formatPrice(currentPrice)}`
                   ) : (
-                    '$0.00'
+                    "$0.00"
                   )}
                 </span>
                 <span
                   className={`text-sm ${
-                    priceChange.percentage >= 0 ? 'text-green-400' : 'text-red-400'
+                    priceChange.percentage >= 0
+                      ? "text-green-400"
+                      : "text-red-400"
                   }`}
                 >
-                  {priceChange.percentage >= 0 ? '+' : ''}
+                  {priceChange.percentage >= 0 ? "+" : ""}
                   {priceChange.percentage.toFixed(2)}%
                 </span>
                 {priceHasError && (
@@ -342,9 +380,15 @@ const ChartHeader: React.FC<ChartHeaderProps> = ({
             <div className="flex items-center gap-6">
               {/* Price Change */}
               <div className="flex flex-col items-center">
-                <p className="text-xs text-gray-400 mb-1">Price ({selectedTimeframe})</p>
+                <p className="text-xs text-gray-400 mb-1">
+                  Price ({selectedTimeframe})
+                </p>
                 <button
-                  onClick={() => setPriceDisplayMode(prev => (prev === 'usd' ? 'percentage' : 'usd'))}
+                  onClick={() =>
+                    setPriceDisplayMode((prev) =>
+                      prev === "usd" ? "percentage" : "usd"
+                    )
+                  }
                   className={`text-sm font-medium hover:opacity-80 transition-opacity cursor-pointer ${getPriceChangeColor()}`}
                   disabled={!hasValidTimeframeData}
                 >
@@ -354,9 +398,15 @@ const ChartHeader: React.FC<ChartHeaderProps> = ({
 
               {/* Volume Change */}
               <div className="flex flex-col items-center">
-                <p className="text-xs text-gray-400 mb-1">Volume ({selectedTimeframe})</p>
+                <p className="text-xs text-gray-400 mb-1">
+                  Volume ({selectedTimeframe})
+                </p>
                 <button
-                  onClick={() => setVolumeDisplayMode(prev => (prev === 'usd' ? 'percentage' : 'usd'))}
+                  onClick={() =>
+                    setVolumeDisplayMode((prev) =>
+                      prev === "usd" ? "percentage" : "usd"
+                    )
+                  }
                   className={`text-sm font-medium hover:opacity-80 transition-opacity cursor-pointer ${getVolumeChangeColor()}`}
                   disabled={!hasValidTimeframeData}
                 >
@@ -368,7 +418,9 @@ const ChartHeader: React.FC<ChartHeaderProps> = ({
               <div className="flex flex-col items-center">
                 <p className="text-xs text-gray-400 mb-1">Total Vol</p>
                 <p className="text-sm text-white font-medium">
-                  {hasValidTimeframeData ? `$${formatCompact(ohlcData?.metadata?.volumeUSD || 0)}` : '--'}
+                  {hasValidTimeframeData
+                    ? `$${formatCompact(ohlcData?.metadata?.volumeUSD || 0)}`
+                    : "--"}
                 </p>
               </div>
 
@@ -388,10 +440,10 @@ const ChartHeader: React.FC<ChartHeaderProps> = ({
                 disabled={refreshDisabled}
                 aria-label="Refresh"
                 sx={{
-                  color: '#00F5E0',
+                  color: "#00F5E0",
                   p: 0.5,
-                  '&.Mui-disabled': {
-                    color: '#00F5E0',
+                  "&.Mui-disabled": {
+                    color: "#00F5E0",
                     opacity: 0.45,
                   },
                 }}
