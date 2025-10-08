@@ -39,6 +39,13 @@ export const katana = {
       url: "https://explorer.katanarpc.com",
     },
   },
+  // ADD THIS:
+  contracts: {
+    multicall3: {
+      address: "0xcA11bde05977b3631167028862bE2a173976CA11",
+      blockCreated: 1, // Add appropriate block number if known
+    },
+  },
 } as const;
 // Custom mobile phantom wallet connector
 const customPhantomWallet = () => ({

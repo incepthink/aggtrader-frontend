@@ -1,3 +1,6 @@
+// ============================================================================
+// FILE: lib/contexts/useYearn.tsx
+// ============================================================================
 "use client";
 
 import {
@@ -48,7 +51,9 @@ const fetcher = async (urls: string[]) => {
   // Separate vaults by type
   const activeVaults = allVaults.filter(
     (vault: TYDaemonVault) =>
-      vault.version?.startsWith("3") && vault.migration?.available !== true
+      vault.version?.startsWith("3") &&
+      vault.migration?.available !== true &&
+      !(vault as any).info?.isRetired // Use type assertion for optional property
   );
 
   const migrations = allVaults.filter(
@@ -56,8 +61,9 @@ const fetcher = async (urls: string[]) => {
       vault.version?.startsWith("3") && vault.migration?.available === true
   );
 
-  const retired = allVaults.filter((vault: TYDaemonVault) =>
-    vault.version?.startsWith("3")
+  const retired = allVaults.filter(
+    (vault: TYDaemonVault) =>
+      vault.version?.startsWith("3") && (vault as any).info?.isRetired === true // Use type assertion for optional property
   );
 
   return { activeVaults, migrations, retired };
@@ -92,7 +98,13 @@ export function YearnProvider({ children }: { children: ReactNode }) {
       );
 
       const price = vault?.tvl?.price || 0;
-      return { raw: BigInt(0), normalized: 0, display: "" };
+
+      // Return TNormalizedBN with all required properties
+      return {
+        raw: BigInt(Math.floor(price * 1_000_000)), // Convert to 6 decimals
+        normalized: price,
+        display: price.toFixed(6),
+      };
     },
     [vaults, vaultsMigrations, vaultsRetired]
   );

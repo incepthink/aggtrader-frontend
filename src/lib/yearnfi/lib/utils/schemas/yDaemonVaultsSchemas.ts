@@ -10,6 +10,7 @@ export type TYDaemonStrategy = {
   riskScore?: number;
 };
 
+
 // Your existing TYDaemonVault type
 export type TYDaemonVault = {
   address: string;

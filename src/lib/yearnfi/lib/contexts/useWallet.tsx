@@ -104,10 +104,9 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
       // Get vault price
       const price = getPrice({
-        address: vault.address as any,
+        address: toAddress(vault.address),
         chainID: vault.chainID,
       });
-
       // Calculate vault value
       const vaultValue = balance.normalized * price.normalized;
       total += vaultValue;
@@ -115,7 +114,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       // Check for staking balance
       if (vault?.staking?.available && vault?.staking?.address) {
         const stakingBalance = getBalance({
-          address: vault.staking.address,
+          address: toAddress(vault.staking.address),
           chainID: vault.chainID,
         });
         const stakingValue = stakingBalance.normalized * price.normalized;
