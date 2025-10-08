@@ -74,7 +74,7 @@ const connectors = connectorsForWallets(
   }
 );
 
-const config = createConfig({
+export const config = createConfig({
   connectors,
   // Add Katana chain to the supported chains
   chains: [mainnet, katana, polygon, optimism, arbitrum, base],

@@ -85,7 +85,7 @@ export const MorphoNavbar: React.FC = () => {
         </div>
 
         {/* Right side - Chain Switcher (positioned absolutely to extreme right) */}
-        <div className="absolute right-0 sm:right-9 flex items-center">
+        {/* <div className="absolute right-0 sm:right-9 flex items-center">
           {isLoading ? (
             <div className="animate-pulse bg-gray-700 rounded-lg h-8 w-24" />
           ) : (
@@ -120,7 +120,7 @@ export const MorphoNavbar: React.FC = () => {
               </div>
             </div>
           )}
-        </div>
+        </div> */}
       </div>
     </AppBar>
   );

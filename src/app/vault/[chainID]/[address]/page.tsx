@@ -6,20 +6,16 @@ import { useSingleVault } from "@/lib/yearnfi/lib/hooks/useSingleVault";
 import { VaultDetailsHeader } from "@/components/yearnfi/vaults-v3/VaultDetailsHeader";
 import { VaultStatsGrid } from "@/components/yearnfi/vaults-v3/VaultStatsGrid";
 import { VaultTabs } from "@/components/yearnfi/vaults-v3/VaultTabs";
+import { VaultActionsProvider } from "@/lib/yearnfi/lib/contexts/useVaultActions";
+import { VaultActionPanel } from "@/components/yearnfi/vaults-v3/actions/VaultActionPanel";
 import Link from "next/link";
 
 export default function VaultDetailPage() {
   const params = useParams();
-
   const chainID = Number(params.chainID);
   const address = params.address as string;
+  const { vault, isLoading, error } = useSingleVault({ chainID, address });
 
-  const { vault, isLoading, error } = useSingleVault({
-    chainID,
-    address,
-  });
-
-  // Loading state
   if (isLoading) {
     return (
       <Box
@@ -40,7 +36,6 @@ export default function VaultDetailPage() {
     );
   }
 
-  // Error state
   if (error || !vault) {
     return (
       <Box
@@ -67,7 +62,6 @@ export default function VaultDetailPage() {
     );
   }
 
-  // Success state
   return (
     <Box
       sx={{
@@ -77,7 +71,6 @@ export default function VaultDetailPage() {
         py: { xs: 3, sm: 4 },
       }}
     >
-      {/* Back button */}
       <Button
         component={Link}
         href="/vault"
@@ -86,16 +79,13 @@ export default function VaultDetailPage() {
       >
         Back to Vaults
       </Button>
-
-      {/* Vault Header */}
       <VaultDetailsHeader vault={vault} />
-
-      {/* Stats Grid */}
       <Box sx={{ mt: 4 }}>
         <VaultStatsGrid vault={vault} />
       </Box>
-
-      {/* Tabs */}
+      <VaultActionsProvider vault={vault}>
+        <VaultActionPanel vault={vault} />
+      </VaultActionsProvider>
       <VaultTabs vault={vault} />
     </Box>
   );

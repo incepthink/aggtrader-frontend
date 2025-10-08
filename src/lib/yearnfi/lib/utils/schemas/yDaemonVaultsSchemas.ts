@@ -1,5 +1,4 @@
-// Add these types to your existing file
-
+// Add this type definition
 export type TYDaemonStrategy = {
   address: string;
   name: string;
@@ -11,7 +10,7 @@ export type TYDaemonStrategy = {
   riskScore?: number;
 };
 
-// Update your TYDaemonVault type to include strategies
+// Your existing TYDaemonVault type
 export type TYDaemonVault = {
   address: string;
   chainID: number;
@@ -36,14 +35,22 @@ export type TYDaemonVault = {
     gross_apr: number;
     net_apy: number;
   };
+  apr?: {
+    netAPR: number;
+    extra: {
+      stakingRewardsAPR: number;
+      gammaRewardAPR: number;
+    };
+  };
   staking: {
     address: string;
     available: boolean;
+    source?: string; // 'OP Boost', 'VeYFI', 'Juiced', 'V3 Staking'
   };
   status?: string;
   migration?: {
     available: boolean;
     target: string;
   };
-  strategies?: TYDaemonStrategy[]; // Add this line
+  strategies?: TYDaemonStrategy[]; // This line uses the type defined above
 };

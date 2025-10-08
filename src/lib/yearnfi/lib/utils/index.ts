@@ -13,11 +13,16 @@ export function formatAmount(
   const num = typeof value === 'string' ? parseFloat(value) : value;
   if (isNaN(num)) return '0.00';
   
+  // Clamp maxDecimals to valid range (0-20)
+  const safeMaxDecimals = Math.min(Math.max(0, maxDecimals), 20);
+  const safeMinDecimals = Math.min(Math.max(0, minDecimals), safeMaxDecimals);
+  
   return new Intl.NumberFormat('en-US', {
-    minimumFractionDigits: minDecimals,
-    maximumFractionDigits: maxDecimals,
+    minimumFractionDigits: safeMinDecimals,
+    maximumFractionDigits: safeMaxDecimals,
   }).format(num);
 }
+
 
 export function isZero(value: any): boolean {
   if (value === 0 || value === '0') return true;

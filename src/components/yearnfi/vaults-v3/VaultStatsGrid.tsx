@@ -1,6 +1,7 @@
 "use client";
 
-import { Box, Typography } from "@mui/material";
+import { Box, Typography, Tooltip } from "@mui/material";
+import InfoIcon from "@mui/icons-material/Info";
 import type { TYDaemonVault } from "@/lib/yearnfi/lib/utils/schemas/yDaemonVaultsSchemas";
 import { Counter } from "@/components/common/Counter";
 import { RenderAmount } from "@/components/common/RenderAmount";
@@ -8,6 +9,7 @@ import { formatAmount, toNormalizedBN } from "@/lib/yearnfi/lib/utils";
 import GlowBox from "@/components/common/ui/GlowBox";
 import { useWeb3 } from "@/lib/yearnfi/lib/contexts/useWeb3";
 import { useVaultBalance } from "@/lib/yearnfi/lib/hooks/useVaultBalance";
+import { useStakingRewards } from "@/lib/yearnfi/lib/hooks/useStakingRewards";
 import { useYearn } from "@/lib/yearnfi/lib/contexts/useYearn";
 
 type VaultStatsGridProps = {
@@ -18,9 +20,10 @@ type StatItemProps = {
   label: string;
   value: React.ReactNode;
   subValue?: string;
+  tooltip?: string;
 };
 
-function StatItem({ label, value, subValue }: StatItemProps) {
+function StatItem({ label, value, subValue, tooltip }: StatItemProps) {
   return (
     <Box
       sx={{
@@ -32,16 +35,23 @@ function StatItem({ label, value, subValue }: StatItemProps) {
         p: 2,
       }}
     >
-      <Typography
-        variant="caption"
-        sx={{
-          color: "text.secondary",
-          textAlign: "center",
-          fontSize: "0.75rem",
-        }}
-      >
-        {label}
-      </Typography>
+      <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+        <Typography
+          variant="caption"
+          sx={{
+            color: "text.secondary",
+            textAlign: "center",
+            fontSize: "0.75rem",
+          }}
+        >
+          {label}
+        </Typography>
+        {tooltip && (
+          <Tooltip title={tooltip}>
+            <InfoIcon sx={{ fontSize: "0.875rem", color: "text.secondary" }} />
+          </Tooltip>
+        )}
+      </Box>
       <Typography
         variant="h4"
         sx={{
@@ -82,6 +92,17 @@ export function VaultStatsGrid({ vault }: VaultStatsGridProps) {
     }
   );
 
+  // Get staking rewards data
+  const {
+    earnedRewards,
+    rewardTokenSymbol,
+    rewardTokenDecimals,
+    hasActiveRewards,
+  } = useStakingRewards({
+    vault,
+    userAddress: isActive ? address : undefined,
+  });
+
   // Extract data from vault
   const totalAssets = vault.tvl?.totalAssets
     ? Number(vault.tvl.totalAssets) / Math.pow(10, vault.decimals)
@@ -89,9 +110,11 @@ export function VaultStatsGrid({ vault }: VaultStatsGridProps) {
   const tvlUSD = vault.tvl?.tvl || 0;
   const tokenSymbol = vault.token.symbol || "tokens";
 
-  // APY data
-  const historicalAPY = vault.apy?.net_apy || 0;
-  const estimatedAPY = vault.apy?.gross_apr || 0;
+  // APY data with staking boost
+  const baseAPY = vault.apy?.net_apy || 0;
+  const stakingAPR = vault.apr?.extra?.stakingRewardsAPR || 0;
+  const gammaAPR = vault.apr?.extra?.gammaRewardAPR || 0;
+  const totalAPY = baseAPY + stakingAPR + gammaAPR;
 
   // User balance in tokens
   const userBalanceNormalized = toNormalizedBN(
@@ -102,10 +125,35 @@ export function VaultStatsGrid({ vault }: VaultStatsGridProps) {
 
   // Get token price and calculate USD value
   const tokenPrice = getPrice({
-    address: vault.token.address,
+    address: vault.token.address as any,
     chainID: vault.chainID,
   });
   const userBalanceUSD = userBalance * tokenPrice.normalized;
+
+  // Calculate earned rewards value
+  const earnedRewardsNormalized = toNormalizedBN(
+    earnedRewards,
+    rewardTokenDecimals
+  );
+  const earnedRewardsValue = earnedRewardsNormalized.normalized;
+
+  // Get reward token price (for now, approximate as 0 if not available)
+  // In production, you'd fetch the actual price for the reward token
+  const earnedRewardsUSD = 0; // TODO: Implement reward token price lookup
+
+  // APY tooltip content
+  const apyTooltip =
+    stakingAPR > 0 || gammaAPR > 0
+      ? `Base APY: ${formatAmount(
+          baseAPY * 100,
+          2,
+          2
+        )}%\nStaking Rewards: ${formatAmount(stakingAPR * 100, 2, 2)}%${
+          gammaAPR > 0
+            ? `\nGamma Rewards: ${formatAmount(gammaAPR * 100, 2, 2)}%`
+            : ""
+        }`
+      : undefined;
 
   return (
     <GlowBox>
@@ -133,25 +181,22 @@ export function VaultStatsGrid({ vault }: VaultStatsGridProps) {
           subValue={`$${formatAmount(tvlUSD, 2, 2)}`}
         />
 
-        {/* Historical APY */}
+        {/* Historical APY with boost */}
         <StatItem
           label="Historical APY"
           value={
             vault.apy?.type === "new" ? (
               "New"
             ) : (
-              <RenderAmount
-                value={historicalAPY}
-                symbol="percent"
-                decimals={2}
-              />
+              <RenderAmount value={totalAPY} symbol="percent" decimals={2} />
             )
           }
           subValue={
-            estimatedAPY > 0
-              ? `Est. APY: ${formatAmount(estimatedAPY * 100, 2, 2)}%`
+            stakingAPR > 0 || gammaAPR > 0
+              ? `Base: ${formatAmount(baseAPY * 100, 2, 2)}% + Boost`
               : undefined
           }
+          tooltip={apyTooltip}
         />
 
         {/* User Holdings */}
@@ -175,24 +220,30 @@ export function VaultStatsGrid({ vault }: VaultStatsGridProps) {
               ? `$${formatAmount(userBalanceUSD, 2, 2)}`
               : "Connect wallet"
           }
+          tooltip={isActive ? "Your yield accrues every block" : undefined}
         />
 
         {/* Extra Rewards (if staking available) */}
-        {vault.staking.available ? (
+        {vault.staking.available && hasActiveRewards ? (
           <StatItem
-            label="Extra earned"
+            label={`Extra earned, ${rewardTokenSymbol || "rewards"}`}
             value={
               !isActive ? (
                 "−"
               ) : (
                 <Counter
-                  value={0}
-                  decimals={18}
+                  value={earnedRewardsValue}
+                  decimals={rewardTokenDecimals}
                   decimalsToDisplay={[2, 8, 12]}
                 />
               )
             }
-            subValue={isActive ? "$0.00" : "Connect wallet"}
+            subValue={
+              isActive
+                ? `$${formatAmount(earnedRewardsUSD, 2, 2)}`
+                : "Connect wallet"
+            }
+            tooltip="Rewards from staking your vault tokens"
           />
         ) : (
           <StatItem

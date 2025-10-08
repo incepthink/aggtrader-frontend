@@ -1,18 +1,29 @@
 "use client";
 
-import { createContext, useContext, ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  ReactNode,
+  useCallback,
+  useMemo,
+} from "react";
 import useSWR from "swr";
-import type { TYDaemonVault } from "@/lib/yearnfi/lib/utils/schemas/yDaemonVaultsSchemas";
+import type { TYDaemonVault } from "../utils/schemas/yDaemonVaultsSchemas";
+import type { TDict, TNormalizedBN } from "../types/mixed";
+import type { TAddress } from "../types/address";
+import { toNormalizedBN } from "../utils";
 
-type TUseYearn = {
+type TTokenAndChain = { address: TAddress; chainID: number };
+
+type TYearnContext = {
   vaults: TYDaemonVault[];
+  vaultsMigrations: TYDaemonVault[];
+  vaultsRetired: TYDaemonVault[];
   isLoadingVaultList: boolean;
-  getPrice: (params: { address: string; chainID: number }) => {
-    normalized: number;
-  };
+  getPrice: (params: TTokenAndChain) => TNormalizedBN;
 };
 
-const YearnContext = createContext<TUseYearn | undefined>(undefined);
+const YearnContext = createContext<TYearnContext | undefined>(undefined);
 
 const SUPPORTED_CHAINS = [1, 747474]; // Ethereum + Katana
 
@@ -34,10 +45,22 @@ const fetcher = async (urls: string[]) => {
   // Flatten all vaults from all chains
   const allVaults = responses.flat();
 
-  // Filter for V3 only
-  return allVaults.filter((vault: TYDaemonVault) =>
+  // Separate vaults by type
+  const activeVaults = allVaults.filter(
+    (vault: TYDaemonVault) =>
+      vault.version?.startsWith("3") && vault.migration?.available !== true
+  );
+
+  const migrations = allVaults.filter(
+    (vault: TYDaemonVault) =>
+      vault.version?.startsWith("3") && vault.migration?.available === true
+  );
+
+  const retired = allVaults.filter((vault: TYDaemonVault) =>
     vault.version?.startsWith("3")
   );
+
+  return { activeVaults, migrations, retired };
 };
 
 export function YearnProvider({ children }: { children: ReactNode }) {
@@ -45,36 +68,45 @@ export function YearnProvider({ children }: { children: ReactNode }) {
     (chainId) => `https://ydaemon.yearn.fi/${chainId}/vaults/all`
   );
 
-  const {
-    data: vaults,
-    error,
-    isLoading,
-  } = useSWR(["yearn-v3-vaults", ...urls], () => fetcher(urls), {
-    revalidateOnFocus: false,
-    revalidateOnReconnect: false,
-    refreshInterval: 60000, // Refresh every minute
-  });
+  const { data, error, isLoading } = useSWR(
+    ["yearn-v3-vaults", ...urls],
+    () => fetcher(urls),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      refreshInterval: 60000, // Refresh every minute
+    }
+  );
 
-  const getPrice = ({
-    address,
-    chainID,
-  }: {
-    address: string;
-    chainID: number;
-  }) => {
-    const vault = vaults?.find(
-      (v) =>
-        v.address.toLowerCase() === address.toLowerCase() &&
-        v.chainID === chainID
-    );
-    return { normalized: vault?.tvl?.price || 0 };
-  };
+  const vaults = useMemo(() => data?.activeVaults || [], [data]);
+  const vaultsMigrations = useMemo(() => data?.migrations || [], [data]);
+  const vaultsRetired = useMemo(() => data?.retired || [], [data]);
 
-  const value: TUseYearn = {
-    vaults: vaults || [],
-    isLoadingVaultList: isLoading,
-    getPrice,
-  };
+  const getPrice = useCallback(
+    ({ address, chainID }: TTokenAndChain): TNormalizedBN => {
+      const allVaults = [...vaults, ...vaultsMigrations, ...vaultsRetired];
+      const vault = allVaults.find(
+        (v) =>
+          v.address.toLowerCase() === address.toLowerCase() &&
+          v.chainID === chainID
+      );
+
+      const price = vault?.tvl?.price || 0;
+      return { raw: BigInt(0), normalized: 0, display: "" };
+    },
+    [vaults, vaultsMigrations, vaultsRetired]
+  );
+
+  const value: TYearnContext = useMemo(
+    () => ({
+      vaults,
+      vaultsMigrations,
+      vaultsRetired,
+      isLoadingVaultList: isLoading,
+      getPrice,
+    }),
+    [vaults, vaultsMigrations, vaultsRetired, isLoading, getPrice]
+  );
 
   return (
     <YearnContext.Provider value={value}>{children}</YearnContext.Provider>

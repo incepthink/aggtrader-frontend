@@ -17,6 +17,8 @@ import { VAULT_TABS, type TabOption } from "@/lib/yearnfi/lib/types/tabs";
 import GlowBox from "@/components/common/ui/GlowBox";
 import { AboutTab } from "./tabs/AboutTab";
 import { StrategiesTab } from "./tabs/StrategiesTab";
+import { InfoTab } from "./tabs/InfoTab";
+import { RiskTab } from "./tabs/RiskTab";
 
 type VaultTabsProps = {
   vault: TYDaemonVault;
@@ -123,36 +125,9 @@ export function VaultTabs({ vault }: VaultTabsProps) {
       <Box sx={{ p: { xs: 2, md: 4 } }}>
         {currentTab === 0 && <AboutTab vault={vault} />}
         {currentTab === 1 && <StrategiesTab vault={vault} />}
-        {currentTab === 2 && <InfoTabContent vault={vault} />}
-        {currentTab === 3 && <RiskTabContent vault={vault} />}
+        {currentTab === 2 && <InfoTab vault={vault} />}
+        {currentTab === 3 && <RiskTab vault={vault} />}
       </Box>
     </GlowBox>
-  );
-}
-
-// Keep placeholder components for remaining tabs
-function InfoTabContent({ vault }: { vault: TYDaemonVault }) {
-  return (
-    <Box>
-      <Box sx={{ mb: 2, p: 2, bgcolor: "background.default", borderRadius: 1 }}>
-        <strong>Vault Information</strong>
-      </Box>
-      <Box sx={{ color: "text.secondary" }}>
-        Content for the Info tab will be added in Phase 9
-      </Box>
-    </Box>
-  );
-}
-
-function RiskTabContent({ vault }: { vault: TYDaemonVault }) {
-  return (
-    <Box>
-      <Box sx={{ mb: 2, p: 2, bgcolor: "background.default", borderRadius: 1 }}>
-        <strong>Risk Assessment</strong>
-      </Box>
-      <Box sx={{ color: "text.secondary" }}>
-        Content for the Risk tab will be added in Phase 9
-      </Box>
-    </Box>
   );
 }

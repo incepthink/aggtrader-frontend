@@ -29,7 +29,7 @@ const page = () => {
       <Container
         maxWidth="xl"
         sx={{
-          px: "0px !important",
+          px: "12px !important",
           py: { xs: 1, sm: 2 },
           maxWidth: { xs: "100%", lg: "1400px", xl: "1600px" },
         }}

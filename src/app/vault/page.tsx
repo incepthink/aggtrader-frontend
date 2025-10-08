@@ -96,7 +96,7 @@ export default function VaultPage() {
     <Container
       maxWidth="xl"
       sx={{
-        px: { xs: 2, sm: 3, md: "0px" },
+        px: { xs: 2, sm: 3, md: "12px" },
         py: { xs: 1, sm: 2 },
         maxWidth: { xs: "100%", lg: "1400px", xl: "1600px" },
       }}
