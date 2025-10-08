@@ -14,7 +14,7 @@ const navItems = [
     label: "Spot",
   },
   { href: ["/lend/earn", "/lend/borrow"], label: "Earn/Borrow" },
-  { href: ["/vault"], label: "Vault" },
+  { href: ["/vault"], label: "Vaults" },
   { href: ["/profile"], label: "Account" },
 ];
 

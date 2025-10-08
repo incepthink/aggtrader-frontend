@@ -2,6 +2,7 @@ import React from "react";
 import { useAccount } from "wagmi";
 import { useKatanaPortfolio } from "@/hooks/useKatanaPortfolio";
 import { CircularProgress } from "@mui/material";
+import { useWallet } from "@/lib/yearnfi/lib/contexts/useWallet";
 
 export default function EstimatedBalanceCard() {
   const { address } = useAccount();
@@ -13,7 +14,11 @@ export default function EstimatedBalanceCard() {
     error: katanaError,
   } = useKatanaPortfolio(address || null);
 
-  console.log("katanaBalance", katanaBalance);
+  const { cumulatedValueInV3Vaults, isLoading: vaultsLoading } = useWallet();
+
+  // Calculate total balance
+  const totalBalance = katanaBalance + cumulatedValueInV3Vaults;
+  const isLoadingTotal = katanaLoading || vaultsLoading;
 
   return (
     <div className="neon-panel">
@@ -22,7 +27,7 @@ export default function EstimatedBalanceCard() {
         <div>
           <p className="text-sm text-white/60">Estimated Balance</p>
           <div className="flex items-baseline gap-2 mt-1">
-            {katanaLoading ? (
+            {isLoadingTotal ? (
               <div className="flex items-center h-[60px]">
                 <CircularProgress size={20} sx={{ color: "#00FFE9" }} />
               </div>
@@ -35,14 +40,15 @@ export default function EstimatedBalanceCard() {
             ) : (
               <>
                 <span className="text-4xl font-semibold text-white">
-                  {katanaBalance.toFixed(2)}
+                  {totalBalance.toFixed(2)}
                 </span>
                 <span className="text-lg text-white/60">USD</span>
               </>
             )}
           </div>
           <p className="text-sm text-white/40 mt-1">
-            Katana • Chain ID: 747474
+            Katana ({katanaBalance.toFixed(2)}) + V3 Vaults (
+            {cumulatedValueInV3Vaults.toFixed(2)})
           </p>
         </div>
 

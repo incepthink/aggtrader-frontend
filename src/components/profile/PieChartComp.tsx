@@ -9,6 +9,7 @@ import {
 import React, { useState, useEffect } from "react";
 import { useAccount } from "wagmi";
 import { useKatanaPortfolio } from "@/hooks/useKatanaPortfolio";
+import { useWallet } from "@/lib/yearnfi/lib/contexts/useWallet";
 
 type PropType = {
   isLoading?: boolean;
@@ -28,6 +29,7 @@ export function PieChartComp({ isLoading = false }: PropType) {
   const { tokens: katanaTokens, isLoading: katanaLoading } = useKatanaPortfolio(
     address || null
   );
+  const { cumulatedValueInV3Vaults, isLoading: vaultsLoading } = useWallet();
   const [activeIndex, setActiveIndex] = useState<number | undefined>(undefined);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -62,45 +64,47 @@ export function PieChartComp({ isLoading = false }: PropType) {
 
   // Pie chart data, fully typed!
   const createPieData = (): PieDataItem[] => {
-    if (!katanaTokens || !katanaTokens.length) {
-      // Placeholder, all fields included!
-      return [
-        {
-          name: "No Data",
-          value: 0,
-          color: "#666666",
-          balance: 0,
-          symbol: "",
-        },
-      ];
-    }
-    console.log("KATANA TOKENS PIE::", katanaTokens);
-
-    // Add tokens
-    const colorList = generateColors(katanaTokens.length);
     const symbolMap = new Map<string, PieDataItem>();
 
-    katanaTokens.forEach((token, index) => {
-      if (token.value > 0.01) {
-        if (symbolMap.has(token.symbol)) {
-          // Add to existing
-          const existing = symbolMap.get(token.symbol)!;
-          existing.balance += token.balance;
-          existing.value += token.value;
-        } else {
-          // Add new
-          symbolMap.set(token.symbol, {
-            name: token.symbol,
-            value: token.value,
-            color: colorList[index],
-            balance: token.balance,
-            symbol: token.symbol,
-          });
+    // Add Katana tokens
+    if (katanaTokens && katanaTokens.length > 0) {
+      katanaTokens.forEach((token) => {
+        if (token.value > 0.01) {
+          if (symbolMap.has(token.symbol)) {
+            const existing = symbolMap.get(token.symbol)!;
+            existing.balance += token.balance;
+            existing.value += token.value;
+          } else {
+            symbolMap.set(token.symbol, {
+              name: token.symbol,
+              value: token.value,
+              color: "#0088FE",
+              balance: token.balance,
+              symbol: token.symbol,
+            });
+          }
         }
-      }
-    });
+      });
+    }
+
+    // Add Yearn V3 Vaults as a single entry
+    if (cumulatedValueInV3Vaults > 0.01) {
+      symbolMap.set("Yearn V3", {
+        name: "Yearn V3 Vaults",
+        value: cumulatedValueInV3Vaults,
+        color: "#00C49F",
+        balance: cumulatedValueInV3Vaults,
+        symbol: "V3",
+      });
+    }
 
     const pieData: PieDataItem[] = Array.from(symbolMap.values());
+
+    // Assign colors
+    const colorList = generateColors(pieData.length);
+    pieData.forEach((item, index) => {
+      item.color = colorList[index];
+    });
 
     return pieData.length > 0
       ? pieData
@@ -163,7 +167,7 @@ export function PieChartComp({ isLoading = false }: PropType) {
   const innerRadius = isMobile ? 70 : 100;
   const outerRadius = isMobile ? 90 : 120;
 
-  const isChartLoading = isLoading || katanaLoading;
+  const isChartLoading = isLoading || katanaLoading || vaultsLoading;
 
   return (
     <div
@@ -295,7 +299,7 @@ export function PieChartComp({ isLoading = false }: PropType) {
                   isMobile ? "text-xs" : "text-sm"
                 } text-gray-400`}
               >
-                Katana Portfolio
+                Total Portfolio
               </span>
               <span
                 className={`block ${
@@ -365,7 +369,9 @@ export function PieChartComp({ isLoading = false }: PropType) {
                     {dataItem.name}
                   </p>
                   <p className="text-xs text-gray-400">
-                    {dataItem.balance.toFixed(4)} {dataItem.symbol}
+                    {dataItem.symbol === "V3"
+                      ? `$${dataItem.balance.toFixed(2)}`
+                      : `${dataItem.balance.toFixed(4)} ${dataItem.symbol}`}
                   </p>
                 </div>
               </div>
@@ -388,7 +394,7 @@ export function PieChartComp({ isLoading = false }: PropType) {
         {/* Info text */}
         <div className={`${isMobile ? "mt-4" : "mt-6"} text-center`}>
           <p className={`text-gray-500 ${isMobile ? "text-xs" : "text-sm"}`}>
-            Real-time Katana portfolio breakdown
+            Katana + Yearn V3 portfolio breakdown
           </p>
         </div>
       </div>

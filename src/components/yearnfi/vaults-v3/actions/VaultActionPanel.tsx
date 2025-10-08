@@ -296,7 +296,7 @@ export function VaultActionPanel({ vault }: VaultActionPanelProps) {
           </Box>
 
           {/* Action Button */}
-          <Box sx={{ pt: 2.5 }}>
+          <Box>
             <ActionButtons />
           </Box>
         </Box>

@@ -104,10 +104,11 @@ export function ActionButtons() {
           disabled={isDisabled || isDepositingTx}
           sx={{
             bgcolor: "primary.main",
+            height: "100%",
             "&.Mui-disabled": {
               bgcolor: "primary.main",
               opacity: 0.5,
-              color: "white",
+              color: "black",
             },
           }}
         >
