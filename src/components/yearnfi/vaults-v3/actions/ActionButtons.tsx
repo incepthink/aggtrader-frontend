@@ -77,7 +77,7 @@ export function ActionButtons() {
             "&.Mui-disabled": {
               bgcolor: "primary.main",
               opacity: 0.5,
-              color: "white",
+              color: "black",
             },
           }}
         >
@@ -137,7 +137,7 @@ export function ActionButtons() {
           "&.Mui-disabled": {
             bgcolor: "primary.main",
             opacity: 0.5,
-            color: "white",
+            color: "black",
           },
         }}
       >

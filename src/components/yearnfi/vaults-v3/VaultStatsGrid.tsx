@@ -210,7 +210,7 @@ export function VaultStatsGrid({ vault }: VaultStatsGridProps) {
             ) : (
               <Counter
                 value={userBalance}
-                decimals={vault.decimals}
+                decimals={2}
                 decimalsToDisplay={[2, 6, 8]}
               />
             )
