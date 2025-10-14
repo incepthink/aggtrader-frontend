@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Box } from "@mui/material";
 import { useSpotStore } from "@/store/spotStore";
 import { useChartData } from "@/hooks/sushiswap/katanaChart/useChartData";
-import ChartHeader from "./ChartHeader";
+import ChartHeader from "./chartHeader";
 import ChartContainer from "../ChartContainer";
 import ChartStatusIndicators from "./ChartStatusIndicators";
 import ChartDebug from "./ChartDebug";
@@ -22,7 +22,7 @@ const KatanaCandlestickChart = () => {
   const [renderKey, setRenderKey] = useState(0);
   const [chartError, setChartError] = useState<string | null>(null);
   const [isDesktopSize, setIsDesktopSize] = useState(false);
-  
+
   // Refs to prevent loops
   const lastTokenAddress = useRef<string | null>(null);
   const lastChainId = useRef<number>(chainId);
@@ -55,10 +55,10 @@ const KatanaCandlestickChart = () => {
       }, 300); // Debounce resize events
     };
 
-    window.addEventListener('resize', handleResize);
-    
+    window.addEventListener("resize", handleResize);
+
     return () => {
-      window.removeEventListener('resize', handleResize);
+      window.removeEventListener("resize", handleResize);
       if (resizeTimeoutRef.current) {
         clearTimeout(resizeTimeoutRef.current);
       }
@@ -80,7 +80,7 @@ const KatanaCandlestickChart = () => {
   // Only force re-render when token actually changes
   useEffect(() => {
     if (
-      tokenAddress !== lastTokenAddress.current || 
+      tokenAddress !== lastTokenAddress.current ||
       chainId !== lastChainId.current
     ) {
       lastTokenAddress.current = tokenAddress;
@@ -146,10 +146,14 @@ const KatanaCandlestickChart = () => {
   }, [refetchAll]);
 
   // Check for error states that should show error boundary
-  const hasError = chartError || error || !isSupported || 
-    (!isKatanaChain || !tokenOne || 
-    ((isLoading || priceLoading) && chartData.length === 0) || 
-    chartData.length === 0);
+  const hasError =
+    chartError ||
+    error ||
+    !isSupported ||
+    !isKatanaChain ||
+    !tokenOne ||
+    ((isLoading || priceLoading) && chartData.length === 0) ||
+    chartData.length === 0;
 
   if (hasError) {
     return (
@@ -203,10 +207,7 @@ const KatanaCandlestickChart = () => {
               overflow: "hidden",
             }}
           >
-            <ChartHeader
-              {...headerProps}
-              isOverlay={false}
-            />
+            <ChartHeader {...headerProps} isOverlay={false} />
           </GlowBox>
         </Box>
       )}
@@ -218,7 +219,7 @@ const KatanaCandlestickChart = () => {
           maxWidth: "100%",
           height: {
             xs: "400px",
-            sm: "450px", 
+            sm: "450px",
             md: "500px",
             lg: "550px",
             xl: "600px",
@@ -242,7 +243,7 @@ const KatanaCandlestickChart = () => {
           }}
         >
           <Box
-            key={renderKey} 
+            key={renderKey}
             sx={{
               width: "100%",
               height: "100%",
@@ -275,10 +276,7 @@ const KatanaCandlestickChart = () => {
             {/* Chart Header - Overlay mode for desktop (screens >= 1560px) only */}
             {isDesktopSize && (
               <Box>
-                <ChartHeader
-                  {...headerProps}
-                  isOverlay={true}
-                />
+                <ChartHeader {...headerProps} isOverlay={true} />
               </Box>
             )}
 
