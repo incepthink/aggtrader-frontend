@@ -11,8 +11,8 @@ import {
 import { useState, useEffect, useMemo } from "react";
 import { useAccount } from "wagmi";
 import { useEquityTrend } from "@/hooks/useEquityTrend";
-import { Info } from "@mui/icons-material";
-import { Tooltip as MuiTooltip } from "@mui/material";
+import { Info, Refresh } from "@mui/icons-material";
+import { Tooltip as MuiTooltip, IconButton } from "@mui/material";
 
 export default function EquityTrendChart() {
   const { address, isConnected } = useAccount();
@@ -20,7 +20,8 @@ export default function EquityTrendChart() {
   const [screenWidth, setScreenWidth] = useState(0);
 
   // Fetch equity trend data
-  const { data, isLoading, error, isSuccess } = useEquityTrend(address);
+  const { data, isLoading, error, isSuccess, refetch } =
+    useEquityTrend(address);
 
   console.log("EQUITYCHART::", data);
 
@@ -237,6 +238,30 @@ export default function EquityTrendChart() {
                 }}
               />
             </MuiTooltip>
+
+            {/* Refresh Button */}
+            <IconButton
+              onClick={() => refetch()}
+              disabled={isLoading}
+              sx={{
+                padding: "4px",
+                color: "#ffffff60",
+                "&:hover": {
+                  color: "#00F5E0",
+                  backgroundColor: "rgba(0, 245, 224, 0.1)",
+                },
+                "&:disabled": {
+                  color: "#ffffff30",
+                },
+              }}
+            >
+              <Refresh
+                sx={{
+                  fontSize: 18,
+                  animation: isLoading ? "spin 1s linear infinite" : "none",
+                }}
+              />
+            </IconButton>
           </div>
 
           {isLoading && (
@@ -413,7 +438,7 @@ export default function EquityTrendChart() {
                   ? "Loading equity data..."
                   : !isConnected
                   ? "Connect your wallet to view equity trends"
-                  : "No equity data available yet"}
+                  : "No equity data available, Try refreshing"}
               </p>
               {!isConnected && (
                 <p className="text-white/40 text-xs">
@@ -429,6 +454,17 @@ export default function EquityTrendChart() {
       {isLoading && (
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-400/5 to-transparent animate-pulse rounded-lg pointer-events-none"></div>
       )}
+
+      <style jsx global>{`
+        @keyframes spin {
+          0% {
+            transform: rotate(0deg);
+          }
+          100% {
+            transform: rotate(360deg);
+          }
+        }
+      `}</style>
     </div>
   );
 }
