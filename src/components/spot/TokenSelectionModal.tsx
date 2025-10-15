@@ -70,6 +70,7 @@ export const TokenSelectionModal: FC = () => {
 
   // Fetch tokens using the backend hook - this will use cached data if available
   const { tokens: rawTokens, isLoading, isError } = useTokensBackend(chainId);
+  console.log("RAW TOKENS", rawTokens);
 
   // Reset search and tab when modal opens
   useEffect(() => {

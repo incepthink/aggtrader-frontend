@@ -290,7 +290,7 @@ function SushiClassicSwap() {
           <div className="switch-container py-0 lg:py-2">
             <div className="line" />
             <div className="switchButton" onClick={switchTokens}>
-              <SwapVertIcon sx={{ fontSize: 28 }} />
+              <SwapVertIcon sx={{ fontSize: 20 }} />
             </div>
             <div className="line" />
           </div>

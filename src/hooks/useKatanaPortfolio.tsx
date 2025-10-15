@@ -32,6 +32,7 @@ export function useKatanaPortfolio(
     error: balancesError,
     refetch: refetchBalances, // Get refetch from useKatanaBalance
   } = useKatanaBalance(address, BACKEND_URL);
+  console.log("KATANA BAALNMCES", balances);
 
   const [portfolioTokens, setPortfolioTokens] = useState<
     KatanaPortfolioToken[]
