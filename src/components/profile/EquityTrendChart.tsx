@@ -382,7 +382,7 @@ export default function EquityTrendChart() {
                   strokeWidth={2}
                   fill="url(#equityGradient)"
                   dot={{
-                    r: chartData.length === 1 ? 5 : 0,
+                    r: 5,
                     fill: "#00FFE9",
                     stroke: "#ffffff",
                     strokeWidth: 2,
@@ -398,6 +398,7 @@ export default function EquityTrendChart() {
                   }}
                   animationDuration={2000}
                   animationEasing="ease-out"
+                  connectNulls
                 />
               </AreaChart>
             </ResponsiveContainer>
