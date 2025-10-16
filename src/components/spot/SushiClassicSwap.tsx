@@ -259,8 +259,8 @@ function SushiClassicSwap() {
   /* ---------- render ---------- */
   return (
     <>
-      <div className="tradeBox p-2">
-        <div className="flex justify-between items-center mb-6 lg:mb-8">
+      <div className="tradeBox px-2">
+        <div className="flex justify-between items-center mb-4 lg:mb-4">
           <h4 className="text-xl">Classic Swap</h4>
           <SwapSettings
             slippage={slippage}

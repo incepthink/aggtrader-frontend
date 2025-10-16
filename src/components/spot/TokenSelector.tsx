@@ -75,11 +75,7 @@ export const TokenSelector: React.FC<TokenSelectorProps> = ({
   return (
     <div className={containerClass}>
       <div className={assetClass} onClick={onClick}>
-        <img
-          src={token.img}
-          alt={``}
-          className="assetLogo"
-        />
+        <img src={token.img} alt={``} className="assetLogo" />
         <p className="text-white">{token.ticker}</p>
         <DownOutlined />
       </div>
@@ -87,7 +83,7 @@ export const TokenSelector: React.FC<TokenSelectorProps> = ({
       {/* Always show balance, optionally show max button */}
       <div
         className={
-          position === "top" ? "max-btn-container" : "absolute right-5 bottom-3"
+          position === "top" ? "max-btn-container" : "absolute right-5 bottom-4"
         }
       >
         <BalanceDisplay

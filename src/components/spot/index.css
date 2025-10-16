@@ -233,7 +233,7 @@
 
 .inputs {
   position: relative;
-  margin-bottom: 32px;
+  margin-bottom: 24px;
 }
 
 .assetOneContainer {
@@ -270,7 +270,7 @@
 .assetTwo {
   position: absolute;
   right: 20px;
-  bottom: 35px;
+  bottom: 45px;
   min-width: 50px;
   height: 35px;
   background-color: #1E1E1E;
