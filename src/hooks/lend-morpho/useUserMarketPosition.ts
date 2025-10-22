@@ -34,16 +34,15 @@ const MORPHO_API_URL = "https://api.morpho.org/graphql";
 export const useUserMarketPositions = () => {
   const { address, isConnected } = useAccount();
 
-  const { chainId } = useChain(); // Get chainId from context
+  const { chainId } = useChain();
 
-  // Simple query focusing only on essential fields
   const query = `
     query GetUserMarketPositions($userAddress: String!, $chainId: Int!) {
       marketPositions(
         first: 100
         where: {
           userAddress_in: [$userAddress]
-          chainId: $chainId
+          chainId_in: [$chainId]
         }
       ) {
         items {
@@ -114,7 +113,6 @@ export const useUserMarketPositions = () => {
 
         const items = response.data.data?.marketPositions?.items || [];
 
-        // Filter only positions with actual borrowed amounts
         const borrowPositions = items.filter(
           (position: any) => parseFloat(position.state.borrowAssets || "0") > 0
         );
@@ -131,7 +129,6 @@ export const useUserMarketPositions = () => {
           0
         );
 
-        // Calculate weighted borrow rate
         const weightedBorrowRate =
           totalBorrowedUsd > 0
             ? borrowPositions.reduce((sum: number, position: any) => {
@@ -165,7 +162,6 @@ export const useUserMarketPositions = () => {
   });
 };
 
-// Simplified single position hook
 export const useUserMarketPosition = (
   marketUniqueKey: string,
   chainId: number = 1

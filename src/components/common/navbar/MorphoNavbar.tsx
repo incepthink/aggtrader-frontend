@@ -11,10 +11,20 @@ export const MorphoNavbar: React.FC = () => {
   const scrollUp = useScrollDirection();
   const { chainName, switchChain, isLoading } = useChain();
 
-  const activeTab = pathname.includes("/lend/borrow") ? "borrow" : "earn";
+  const activeTab = pathname.includes("/lend/borrow")
+    ? "borrow"
+    : pathname.includes("/lend/earn")
+    ? "earn"
+    : "vault";
 
-  const handleTabClick = (tab: "earn" | "borrow") => {
-    router.push(tab === "earn" ? "/lend/earn" : "/lend/borrow");
+  const handleTabClick = (tab: "earn" | "borrow" | "vault") => {
+    if (tab === "borrow") {
+      router.push("/lend/borrow");
+    } else if (tab === "earn") {
+      router.push("/lend/earn");
+    } else if (tab === "vault") {
+      router.push("/lend/vault");
+    }
   };
 
   const handleChainSwitch = (newChainName: ChainName) => {
@@ -39,7 +49,7 @@ export const MorphoNavbar: React.FC = () => {
     >
       <div className="flex mx-auto justify-start sm:justify-center items-center w-full px-0 sm:px-4 relative">
         {/* Center - Navigation tabs */}
-        <div className="flex">
+        <div className="flex md:-ml-18">
           <Button
             onClick={() => handleTabClick("earn")}
             sx={{
@@ -81,6 +91,27 @@ export const MorphoNavbar: React.FC = () => {
             }}
           >
             Borrow
+          </Button>
+          <Button
+            onClick={() => handleTabClick("vault")}
+            sx={{
+              color: activeTab === "vault" ? "#00F5E0" : "#8b949e",
+              borderBottom:
+                activeTab === "vault"
+                  ? "2px solid #00F5E0"
+                  : "2px solid transparent",
+              borderRadius: 0,
+              px: 3,
+              height: "48px", // match Toolbar height
+              lineHeight: "48px", // align text vertically
+              fontSize: "16px",
+              fontWeight: activeTab === "vault" ? "600" : "400",
+              "&:hover": {
+                backgroundColor: "rgba(0, 245, 224, 0.1)",
+              },
+            }}
+          >
+            Vault
           </Button>
         </div>
 

@@ -30,10 +30,7 @@ type FiltersProps = {
   shouldDebounce?: boolean;
 };
 
-const CHAIN_OPTIONS = [
-  { id: 1, name: "Ethereum" },
-  { id: 747474, name: "Katana" },
-];
+const CHAIN_OPTIONS = [{ id: 747474, name: "Katana" }];
 
 type FilterBoxProps = {
   label: string;
@@ -41,6 +38,7 @@ type FilterBoxProps = {
   options: { id: string | number; name: string }[];
   allOptions: (string | number)[];
   onChange: (values: any[]) => void;
+  noAll?: Boolean;
 };
 
 function FilterBox({
@@ -49,6 +47,7 @@ function FilterBox({
   options,
   allOptions,
   onChange,
+  noAll,
 }: FilterBoxProps) {
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
 
@@ -181,22 +180,24 @@ function FilterBox({
         }}
       >
         <Box sx={{ p: 1 }}>
-          <MenuItem
-            onClick={() => handleSelect("all")}
-            sx={{
-              color: "white",
-              fontSize: "0.875rem",
-              borderRadius: 1,
-              "&:hover": {
-                backgroundColor: "rgba(0, 245, 224, 0.1)",
-              },
-              ...(isAllSelected && {
-                backgroundColor: "rgba(0, 245, 224, 0.2)",
-              }),
-            }}
-          >
-            All
-          </MenuItem>
+          {!noAll && (
+            <MenuItem
+              onClick={() => handleSelect("all")}
+              sx={{
+                color: "white",
+                fontSize: "0.875rem",
+                borderRadius: 1,
+                "&:hover": {
+                  backgroundColor: "rgba(0, 245, 224, 0.1)",
+                },
+                ...(isAllSelected && {
+                  backgroundColor: "rgba(0, 245, 224, 0.2)",
+                }),
+              }}
+            >
+              All
+            </MenuItem>
+          )}
           {options.map((option) => (
             <MenuItem
               key={option.id}
@@ -319,6 +320,7 @@ export function Filters({
 
         <FilterBox
           label="Chain"
+          noAll={true}
           selected={chains || []}
           options={chainOptions}
           allOptions={[1, 747474]}

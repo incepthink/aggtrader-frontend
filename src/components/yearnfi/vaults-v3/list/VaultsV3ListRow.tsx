@@ -22,7 +22,7 @@ export function VaultsV3ListRow({
   if (isMobile) {
     return (
       <Link
-        href={`/vault/${currentVault.chainID}/${currentVault.address}`}
+        href={`/lend/vault/${currentVault.chainID}/${currentVault.address}`}
         style={{ textDecoration: "none", color: "inherit" }}
       >
         <Box
@@ -131,7 +131,7 @@ export function VaultsV3ListRow({
   // Desktop Table Row
   return (
     <Link
-      href={`/vault/${currentVault.chainID}/${currentVault.address}`}
+      href={`/lend/vault/${currentVault.chainID}/${currentVault.address}`}
       style={{ textDecoration: "none", color: "inherit" }}
     >
       <Box

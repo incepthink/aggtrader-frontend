@@ -110,16 +110,16 @@ export const useMarketsQuery = (
   options: MarketsQueryOptions = {}
 ): UseQueryResult<Market[], Error> => {
   const {
-    limit = 100,
+    limit = 20, // Reduced from 100 to 20 to lower complexity
     skip = 0,
-    whitelistedOnly = true, // Default to true to filter spam markets
+    whitelistedOnly = true,
     orderBy = "SupplyAssetsUsd",
     orderDirection = "Desc",
   } = options;
 
-  const { chainId } = useChain(); // Get chainId from context
+  const { chainId } = useChain();
 
-  // Comprehensive GraphQL query for markets data
+  // Simplified GraphQL query - removed some nested fields to reduce complexity
   const query = `
     query GetMarkets($first: Int!, $skip: Int!, $where: MarketFilters!, $orderBy: MarketOrderBy!, $orderDirection: OrderDirection!) {
       markets(
@@ -154,39 +154,16 @@ export const useMarketsQuery = (
             supplyApy
             netBorrowApy
             netSupplyApy
-            borrowAssets
             borrowAssetsUsd
-            supplyAssets
             supplyAssetsUsd
-            collateralAssets
             collateralAssetsUsd
-            liquidityAssets
             liquidityAssetsUsd
             utilization
             fee
-            rewards {
-              asset {
-                address
-                symbol
-                decimals
-              }
-              supplyApr
-              borrowApr
-            }
           }
           oracle {
             address
             type
-          }
-          oracleInfo {
-            type
-          }
-          supplyingVaults {
-            address
-            symbol
-            metadata {
-              description
-            }
           }
           warnings {
             type
@@ -204,12 +181,10 @@ export const useMarketsQuery = (
     ],
     queryFn: async (): Promise<Market[]> => {
       try {
-        // Build where clause based on options
         const whereClause: any = {
           chainId_in: chainId,
         };
 
-        // Add whitelisted filter - null gets all markets, true gets only whitelisted
         if (whitelistedOnly) {
           whereClause.whitelisted = true;
         } else {
@@ -234,15 +209,13 @@ export const useMarketsQuery = (
               "Content-Type": "application/json",
               Accept: "application/json",
             },
-            timeout: 10000, // 10 second timeout
+            timeout: 10000,
           });
 
-        // Check for GraphQL errors
         if (response.data.errors && response.data.errors.length > 0) {
           throw new Error(`GraphQL Error: ${response.data.errors[0].message}`);
         }
 
-        // Check if data exists
         if (!response.data.data || !response.data.data.markets) {
           throw new Error("No markets data received from API");
         }
@@ -263,18 +236,17 @@ export const useMarketsQuery = (
         throw error;
       }
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
     retry: (failureCount, error) => {
-      // Retry up to 3 times, but not for 4xx errors
       if (failureCount < 3) {
         const axiosError = error as any;
         if (
           axiosError?.response?.status >= 400 &&
           axiosError?.response?.status < 500
         ) {
-          return false; // Don't retry 4xx errors
+          return false;
         }
         return true;
       }

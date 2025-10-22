@@ -27,7 +27,7 @@ export function useQueryArguments({
   const [search, setSearch] = useState<string>('');
   const [types, setTypes] = useState<string[] | null>(defaultTypes);
   const [categories, setCategories] = useState<string[] | null>(defaultCategories);
-  const [chains, setChains] = useState<number[] | null>([1, 747474]); // Ethereum + Katana
+  const [chains, setChains] = useState<number[] | null>([ 747474]); // Ethereum + Katana
   const [sortDirection, setSortDirection] = useState<TSortDirection>('');
   const [sortBy, setSortBy] = useState<TPossibleSortBy>('featuringScore');
 
@@ -59,7 +59,7 @@ export function useQueryArguments({
     setSearch('');
     setTypes(defaultTypes);
     setCategories(defaultCategories);
-    setChains([1, 747474]);
+    setChains([ 747474]);
     setSortDirection('');
     setSortBy('featuringScore');
   }, [defaultTypes, defaultCategories]);

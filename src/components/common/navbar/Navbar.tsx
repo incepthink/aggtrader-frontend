@@ -1,21 +1,20 @@
 "use client";
 
 // src/components/Navbar.tsx
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import NavLink from "./Navlink";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { Menu, Close, KeyboardArrowDown } from "@mui/icons-material";
+import { Menu, Close } from "@mui/icons-material";
 import { NetworkSelector } from "./NetworkSelector";
-import { Typography, Menu as MuiMenu, MenuItem } from "@mui/material";
-import { useAccount } from "wagmi";
-import { usePathname } from "next/navigation";
-import axios from "axios";
-import { BACKEND_URL } from "@/utils/constants";
+import { Typography } from "@mui/material";
 
-const productsItems = [
-  { href: "/lend/earn", label: "Earn" },
-  { href: "/lend/borrow", label: "Borrow" },
-  { href: "/vault", label: "Vaults" },
+const navItems = [
+  {
+    href: ["/spot"],
+    label: "Spot",
+  },
+  { href: ["/lend/earn", "/lend/borrow", "/lend/vault"], label: "Lending" },
+  { href: ["/profile"], label: "Account" },
 ];
 
 interface GradientConnectButtonProps {
@@ -42,10 +41,12 @@ export function GradientConnectButton({
         const ready = mounted && authenticationStatus !== "loading";
         const connected = ready && account;
 
+        // Default navbar styling
         const defaultStyles = `bg-gradient-to-r from-[#00F5E0] to-[#00FAFF] text-black font-semibold p-2 px-3 rounded-sm hover:ring-2 hover:ring-[#00F5E0] hover:ring-offset-2 hover:ring-offset-gray-900
    hover:shadow-[0_0_4px_rgba(0,245,224,0.8),0_0_8px_rgba(0,245,224,0.7),0_0_12px_rgba(0,245,224,0.6),0_0_18px_rgba(0,245,224,0.5),0_0_24px_rgba(0,245,224,0.4)]
    transition-all duration-300 cursor-pointer flex gap-3 items-center text-sm justify-center whitespace-nowrap`;
 
+        // Form variant styling (matches your button design)
         const formStyles = `bg-gradient-to-r from-[#00F5E0] to-[#00FAFF] text-black font-bold py-3 px-4 rounded-lg hover:opacity-90 transition-all duration-300 cursor-pointer flex gap-2 items-center justify-center text-base ${
           fullWidth ? "w-full" : ""
         }`;
@@ -94,62 +95,6 @@ export function GradientConnectButton({
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [selectedProduct, setSelectedProduct] = useState("Earn");
-  const { address, isConnected } = useAccount();
-  const pathname = usePathname();
-
-  // Set selected product based on current pathname
-  useEffect(() => {
-    if (pathname?.includes("/lend/earn")) {
-      setSelectedProduct("Earn");
-    } else if (pathname?.includes("/lend/borrow")) {
-      setSelectedProduct("Borrow");
-    } else if (pathname?.includes("/vault")) {
-      setSelectedProduct("Vaults");
-    } else {
-      // Default to Earn for other pages (spot, account, etc.)
-      setSelectedProduct("Earn");
-    }
-  }, [pathname]);
-
-  const handleDropdownClick = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleDropdownClose = () => {
-    setAnchorEl(null);
-  };
-
-  const handleProductSelect = (label: string, href: string) => {
-    setSelectedProduct(label);
-    handleDropdownClose();
-    window.location.href = href;
-  };
-
-  // Store user for equity tracking when wallet connects
-  useEffect(() => {
-    const storeUserForTracking = async () => {
-      if (isConnected && address) {
-        try {
-          const response = await axios.post(
-            `${BACKEND_URL}/api/user/store`,
-            { walletAddress: address },
-            { timeout: 10000 }
-          );
-
-          console.log("[Equity Tracking] User stored:", response.data);
-        } catch (error: any) {
-          console.error(
-            "[Equity Tracking] Failed to store user:",
-            error?.message
-          );
-        }
-      }
-    };
-
-    storeUserForTracking();
-  }, [isConnected, address]);
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -180,56 +125,13 @@ export default function Navbar() {
         </a>
 
         {/* Desktop Navigation */}
-        <ul className="hidden lg:flex list-none gap-6 m-0 p-4 items-center">
-          <li>
-            <NavLink href={["/spot"]}>Spot</NavLink>
-          </li>
-          <li>
-            <button
-              onClick={handleDropdownClick}
-              className="flex items-center gap-1 text-white hover:text-[#00F5E0] transition-colors duration-200 cursor-pointer text-xl font-medium"
-            >
-              {selectedProduct}
-              <KeyboardArrowDown sx={{ fontSize: 20 }} />
-            </button>
-          </li>
-          <li>
-            <NavLink href={["/profile"]}>Account</NavLink>
-          </li>
-        </ul>
-
-        {/* Dropdown Menu */}
-        <MuiMenu
-          anchorEl={anchorEl}
-          open={Boolean(anchorEl)}
-          onClose={handleDropdownClose}
-          sx={{
-            "& .MuiPaper-root": {
-              backgroundColor: "#1a1a1a",
-              border: "1px solid rgba(0, 245, 224, 0.2)",
-              borderRadius: "8px",
-              marginTop: "8px",
-            },
-          }}
-        >
-          {productsItems.map((item) => (
-            <MenuItem
-              key={item.href}
-              onClick={() => handleProductSelect(item.label, item.href)}
-              sx={{
-                color: "#ffffff",
-                "&:hover": {
-                  backgroundColor: "rgba(0, 245, 224, 0.1)",
-                  color: "#00F5E0",
-                },
-                padding: "10px 20px",
-                fontSize: "16px",
-              }}
-            >
-              {item.label}
-            </MenuItem>
+        <ul className="hidden lg:flex list-none gap-6 m-0 p-4">
+          {navItems.map(({ href, label }) => (
+            <li key={href[0]}>
+              <NavLink href={href}>{label}</NavLink>
+            </li>
           ))}
-        </MuiMenu>
+        </ul>
 
         {/* Desktop Network Selector and Connect Button */}
         <div className="hidden lg:flex items-center gap-3">
@@ -257,10 +159,10 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* Mobile Menu Overlay - Translucent */}
+      {/* Mobile Menu Overlay */}
       {isMenuOpen && (
         <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden"
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
           onClick={closeMenu}
         />
       )}
@@ -295,38 +197,17 @@ export default function Navbar() {
         </div>
 
         <ul className="flex flex-col p-4 gap-4">
-          <li>
-            <a
-              href="/spot"
-              onClick={closeMenu}
-              className="block text-white hover:text-[#00F5E0] transition-colors duration-200 py-2"
-            >
-              Spot
-            </a>
-          </li>
-          {productsItems.map((item) => (
-            <li key={item.href}>
+          {navItems.map(({ href, label }) => (
+            <li key={href[0]}>
               <a
-                href={item.href}
-                onClick={() => {
-                  setSelectedProduct(item.label);
-                  closeMenu();
-                }}
+                href={href[0]}
+                onClick={closeMenu}
                 className="block text-white hover:text-[#00F5E0] transition-colors duration-200 py-2"
               >
-                {item.label}
+                {label}
               </a>
             </li>
           ))}
-          <li>
-            <a
-              href="/profile"
-              onClick={closeMenu}
-              className="block text-white hover:text-[#00F5E0] transition-colors duration-200 py-2"
-            >
-              Account
-            </a>
-          </li>
         </ul>
       </div>
     </>
