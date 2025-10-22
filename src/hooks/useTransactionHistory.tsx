@@ -269,6 +269,7 @@ async function fetchRecentTransactions(
 
     // Sort by timestamp (most recent first)
     transactions.sort((a, b) => b.timestamp - a.timestamp);
+    console.log(transactions);
 
     return transactions;
   } catch (error) {
