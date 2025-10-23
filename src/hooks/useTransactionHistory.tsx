@@ -197,150 +197,80 @@ async function fetchRecentTransactions(
     throw new Error("Address is required");
   }
 
-  try {
-    const response = await fetch(
-      `${BACKEND_URL}/api/proxy/1inch/profile/swap-history?addresses=${address}&limit=20`
-    );
+  const response = await fetch(
+    `${BACKEND_URL}/api/proxy/1inch/profile/swap-history?addresses=${address}&limit=20`
+  );
 
-    if (!response.ok) {
-      throw new Error(`Transactions API error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    console.log("Transactions Data:", data);
-
-    const transactions: Transaction[] = [];
-
-    if (data?.items) {
-      data.items.forEach((tx: any) => {
-        const timestamp = tx.timeMs;
-        const date = new Date(timestamp);
-
-        // Format date for display
-        const formattedDate = date.toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-        });
-
-        // Parse token information from tokenActions
-        const tokenInfo = parseTokenActions(
-          tx.details?.tokenActions || [],
-          tx.details?.type || ""
-        );
-
-        // Calculate human-readable amount
-        const numericAmount =
-          parseFloat(tokenInfo.amount) / Math.pow(10, tokenInfo.decimals);
-
-        // Determine transaction type
-        const type = getTransactionType(tx.details, tx.direction);
-
-        transactions.push({
-          hash: tx.details?.txHash || `tx-${tx.id}`,
-          timestamp: timestamp,
-          formattedDate: formattedDate,
-          type: type,
-          token: {
-            symbol: tokenInfo.symbol,
-            name: tokenInfo.name,
-            address: tokenInfo.address,
-            decimals: tokenInfo.decimals,
-            amount: tokenInfo.amount,
-          },
-          swapDetails: tokenInfo.swapDetails,
-          amount: numericAmount,
-          from: tx.details?.fromAddress || "",
-          to: tx.details?.toAddress || "",
-          status:
-            tx.details?.status === "completed"
-              ? "success"
-              : tx.details?.status === "failed"
-              ? "failed"
-              : "pending",
-          direction: tx.direction,
-          chainId: tx.details?.chainId || 1,
-          blockNumber: tx.details?.blockNumber || 0,
-          rating: tx.rating || "unknown",
-        });
-      });
-    }
-
-    // Sort by timestamp (most recent first)
-    transactions.sort((a, b) => b.timestamp - a.timestamp);
-    console.log(transactions);
-
-    return transactions;
-  } catch (error) {
-    console.error("Error fetching recent transactions from proxy:", error);
-    throw error;
+  if (!response.ok) {
+    throw new Error(`Transactions API error: ${response.status}`);
   }
-}
 
-// Generate mock transaction data as fallback
-function generateMockTransactions(): Transaction[] {
-  const mockTransactions: Transaction[] = [
-    {
-      hash: "0x1234567890abcdef1234567890abcdef12345678",
-      timestamp: Date.now() - 1000 * 60 * 30,
-      formattedDate: new Date(Date.now() - 1000 * 60 * 30).toLocaleDateString(
-        "en-US",
-        {
-          month: "short",
-          day: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-        }
-      ),
-      type: "receive",
-      token: {
-        symbol: "USDC",
-        name: "USDC",
-        address: "0xa0b86a33e6c9440ec743fb6bcbabef3a49a7bdc3",
-        decimals: 6,
-        amount: "500000000",
-      },
-      amount: 500.0,
-      from: "0xabcdef1234567890abcdef1234567890abcdef12",
-      to: "0x1234567890abcdef1234567890abcdef12345678",
-      status: "success",
-      direction: "in",
-      chainId: 1,
-      blockNumber: 19000000,
-      rating: "reliable",
-    },
-    {
-      hash: "0x5678901234abcdef5678901234abcdef56789012",
-      timestamp: Date.now() - 1000 * 60 * 60 * 2,
-      formattedDate: new Date(
-        Date.now() - 1000 * 60 * 60 * 2
-      ).toLocaleDateString("en-US", {
+  const data = await response.json();
+  console.log("Transactions Data:", data);
+
+  const transactions: Transaction[] = [];
+
+  if (data?.items) {
+    data.items.forEach((tx: any) => {
+      const timestamp = tx.timeMs;
+      const date = new Date(timestamp);
+
+      // Format date for display
+      const formattedDate = date.toLocaleDateString("en-US", {
         month: "short",
         day: "numeric",
         hour: "2-digit",
         minute: "2-digit",
-      }),
-      type: "send",
-      token: {
-        symbol: "ETH",
-        name: "ETH",
-        address: "0x0000000000000000000000000000000000000000",
-        decimals: 18,
-        amount: "500000000000000000",
-      },
-      amount: 0.5,
-      from: "0x1234567890abcdef1234567890abcdef12345678",
-      to: "0x9876543210fedcba9876543210fedcba98765432",
-      status: "success",
-      direction: "out",
-      chainId: 1,
-      blockNumber: 19000001,
-      rating: "reliable",
-    },
-  ];
+      });
 
-  return mockTransactions;
+      // Parse token information from tokenActions
+      const tokenInfo = parseTokenActions(
+        tx.details?.tokenActions || [],
+        tx.details?.type || ""
+      );
+
+      // Calculate human-readable amount
+      const numericAmount =
+        parseFloat(tokenInfo.amount) / Math.pow(10, tokenInfo.decimals);
+
+      // Determine transaction type
+      const type = getTransactionType(tx.details, tx.direction);
+
+      transactions.push({
+        hash: tx.details?.txHash || `tx-${tx.id}`,
+        timestamp: timestamp,
+        formattedDate: formattedDate,
+        type: type,
+        token: {
+          symbol: tokenInfo.symbol,
+          name: tokenInfo.name,
+          address: tokenInfo.address,
+          decimals: tokenInfo.decimals,
+          amount: tokenInfo.amount,
+        },
+        swapDetails: tokenInfo.swapDetails,
+        amount: numericAmount,
+        from: tx.details?.fromAddress || "",
+        to: tx.details?.toAddress || "",
+        status:
+          tx.details?.status === "completed"
+            ? "success"
+            : tx.details?.status === "failed"
+            ? "failed"
+            : "pending",
+        direction: tx.direction,
+        chainId: tx.details?.chainId || 1,
+        blockNumber: tx.details?.blockNumber || 0,
+        rating: tx.rating || "unknown",
+      });
+    });
+  }
+
+  // Sort by timestamp (most recent first)
+  transactions.sort((a, b) => b.timestamp - a.timestamp);
+  console.log(transactions);
+
+  return transactions;
 }
 
 // Custom hook for recent transactions
@@ -351,18 +281,7 @@ export function useRecentTransactions({
 
   return useQuery({
     queryKey: ["recentTransactions", address],
-    queryFn: async () => {
-      try {
-        return await fetchRecentTransactions(address!);
-      } catch (error) {
-        console.warn(
-          "Failed to fetch real transactions, using mock data:",
-          error
-        );
-        // Return mock data as fallback
-        return generateMockTransactions();
-      }
-    },
+    queryFn: () => fetchRecentTransactions(address!),
     enabled: Boolean(enabled && isConnected && address),
     staleTime: 2 * 60 * 1000, // 2 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes

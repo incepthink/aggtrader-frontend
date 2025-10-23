@@ -11,6 +11,7 @@ import { ChainProvider } from "@/context/ChainContext";
 import { GoogleAnalytics } from "@next/third-parties/google";
 import { DerivedStateTwapProvider } from "@/store/limit-order/derivedstate-twap-provider";
 import { VaultProviders } from "@/lib/yearnfi/lib/contexts/Providers";
+import Script from "next/script";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -36,12 +37,22 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#050C19] relative`}
       >
+        {/* Clarity */}
+        <Script id="ms-clarity" strategy="afterInteractive">
+          {`
+            (function(c,l,a,r,i,t,y){
+              c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+              t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+              y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+            })(window, document, "clarity", "script", "tulul7osl2");
+          `}
+        </Script>
+
         <WagmiWalletProvider>
           <MuiThemeProvider>
             <ChainProvider defaultChain="ETHEREUM">
               <DerivedStateTwapProvider isLimitOrder={true}>
                 <VaultProviders>
-                  {/* Background */}
                   <div className="fixed inset-0 -z-10 overflow-hidden">
                     <img
                       src="/ellipse-home.png"
@@ -49,7 +60,6 @@ export default function RootLayout({
                       alt=""
                     />
                   </div>
-                  {/* Main UI */}
                   <Navbar />
                   <ConditionalMorphoNavbar />
                   {children}
