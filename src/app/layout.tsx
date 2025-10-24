@@ -1,4 +1,4 @@
-// app/layout.tsx (RootLayout)
+// app/layout.tsx
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -37,6 +37,18 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#050C19] relative`}
       >
+        {/* New Relic Browser Agent - Add this FIRST */}
+        <Script
+          id="new-relic-browser"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              // Paste your New Relic Browser snippet here
+              // Get it from: New Relic UI > Browser > Your App > Application settings
+            `,
+          }}
+        />
+
         {/* Clarity */}
         <Script id="ms-clarity" strategy="afterInteractive">
           {`
