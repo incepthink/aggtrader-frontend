@@ -28,7 +28,10 @@ import {
   Tab,
 } from "@mui/material";
 import { Close as CloseIcon, Search as SearchIcon } from "@mui/icons-material";
-import { useTokensBackend, type TokenData } from "../../hooks/useTokensBackend";
+import {
+  useTokensBackend,
+  type TokenData,
+} from "../../../../hooks/useTokensBackend";
 import { useSpotStore } from "@/store/spotStore";
 
 // Priority tokens that should appear first
@@ -556,9 +559,7 @@ export const TokenSelectionModal: FC = () => {
                   activeTab === "popular"
                     ? priorityTokens.length
                     : allTokens.length
-                } ${activeTab} tokens available on ${
-                  chainId === 1 ? "Ethereum" : `Chain ${chainId}`
-                }`}
+                } ${activeTab} tokens available on Katana`}
           </Typography>
         </Box>
       </DialogContent>

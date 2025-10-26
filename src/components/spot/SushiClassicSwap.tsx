@@ -14,11 +14,11 @@ import { useSpotStore } from "@/store/spotStore";
 import { GradientConnectButton } from "../common/navbar/Navbar";
 
 // Import refactored components
-import { SwapSettings } from "./SwapSettings";
-import { SwapInput } from "./SwapInput";
-import { TokenSelector } from "./TokenSelector";
-import { SwapDetails } from "./SwapDetails";
-import { TokenSelectionModal } from "./TokenSelectionModal";
+import { SwapSettings } from "./classic-swap/components/SwapSettings";
+import { SwapInput } from "./classic-swap/components/SwapInput";
+import { TokenSelector } from "./classic-swap/components/TokenSelector";
+import { SwapDetails } from "./classic-swap/components/SwapDetails";
+import { TokenSelectionModal } from "./classic-swap/components/TokenSelectionModal";
 
 // Import hooks
 import { useSushiClassic } from "../../hooks/sushiswap/useSushiClassic";

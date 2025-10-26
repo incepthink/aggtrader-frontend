@@ -1,11 +1,13 @@
 // hooks/sushiswap/useChartLifecycle.ts (MODIFIED)
 import { useRef, useCallback, MutableRefObject } from 'react';
 import { createChart, IChartApi, CandlestickData, UTCTimestamp } from 'lightweight-charts';
+import { getVisibleBarsForTimeframe, TimeframeOption } from '@/utils/chartVisibleRange';
 
 interface UseChartLifecycleProps {
   tokenAddress: string | null;
   minMove: number;
   enabled: boolean; // CHANGED: from isKatanaChain to generic enabled
+  currentTimeframe?: string; // NEW: for visible range calculation
   onChartReady: (ready: boolean) => void;
   onError: (error: string) => void;
 }
@@ -14,6 +16,7 @@ export const useChartLifecycle = ({
   tokenAddress,
   minMove,
   enabled, // CHANGED: generic enabled prop
+  currentTimeframe = '1h', // NEW: default timeframe
   onChartReady,
   onError,
 }: UseChartLifecycleProps) => {
@@ -219,9 +222,9 @@ export const useChartLifecycle = ({
       console.error('Error initializing chart:', err);
       onError(`Chart initialization error: ${err}`);
     }
-  }, [tokenAddress, enabled, onChartReady, onError, handleResize]); // CHANGED: dependencies
+  }, [tokenAddress, enabled, onChartReady, onError, handleResize]); // CHANGED: removed cleanupChart
 
-  // Update chart data
+  // Update chart data - MODIFIED TO USE DYNAMIC VISIBLE RANGE
   const updateChartData = useCallback((newData: CandlestickData[]) => {
     console.log('updateChartData called with:', newData.length, 'points');
     
@@ -243,25 +246,32 @@ export const useChartLifecycle = ({
       console.log('Setting chart data:', sortedData.length, 'candles');
       candlestickSeriesRef.current.setData(sortedData);
 
-      // Set initial visible range to show recent data
+      // Set initial visible range based on timeframe
       if (sortedData.length > 0) {
         setTimeout(() => {
           if (chartRef.current) {
             try {
+              // Get the number of bars to show based on timeframe
+              const visibleBars = getVisibleBarsForTimeframe(currentTimeframe as TimeframeOption);
+              
               const lastTime = sortedData[sortedData.length - 1].time as number;
               const firstTime = sortedData[0].time as number;
               
-              // Show last 3 days or all data if less than 3 days
-              const threeDaysInSeconds = 3 * 24 * 60 * 60;
-              const startTime = Math.max(lastTime - threeDaysInSeconds, firstTime) as UTCTimestamp;
+              // Calculate how many bars to go back
+              const barsToGoBack = Math.min(visibleBars, sortedData.length);
+              const fromIndex = Math.max(0, sortedData.length - barsToGoBack);
+              const startTime = sortedData[fromIndex].time as number;
               
-              console.log('Setting visible range:', { 
+              console.log(`Setting visible range for ${currentTimeframe}:`, { 
+                visibleBars,
+                barsToGoBack,
+                totalBars: sortedData.length,
                 from: new Date(startTime * 1000).toISOString(), 
-                to: new Date((lastTime as number) * 1000).toISOString() 
+                to: new Date(lastTime * 1000).toISOString() 
               });
               
               chartRef.current.timeScale().setVisibleRange({
-                from: startTime,
+                from: startTime as UTCTimestamp,
                 to: lastTime as UTCTimestamp,
               });
             } catch (err) {
@@ -275,7 +285,7 @@ export const useChartLifecycle = ({
       console.error('Error updating chart data:', err);
       onError(`Chart update error: ${err}`);
     }
-  }, [onError]);
+  }, [onError, currentTimeframe]); // CHANGED: added currentTimeframe
 
   return {
     chartContainerRef,

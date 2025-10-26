@@ -44,7 +44,7 @@ const ResponsiveFilterControls: React.FC<ResponsiveFilterControlsProps> = ({
           display: isMobile ? "none" : "visible",
         }}
       >
-        Vaults
+        Lending
       </Typography>
 
       {/* Search Controls */}

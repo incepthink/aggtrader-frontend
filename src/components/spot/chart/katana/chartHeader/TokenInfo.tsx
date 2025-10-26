@@ -29,6 +29,9 @@ export const TokenInfo: React.FC<TokenInfoProps> = ({
   const titleSize = isMobile ? "text-base md:text-lg" : "text-lg";
   const priceSize = isMobile ? "text-sm" : "";
 
+  const symbol = ohlcData.metadata.poolToken0.symbol;
+  const cleanedSymbol = symbol.startsWith("vb") ? symbol.slice(2) : symbol;
+
   return (
     <div className="flex items-center gap-2 md:gap-3">
       {tokenOne?.img && (
@@ -44,7 +47,7 @@ export const TokenInfo: React.FC<TokenInfoProps> = ({
           {ohlcData.metadata.poolToken0.id.toLowerCase() ===
           tokenOne?.address.toLowerCase()
             ? ohlcData.metadata.poolToken1.symbol
-            : ohlcData.metadata.poolToken0.symbol || "Token"}
+            : cleanedSymbol || "Token"}
         </p>
         <div className="flex items-center gap-2">
           <span className={`text-[#00F5E0] font-semibold ${priceSize}`}>

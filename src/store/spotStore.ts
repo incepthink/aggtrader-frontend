@@ -1,7 +1,7 @@
 import { Token, TOKENS, KATANA_TOKENS } from "@/utils/spot/TokenList";
 import { create } from "zustand";
 
-type ChainId = 1 | 747474;
+type ChainId =  747474 | 1;
 
 type TokenPosition = "tokenOne" | "tokenTwo";
 
@@ -36,7 +36,7 @@ const getDefaultTokensForChain = (chainId: ChainId): [Token, Token] => {
 const getValidChainId = (chainId: number): ChainId => {
   // Only allow supported chains, fallback to Ethereum
   if (chainId === 747474) return 747474;
-  return 1; // Default to Ethereum for any unsupported chain
+  return 747474; // Default to Ethereum for any unsupported chain
 };
 
 // Get initial chain ID from window if available (for hydration)
@@ -62,7 +62,7 @@ const getInitialChainId = (): ChainId => {
   }
 
   // Fallback to Ethereum
-  return 1;
+  return 747474;
 };
 
 const initialChainId = getInitialChainId();

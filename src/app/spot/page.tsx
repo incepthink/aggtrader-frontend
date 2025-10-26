@@ -11,7 +11,7 @@ import EthereumPoolCandlestickChart from "@/components/spot/EthereumPoolCandlest
 import { LimitWidget } from "@/components/spot/limit-widget/LimitWidget";
 import { SwapModeButtons } from "@/components/spot/limit-widget/SwapModeButtons";
 import OneInchSwap from "@/components/spot/OneInchSwap";
-import SushiClassicSwap from "@/components/spot/SushiClassicSwap";
+import SushiClassicSwap from "@/components/spot/classic-swap/Sushiclassicswap";
 import TokenBalancesCard from "@/components/spot/tokenBalance/TokenBalancesCard";
 import TokenSelect from "@/components/spot/TokenSelect";
 import { TokenSelectModal } from "@/components/spot/TokenSelectModal";
@@ -62,7 +62,7 @@ const page = () => {
               }}
             >
               {/* Chart Components */}
-              {chainId === 1 && <EthereumCandlestickChart />}
+              {/* {chainId === 1 && <EthereumCandlestickChart />} */}
               {chainId === 747474 && <KatanaCandlestickChart />}
             </Box>
 

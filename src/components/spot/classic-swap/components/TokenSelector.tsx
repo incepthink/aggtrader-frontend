@@ -5,7 +5,7 @@ import { DownOutlined } from "@ant-design/icons";
 import React from "react";
 import { formatUnits } from "viem";
 import { useAccount, useBalance } from "wagmi";
-import type { Token } from "../../hooks/sushiswap/useSwapPrices";
+import type { Token } from "../../../../hooks/sushiswap/useSwapPrices";
 
 interface TokenSelectorProps {
   token: Token;

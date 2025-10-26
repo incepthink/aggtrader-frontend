@@ -298,6 +298,7 @@ const KatanaCandlestickChart = () => {
                 resolution={resolution}
                 onChartReady={handleChartReady}
                 onError={handleChartError}
+                currentTimeframe={currentTimeframe} // NEW: pass current timeframe
               />
             </Box>
 

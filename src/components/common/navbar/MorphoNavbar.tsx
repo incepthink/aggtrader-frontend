@@ -69,7 +69,7 @@ export const MorphoNavbar: React.FC = () => {
               },
             }}
           >
-            Earn
+            Lend
           </Button>
           <Button
             onClick={() => handleTabClick("borrow")}

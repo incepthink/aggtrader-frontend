@@ -309,6 +309,7 @@ const EthereumCandlestickChart = () => {
                 onChartReady={handleChartReady}
                 onError={handleChartError}
                 chainType="ethereum"
+                currentTimeframe={currentTimeframe}
               />
             </Box>
 

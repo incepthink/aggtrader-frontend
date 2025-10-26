@@ -1,17 +1,18 @@
 // components/chart/ChartContainer.tsx (MODIFIED)
-import React, { useEffect, useRef, useState } from 'react';
-import { CandlestickData } from 'lightweight-charts';
-import { useChartLifecycle } from '@/hooks/sushiswap/useChartLifecycle';
+import React, { useEffect, useRef, useState } from "react";
+import { CandlestickData } from "lightweight-charts";
+import { useChartLifecycle } from "@/hooks/sushiswap/useChartLifecycle";
 
 interface ChartContainerProps {
   tokenAddress: string | null;
   enabled: boolean; // CHANGED: from isKatanaChain to generic enabled
   chartData: CandlestickData[];
   renderKey: number;
-  resolution: 'hour' | 'day';
+  resolution: "hour" | "day";
   onChartReady: (ready: boolean) => void;
   onError: (error: string) => void;
-  chainType?: 'katana' | 'ethereum'; // NEW: for logging purposes
+  chainType?: "katana" | "ethereum"; // NEW: for logging purposes
+  currentTimeframe?: string; // NEW: for visible range calculation
 }
 
 const ChartContainer: React.FC<ChartContainerProps> = ({
@@ -22,29 +23,28 @@ const ChartContainer: React.FC<ChartContainerProps> = ({
   resolution,
   onChartReady,
   onError,
-  chainType = 'unknown', // NEW: default value
+  chainType = "katana", // NEW: default value for Katana chain
+  currentTimeframe = "1h", // NEW: default timeframe
 }) => {
   const initializationRef = useRef<number>(0);
   const currentRenderKey = useRef<number>(renderKey);
   const [isChartInitialized, setIsChartInitialized] = useState(false);
 
-  let minMove = chartData.length > 0 ? (chartData[0].open < 0.1 ? 0.00001 : 0.01) : 0.01; // FIXED: handle empty data
+  let minMove =
+    chartData.length > 0 ? (chartData[0].open < 0.1 ? 0.00001 : 0.01) : 0.01; // FIXED: handle empty data
 
-  const {
-    chartContainerRef,
-    initializeChart,
-    cleanupChart,
-    updateChartData,
-  } = useChartLifecycle({
-    tokenAddress,
-    minMove,
-    enabled, // CHANGED: use enabled prop
-    onChartReady: (ready) => {
-      setIsChartInitialized(ready);
-      onChartReady(ready);
-    },
-    onError,
-  });
+  const { chartContainerRef, initializeChart, cleanupChart, updateChartData } =
+    useChartLifecycle({
+      tokenAddress,
+      minMove,
+      enabled, // CHANGED: use enabled prop
+      currentTimeframe, // NEW: pass timeframe
+      onChartReady: (ready) => {
+        setIsChartInitialized(ready);
+        onChartReady(ready);
+      },
+      onError,
+    });
 
   // Track render key changes to prevent loops
   useEffect(() => {
@@ -53,18 +53,22 @@ const ChartContainer: React.FC<ChartContainerProps> = ({
 
   // Initialize chart only when needed
   useEffect(() => {
-    if (!tokenAddress || !enabled) { // CHANGED: use enabled prop
+    if (!tokenAddress || !enabled) {
+      // CHANGED: use enabled prop
       cleanupChart();
       setIsChartInitialized(false);
       return;
     }
 
     const currentInit = ++initializationRef.current;
-    
+
     const timer = setTimeout(() => {
       // Only initialize if this is still the latest initialization
       if (currentInit === initializationRef.current) {
-        console.log(`[${chainType.toUpperCase()}] Initializing chart for token:`, tokenAddress); // CHANGED: chain-aware logging
+        console.log(
+          `[${chainType.toUpperCase()}] Initializing chart for token:`,
+          tokenAddress
+        ); // CHANGED: chain-aware logging
         initializeChart();
       }
     }, 100);
@@ -76,36 +80,43 @@ const ChartContainer: React.FC<ChartContainerProps> = ({
         setIsChartInitialized(false);
       }
     };
-  }, [tokenAddress, enabled, renderKey, chainType]); // CHANGED: dependencies
+  }, [tokenAddress, enabled, renderKey, chainType, currentTimeframe]); // CHANGED: added currentTimeframe
 
   // Update chart data when chart is ready AND data is available
   useEffect(() => {
-    console.log(`[${chainType.toUpperCase()}] Data update effect:`, { // CHANGED: chain-aware logging
-      isChartInitialized, 
-      enabled, 
+    console.log(`[${chainType.toUpperCase()}] Data update effect:`, {
+      // CHANGED: chain-aware logging
+      isChartInitialized,
+      enabled,
       chartDataLength: chartData.length,
-      hasData: chartData.length > 0 
+      hasData: chartData.length > 0,
     });
-    
-    if (isChartInitialized && enabled && chartData.length > 0) { // CHANGED: use enabled prop
+
+    if (isChartInitialized && enabled && chartData.length > 0) {
+      // CHANGED: use enabled prop
       // Add a small delay to ensure chart is fully ready
       const timer = setTimeout(() => {
-        console.log(`[${chainType.toUpperCase()}] Updating chart with data after initialization...`); // CHANGED: chain-aware logging
+        console.log(
+          `[${chainType.toUpperCase()}] Updating chart with data after initialization...`
+        ); // CHANGED: chain-aware logging
         updateChartData(chartData);
       }, 100);
-      
+
       return () => clearTimeout(timer);
     }
-  }, [isChartInitialized, chartData, enabled, chainType]); // CHANGED: dependencies
+  }, [isChartInitialized, chartData, enabled, chainType]); // REMOVED: updateChartData from dependencies
 
   // Handle resolution changes with cleanup
   useEffect(() => {
-    if (tokenAddress && enabled) { // CHANGED: use enabled prop
+    if (tokenAddress && enabled) {
+      // CHANGED: use enabled prop
       const currentInit = ++initializationRef.current;
-      
+
       const timer = setTimeout(() => {
         if (currentInit === initializationRef.current) {
-          console.log(`[${chainType.toUpperCase()}] Resolution changed, reinitializing chart...`); // CHANGED: chain-aware logging
+          console.log(
+            `[${chainType.toUpperCase()}] Resolution changed, reinitializing chart...`
+          ); // CHANGED: chain-aware logging
           cleanupChart();
           setIsChartInitialized(false);
           setTimeout(() => {
@@ -115,18 +126,18 @@ const ChartContainer: React.FC<ChartContainerProps> = ({
           }, 50);
         }
       }, 200);
-      
+
       return () => clearTimeout(timer);
     }
-  }, [resolution, chainType]); // CHANGED: dependencies
+  }, [resolution, chainType, tokenAddress, enabled]); // REMOVED: cleanupChart, initializeChart from dependencies
 
   return (
-    <div 
+    <div
       style={{
-        width: '100%',
-        height: '100%',
-        position: 'relative',
-        overflow: 'hidden',
+        width: "100%",
+        height: "100%",
+        position: "relative",
+        overflow: "hidden",
         // Ensure the container can be properly measured
         minWidth: 0,
         minHeight: 0,
@@ -135,16 +146,16 @@ const ChartContainer: React.FC<ChartContainerProps> = ({
       <div
         ref={chartContainerRef}
         style={{
-          width: '100%',
-          height: '100%',
-          backgroundColor: '#0d1117',
-          borderRadius: '8px',
-          position: 'relative',
+          width: "100%",
+          height: "100%",
+          backgroundColor: "#0d1117",
+          borderRadius: "8px",
+          position: "relative",
           // Remove any fixed dimensions that could interfere with responsiveness
-          minWidth: '200px', // Minimum usable chart width
-          minHeight: '200px', // Minimum usable chart height
+          minWidth: "200px", // Minimum usable chart width
+          minHeight: "200px", // Minimum usable chart height
           // Ensure the chart container takes full available space
-          boxSizing: 'border-box',
+          boxSizing: "border-box",
         }}
       />
     </div>
