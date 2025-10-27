@@ -7,9 +7,7 @@ interface MetricsDisplayProps {
   selectedTimeframe: TimeframeOption;
   timeframeMetrics: TimeframeMetrics | null;
   priceDisplayMode: MetricDisplayMode;
-  volumeDisplayMode: MetricDisplayMode;
   onPriceDisplayToggle: () => void;
-  onVolumeDisplayToggle: () => void;
   ohlcData: any;
   layout: "grid" | "row";
 }
@@ -18,9 +16,7 @@ export const MetricsDisplay: React.FC<MetricsDisplayProps> = ({
   selectedTimeframe,
   timeframeMetrics,
   priceDisplayMode,
-  volumeDisplayMode,
   onPriceDisplayToggle,
-  onVolumeDisplayToggle,
   ohlcData,
   layout,
 }) => {
@@ -51,16 +47,9 @@ export const MetricsDisplay: React.FC<MetricsDisplayProps> = ({
     }
 
     const { volumeChange } = timeframeMetrics!;
-
-    if (volumeDisplayMode === "usd") {
-      const value = volumeChange.absolute;
-      const sign = value >= 0 ? "+" : "";
-      return `${sign}$${formatCompact(Math.abs(value))}`;
-    } else {
-      const value = volumeChange.percentage;
-      const sign = value >= 0 ? "+" : "";
-      return `${sign}${value.toFixed(2)}%`;
-    }
+    const value = volumeChange.absolute;
+    const sign = value >= 0 ? "+" : "";
+    return `${sign}$${formatCompact(Math.abs(value))}`;
   };
 
   const getPriceChangeColor = (): string => {
@@ -72,7 +61,7 @@ export const MetricsDisplay: React.FC<MetricsDisplayProps> = ({
 
   const getVolumeChangeColor = (): string => {
     if (!hasValidTimeframeData) return "text-gray-400";
-    return timeframeMetrics!.volumeChange.percentage >= 0
+    return timeframeMetrics!.volumeChange.absolute >= 0
       ? "text-green-400"
       : "text-red-400";
   };
@@ -95,8 +84,7 @@ export const MetricsDisplay: React.FC<MetricsDisplayProps> = ({
       <MetricCard
         label={`Volume (${selectedTimeframe})`}
         value={renderVolumeChange()}
-        isClickable
-        onClick={onVolumeDisplayToggle}
+        isClickable={false}
         colorClass={getVolumeChangeColor()}
         disabled={!hasValidTimeframeData}
         variant={layout}

@@ -167,9 +167,8 @@ function generateOHLCFromSwaps(swaps: SwapData[], timeframeMinutes: number): Can
   // Sort time windows to process in chronological order
   const sortedWindows = Array.from(groupedSwaps.entries()).sort((a, b) => a[0] - b[0]);
 
-  // Convert each window to OHLC with price continuity
+  // Convert each window to OHLC - NO PRICE CONTINUITY (like DexScreener)
   const ohlcData: CandlestickData[] = [];
-  let previousClose: number | null = null;
 
   for (const [windowStart, windowSwaps] of sortedWindows) {
     // Sort swaps by timestamp within the window
@@ -181,43 +180,27 @@ function generateOHLCFromSwaps(swaps: SwapData[], timeframeMinutes: number): Can
 
     if (prices.length === 0) continue;
 
-    // Determine open price with continuity logic
-    let openPrice: number;
-    if (previousClose === null) {
-      // First candle: use actual first trade price
-      openPrice = prices[0];
-    } else {
-      // Subsequent candles: open at previous candle's close for continuity
-      openPrice = previousClose;
-    }
-
-    const closePrice = prices[prices.length - 1]; // Last price in window
+    // Use ACTUAL first trade as open (not previous close)
+    const openPrice = prices[0];              // First trade in window
+    const closePrice = prices[prices.length - 1]; // Last trade in window
     const highPrice = Math.max(...prices);       // Highest price in window
     const lowPrice = Math.min(...prices);        // Lowest price in window
-
-    // Ensure high includes the open price (in case open > all trade prices)
-    const adjustedHigh = Math.max(highPrice, openPrice);
-    // Ensure low includes the open price (in case open < all trade prices)  
-    const adjustedLow = Math.min(lowPrice, openPrice);
 
     const ohlcPoint: CandlestickData = {
       time: Math.floor(windowStart / 1000) as UTCTimestamp, // Convert to seconds
       open: openPrice,
-      high: adjustedHigh,
-      low: adjustedLow,
+      high: highPrice,
+      low: lowPrice,
       close: closePrice,
     };
 
     ohlcData.push(ohlcPoint);
-    
-    // Update previous close for next iteration
-    previousClose = closePrice;
   }
 
   // Sort by timestamp (should already be sorted, but ensure it)
   ohlcData.sort((a, b) => (a.time as number) - (b.time as number));
 
-  console.log(`Generated ${ohlcData.length} OHLC points with price continuity`);
+  console.log(`Generated ${ohlcData.length} OHLC points (no artificial continuity)`);
   
   if (ohlcData.length > 0) {
     console.log('First OHLC point:', ohlcData[0]);
@@ -228,7 +211,8 @@ function generateOHLCFromSwaps(swaps: SwapData[], timeframeMinutes: number): Can
 }
 
 /**
- * Calculate timeframe-specific metrics (price change, volume change) - PROPERLY FIXED VERSION
+ * Calculate timeframe-specific metrics (price change, volume change) - FIXED VERSION
+ * Now properly filters to ONLY the selected timeframe window from NOW backwards
  */
 function calculateTimeframeMetrics(
   swaps: SwapData[], 
@@ -255,157 +239,122 @@ function calculateTimeframeMetrics(
     };
   }
 
-  console.log(`[Metrics Calculation] Calculating for timeframe: ${timeframe}`);
+  console.log(`[Metrics] Calculating for timeframe: ${timeframe}`);
 
-  // Get the timeframe duration in milliseconds
+  // Get timeframe duration in milliseconds
   const timeframeMinutes = getTimeframeMinutes(timeframe);
   const timeframeMs = timeframeMinutes * 60 * 1000;
 
-  // Calculate how many recent periods to include based on timeframe
-  // For shorter timeframes, we want more recent periods for meaningful data
-  let periodsToInclude: number;
-  switch (timeframe) {
-    case '1m':
-      periodsToInclude = Math.min(60, ohlcData.length); // Last 60 minutes
-      break;
-    case '5m':
-      periodsToInclude = Math.min(48, ohlcData.length); // Last 4 hours (48 * 5min)
-      break;
-    case '15m':
-      periodsToInclude = Math.min(32, ohlcData.length); // Last 8 hours (32 * 15min)
-      break;
-    case '30m':
-      periodsToInclude = Math.min(48, ohlcData.length); // Last 24 hours (48 * 30min)
-      break;
-    case '1h':
-      periodsToInclude = Math.min(24, ohlcData.length); // Last 24 hours
-      break;
-    case '4h':
-      periodsToInclude = Math.min(42, ohlcData.length); // Last 7 days (42 * 4h)
-      break;
-    case '1d':
-      periodsToInclude = Math.min(30, ohlcData.length); // Last 30 days
-      break;
-    case '1w':
-      periodsToInclude = Math.min(12, ohlcData.length); // Last 12 weeks
-      break;
-    default:
-      periodsToInclude = Math.min(24, ohlcData.length);
-  }
+  // Get the most recent candle's timestamp
+  const lastCandle = ohlcData[ohlcData.length - 1];
+  const currentTime = (lastCandle.time as number) * 1000; // Convert to milliseconds
 
-  // Get the most recent OHLC data for this timeframe
-  const recentOHLCData = ohlcData.slice(-periodsToInclude);
-  
-  console.log(`[Metrics Calculation] Using recent data:`, {
-    totalOHLCPoints: ohlcData.length,
-    periodsToInclude,
-    recentOHLCCount: recentOHLCData.length,
-    timeframeMinutes,
-    firstRecentTime: recentOHLCData[0] ? new Date((recentOHLCData[0].time as number) * 1000).toISOString() : 'none',
-    lastRecentTime: recentOHLCData[recentOHLCData.length - 1] ? new Date((recentOHLCData[recentOHLCData.length - 1].time as number) * 1000).toISOString() : 'none'
+  // Calculate the start time for the selected timeframe window
+  const timeframeStartTime = currentTime - timeframeMs;
+
+  console.log(`[Metrics] Timeframe window:`, {
+    timeframe,
+    currentTime: new Date(currentTime).toISOString(),
+    timeframeStartTime: new Date(timeframeStartTime).toISOString(),
+    durationMs: timeframeMs,
   });
 
-  // Filter swaps to only those within the recent OHLC timeframe
-  const recentStartTime = (recentOHLCData[0]?.time as number) * 1000; // Convert to milliseconds
-  const recentEndTime = (recentOHLCData[recentOHLCData.length - 1]?.time as number) * 1000;
-  
-  // For volume calculations, we want to focus on just the LAST timeframe period, not the entire recent period
-  // Get the most recent single timeframe period
-  const lastOHLC = recentOHLCData[recentOHLCData.length - 1];
-  const lastPeriodStart = (lastOHLC?.time as number) * 1000;
-  const lastPeriodEnd = lastPeriodStart + timeframeMs;
-  
-  // Filter swaps for just the most recent single timeframe period
-  const lastPeriodSwaps = swaps.filter(swap => 
-    swap.timestamp >= lastPeriodStart && swap.timestamp < lastPeriodEnd
-  );
-
-  console.log(`[Metrics Calculation] Filtered swaps for most recent ${timeframe} period:`, {
-    originalCount: swaps.length,
-    lastPeriodCount: lastPeriodSwaps.length,
-    lastPeriodTimeRange: {
-      start: new Date(lastPeriodStart).toISOString(),
-      end: new Date(lastPeriodEnd).toISOString(),
-      durationMinutes: timeframeMinutes
-    }
+  // Filter OHLC data to ONLY the selected timeframe period
+  const timeframeOHLC = ohlcData.filter(candle => {
+    const candleTime = (candle.time as number) * 1000;
+    return candleTime >= timeframeStartTime && candleTime <= currentTime;
   });
 
-  // Price change calculation from recent OHLC data
-  const firstPrice = recentOHLCData[0]?.open || 0;
-  const lastPrice = recentOHLCData[recentOHLCData.length - 1]?.close || 0;
-  
-  const priceAbsolute = lastPrice - firstPrice;
-  const pricePercentage = firstPrice > 0 ? (priceAbsolute / firstPrice) * 100 : 0;
+  console.log(`[Metrics] Filtered OHLC:`, {
+    totalCandles: ohlcData.length,
+    timeframeCandles: timeframeOHLC.length,
+  });
 
-  // Calculate total volume for just the most recent single timeframe period
-  const totalVolume = lastPeriodSwaps.reduce((sum, swap) => sum + swap.tokenVolumeUSD, 0);
-
-  // Volume change calculation - compare current single timeframe with previous single timeframe
-  let volumeAbsolute = 0;
-  let volumePercentage = 0;
-  let previousPeriodSwaps: SwapData[] | null = null;
-
-  // For volume change, compare the last timeframe period with the immediately previous timeframe period
-  if (recentOHLCData.length >= 2) {
-    // Get the previous OHLC period
-    const previousOHLC = recentOHLCData[recentOHLCData.length - 2];
-    
-    // Calculate time range for the previous timeframe period
-    const previousPeriodStart = (previousOHLC.time as number) * 1000;
-    const previousPeriodEnd = previousPeriodStart + timeframeMs;
-    
-    // Filter swaps for the previous timeframe period
-    previousPeriodSwaps = swaps.filter(swap => 
-      swap.timestamp >= previousPeriodStart && swap.timestamp < previousPeriodEnd
-    );
-    
-    const previousPeriodVolume = previousPeriodSwaps.reduce((sum, swap) => sum + swap.tokenVolumeUSD, 0);
-    
-    volumeAbsolute = totalVolume - previousPeriodVolume;
-    volumePercentage = previousPeriodVolume > 0 ? (volumeAbsolute / previousPeriodVolume) * 100 : 0;
-    
-    console.log(`[Metrics Calculation] Volume comparison for single ${timeframe} periods:`, {
-      timeframeMs,
-      currentPeriod: { 
-        start: new Date(lastPeriodStart).toISOString(), 
-        end: new Date(lastPeriodEnd).toISOString(), 
-        volume: totalVolume,
-        swaps: lastPeriodSwaps.length
-      },
-      previousPeriod: { 
-        start: new Date(previousPeriodStart).toISOString(), 
-        end: new Date(previousPeriodEnd).toISOString(), 
-        volume: previousPeriodVolume,
-        swaps: previousPeriodSwaps.length
-      },
-      change: { absolute: volumeAbsolute, percentage: volumePercentage }
-    });
-  }
-
-  // If we have very few swaps, fallback to OHLC-only calculation
-  if (lastPeriodSwaps.length < 1) {
-    console.log(`[Metrics Calculation] Too few swaps in last period (${lastPeriodSwaps.length}), using fallback calculation`);
-    
+  if (timeframeOHLC.length === 0) {
+    console.warn('[Metrics] No OHLC data in timeframe window');
     return {
-      priceChange: { absolute: priceAbsolute, percentage: pricePercentage },
-      volumeChange: { absolute: volumeAbsolute, percentage: volumePercentage },
-      totalVolume: totalVolume,
-      avgPrice: lastPrice,
+      priceChange: { absolute: 0, percentage: 0 },
+      volumeChange: { absolute: 0, percentage: 0 },
+      totalVolume: 0,
+      avgPrice: lastCandle.close,
     };
   }
 
-  // Volume-weighted average price from last period swaps
+  // --- PRICE CHANGE CALCULATION ---
+  const firstCandle = timeframeOHLC[0];
+  const lastCandleInWindow = timeframeOHLC[timeframeOHLC.length - 1];
+  
+  const startPrice = firstCandle.open;
+  const endPrice = lastCandleInWindow.close;
+  
+  const priceAbsolute = endPrice - startPrice;
+  const pricePercentage = startPrice > 0 ? (priceAbsolute / startPrice) * 100 : 0;
+
+  console.log(`[Metrics] Price change:`, {
+    startPrice,
+    endPrice,
+    absolute: priceAbsolute,
+    percentage: pricePercentage,
+  });
+
+  // --- VOLUME CALCULATION ---
+  // Filter swaps to ONLY the current timeframe period
+  const currentPeriodSwaps = swaps.filter(swap => 
+    swap.timestamp >= timeframeStartTime && swap.timestamp <= currentTime
+  );
+
+  const currentVolume = currentPeriodSwaps.reduce((sum, swap) => sum + swap.tokenVolumeUSD, 0);
+
+  console.log(`[Metrics] Current period volume:`, {
+    swaps: currentPeriodSwaps.length,
+    volume: currentVolume,
+  });
+
+  // --- VOLUME CHANGE CALCULATION ---
+  // Compare with the PREVIOUS timeframe period
+  const previousPeriodStartTime = timeframeStartTime - timeframeMs;
+  const previousPeriodEndTime = timeframeStartTime;
+
+  const previousPeriodSwaps = swaps.filter(swap => 
+    swap.timestamp >= previousPeriodStartTime && swap.timestamp < previousPeriodEndTime
+  );
+
+  const previousVolume = previousPeriodSwaps.reduce((sum, swap) => sum + swap.tokenVolumeUSD, 0);
+
+  const volumeAbsolute = currentVolume - previousVolume;
+  const volumePercentage = previousVolume > 0 ? (volumeAbsolute / previousVolume) * 100 : 0;
+
+  console.log(`[Metrics] Volume change:`, {
+    previousPeriod: {
+      start: new Date(previousPeriodStartTime).toISOString(),
+      end: new Date(previousPeriodEndTime).toISOString(),
+      swaps: previousPeriodSwaps.length,
+      volume: previousVolume,
+    },
+    currentPeriod: {
+      start: new Date(timeframeStartTime).toISOString(),
+      end: new Date(currentTime).toISOString(),
+      swaps: currentPeriodSwaps.length,
+      volume: currentVolume,
+    },
+    change: {
+      absolute: volumeAbsolute,
+      percentage: volumePercentage,
+    },
+  });
+
+  // --- AVERAGE PRICE CALCULATION ---
   let totalWeightedPrice = 0;
   let totalVolumeForAvg = 0;
   
-  for (const swap of lastPeriodSwaps) {
+  for (const swap of currentPeriodSwaps) {
     if (swap.tokenVolumeUSD > 0) {
       totalWeightedPrice += swap.tokenPriceUSD * swap.tokenVolumeUSD;
       totalVolumeForAvg += swap.tokenVolumeUSD;
     }
   }
   
-  const avgPrice = totalVolumeForAvg > 0 ? totalWeightedPrice / totalVolumeForAvg : lastPrice;
+  const avgPrice = totalVolumeForAvg > 0 ? totalWeightedPrice / totalVolumeForAvg : endPrice;
 
   const result = {
     priceChange: {
@@ -416,23 +365,11 @@ function calculateTimeframeMetrics(
       absolute: volumeAbsolute,
       percentage: volumePercentage,
     },
-    totalVolume: totalVolume,
+    totalVolume: currentVolume,
     avgPrice: avgPrice,
   };
 
-  console.log(`[Metrics Calculation] Final result for ${timeframe}:`, {
-    periodsIncluded: periodsToInclude,
-    priceChange: result.priceChange,
-    volumeChange: result.volumeChange,
-    totalVolume: result.totalVolume,
-    avgPrice: result.avgPrice,
-    dataPoints: { 
-      lastPeriodSwaps: lastPeriodSwaps.length, 
-      recentOHLC: recentOHLCData.length,
-      previousPeriodSwaps: previousPeriodSwaps?.length || 0,
-      timeframeMinutes: timeframeMinutes
-    }
-  });
+  console.log(`[Metrics] Final result:`, result);
 
   return result;
 }
@@ -524,6 +461,7 @@ export function useKatanaSwapOHLC({
         },
       });
 
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -575,10 +513,10 @@ export function useKatanaSwapOHLC({
       const shouldFillGaps = false; // Enable gap filling for continuous charts
       const filledChart = shouldFillGaps ? fillOHLCGaps(ohlcChart, timeframeMinutes) : ohlcChart;
 
-      // Calculate timeframe-specific metrics - THIS IS THE KEY FIX
+      // Calculate timeframe-specific metrics - NOW FIXED TO USE EXACT TIMEFRAME WINDOW
       const timeframeMetrics = calculateTimeframeMetrics(
         rawSwapData.swaps, 
-        filledChart, // Use the processed OHLC chart, not the raw swaps
+        filledChart,
         timeframe
       );
 

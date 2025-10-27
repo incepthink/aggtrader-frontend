@@ -23,8 +23,6 @@ export const DesktopLayout: React.FC<ChartHeaderProps> = ({
 }) => {
   const [priceDisplayMode, setPriceDisplayMode] =
     useState<MetricDisplayMode>("percentage");
-  const [volumeDisplayMode, setVolumeDisplayMode] =
-    useState<MetricDisplayMode>("usd");
 
   const hasValidTimeframeData =
     !!timeframeMetrics && timeframeMetrics.timeframe === selectedTimeframe;
@@ -53,16 +51,9 @@ export const DesktopLayout: React.FC<ChartHeaderProps> = ({
     }
 
     const { volumeChange } = timeframeMetrics!;
-
-    if (volumeDisplayMode === "usd") {
-      const value = volumeChange.absolute;
-      const sign = value >= 0 ? "+" : "";
-      return `${sign}$${formatCompact(Math.abs(value))}`;
-    } else {
-      const value = volumeChange.percentage;
-      const sign = value >= 0 ? "+" : "";
-      return `${sign}${value.toFixed(2)}%`;
-    }
+    const value = volumeChange.absolute;
+    const sign = value >= 0 ? "+" : "";
+    return `${sign}$${formatCompact(Math.abs(value))}`;
   };
 
   const getPriceChangeColor = (): string => {
@@ -74,7 +65,7 @@ export const DesktopLayout: React.FC<ChartHeaderProps> = ({
 
   const getVolumeChangeColor = (): string => {
     if (!hasValidTimeframeData) return "text-gray-400";
-    return timeframeMetrics!.volumeChange.percentage >= 0
+    return timeframeMetrics!.volumeChange.absolute >= 0
       ? "text-green-400"
       : "text-red-400";
   };
@@ -128,22 +119,14 @@ export const DesktopLayout: React.FC<ChartHeaderProps> = ({
             </button>
           </div>
 
-          {/* Volume Change */}
+          {/* Volume Change - USD ONLY */}
           <div className="flex flex-col items-center">
             <p className="text-xs text-gray-400 mb-1">
               Volume ({selectedTimeframe})
             </p>
-            <button
-              onClick={() =>
-                setVolumeDisplayMode((prev) =>
-                  prev === "usd" ? "percentage" : "usd"
-                )
-              }
-              className={`text-sm font-medium hover:opacity-80 transition-opacity cursor-pointer ${getVolumeChangeColor()}`}
-              disabled={!hasValidTimeframeData}
-            >
+            <p className={`text-sm font-medium ${getVolumeChangeColor()}`}>
               {renderVolumeChange()}
-            </button>
+            </p>
           </div>
 
           {/* Total Volume */}

@@ -21,8 +21,6 @@ export const MobileLayout: React.FC<ChartHeaderProps> = ({
 }) => {
   const [priceDisplayMode, setPriceDisplayMode] =
     useState<MetricDisplayMode>("percentage");
-  const [volumeDisplayMode, setVolumeDisplayMode] =
-    useState<MetricDisplayMode>("usd");
 
   // Track if screen is >= 850px
   const [isTabletSize, setIsTabletSize] = useState(false);
@@ -63,14 +61,8 @@ export const MobileLayout: React.FC<ChartHeaderProps> = ({
               selectedTimeframe={selectedTimeframe}
               timeframeMetrics={timeframeMetrics}
               priceDisplayMode={priceDisplayMode}
-              volumeDisplayMode={volumeDisplayMode}
               onPriceDisplayToggle={() =>
                 setPriceDisplayMode((prev) =>
-                  prev === "usd" ? "percentage" : "usd"
-                )
-              }
-              onVolumeDisplayToggle={() =>
-                setVolumeDisplayMode((prev) =>
                   prev === "usd" ? "percentage" : "usd"
                 )
               }
@@ -106,14 +98,8 @@ export const MobileLayout: React.FC<ChartHeaderProps> = ({
           selectedTimeframe={selectedTimeframe}
           timeframeMetrics={timeframeMetrics}
           priceDisplayMode={priceDisplayMode}
-          volumeDisplayMode={volumeDisplayMode}
           onPriceDisplayToggle={() =>
             setPriceDisplayMode((prev) =>
-              prev === "usd" ? "percentage" : "usd"
-            )
-          }
-          onVolumeDisplayToggle={() =>
-            setVolumeDisplayMode((prev) =>
               prev === "usd" ? "percentage" : "usd"
             )
           }

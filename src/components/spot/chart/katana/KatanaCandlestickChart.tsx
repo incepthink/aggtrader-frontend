@@ -120,6 +120,8 @@ const KatanaCandlestickChart = () => {
     isKatanaChain,
   });
 
+  console.log("CHART DATA", chartData);
+
   // Handle chart ready state
   const handleChartReady = useCallback((ready: boolean) => {
     setChartReady(ready);

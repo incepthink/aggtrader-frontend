@@ -20,10 +20,11 @@ export default function Home() {
         /> */}
       </div>
       <div className="absolute top-0 h-screen w-full flex items-center justify-center bg-transparent text-white">
-        <div className="text-center px-4 sm:px-8 max-w-3xl z-10">
-          <h1 className="text-4xl sm:text-6xl font-semibold leading-tight">
-            The Platform to Power <br />
-            All <span className="text-cyan-400">Agg Trades</span>
+        <div className="text-center px-4 sm:px-8 max-w-4xl z-10">
+          <h1 className="text-4xl sm:text-4xl md:text-5xl font-semibold leading-tight">
+            The Hub for all DeFi activity on
+            <br />
+            <span className="text-cyan-400 text-4xl md:text-6xl">Katana</span>
           </h1>
           <p className="mt-4 text-lg sm:text-xl text-gray-300">
             Trading is chaotic — but it doesn’t have to be.
