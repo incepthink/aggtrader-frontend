@@ -39,6 +39,7 @@
     "date-fns": "^4.1.0",
     "dayjs": "^1.11.13",
     "ethers": "^5.8.0",
+    "framer-motion": "^12.23.24",
     "graphql": "^16.11.0",
     "lightweight-charts": "^4.2.3",
     "next": "^15.5.2",
