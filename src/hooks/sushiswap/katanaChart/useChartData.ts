@@ -1,77 +1,55 @@
+// hooks/sushiswap/katanaChart/useChartData.ts
+
 import { useMemo, useRef } from 'react';
-// CHANGE THIS LINE: Replace the import
-import { useKatanaSqrtPriceOHLC, TimeframeOption } from '@/hooks/sushiswap/katanaChart/useKatanaSqrtPriceOHLC'; // Updated import
+import { useKatanaCandleOHLC } from '@/hooks/sushiswap/katanaChart/useKatanaCandleOHLC';
 import { usePriceBackend } from '@/hooks/sushiswap/usePriceBackend';
 import { CandlestickData, UTCTimestamp } from 'lightweight-charts';
-import useKatanaSwapOHLC from './useKatanaSwapOHLC';
+import { TimeframeOption, TimeframeMetrics } from '@/components/spot/chart/katana/chartHeader/types';
 
-interface UseChartDataProps {
-  tokenAddress: string | null;
-  chainId: number;
-  resolution: 'hour' | 'day';
-  isKatanaChain: boolean;
-}
-
-// Extended return type to include timeframe functionality
 interface UseChartDataReturn {
-  // Data
   ohlcData: any;
-  chartData: CandlestickData[];
+  chartData: any[];
   currentPrice: number | null;
   priceChange: { percentage: number; absolute: number };
-  high: number;
-  low: number;
-  
-  // Loading states
+  high: number | null;
+  low: number | null;
   isLoading: boolean;
   ohlcLoading: boolean;
   priceLoading: boolean;
-  
-  // Error states
   error: string | null;
   priceHasError: boolean;
   priceErrorData: any;
   isSupported: boolean;
-  
-  // Actions
   refetchAll: () => void;
   refetchOHLC: () => void;
   refetchPrice: () => void;
-  
-  // New timeframe functionality
   currentTimeframe: TimeframeOption;
   changeTimeframe: (timeframe: TimeframeOption) => void;
   isProcessingTimeframe: boolean;
-  
-  // New timeframe metrics
-  timeframeMetrics: {
-    priceChange: { absolute: number; percentage: number };
-    volumeChange: { absolute: number; percentage: number };
-    totalVolume: number;
-    avgPrice: number;
-    timeframe: TimeframeOption;
-  } | null;
+  timeframeMetrics: TimeframeMetrics | null;
 }
 
-export const useChartData = ({
+export function useChartData({
   tokenAddress,
   chainId,
-  resolution,
+  timeframe = '1h',
   isKatanaChain,
-}: UseChartDataProps): UseChartDataReturn => {
-  // Track processed data to prevent unnecessary re-processing
+}: {
+  tokenAddress: string | null;
+  chainId: number;
+  timeframe?: TimeframeOption;
+  isKatanaChain: boolean;
+}): UseChartDataReturn {
   const lastProcessedData = useRef<any>(null);
   const lastProcessedCount = useRef<number>(0);
 
-  // Debug logging
-  console.log('useChartData:', { tokenAddress, chainId, resolution, isKatanaChain });
+  console.log('useChartData:', { tokenAddress, chainId, timeframe, isKatanaChain });
 
   if (tokenAddress === "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee") {
     tokenAddress = "0xee7d8bcfb72bc1880d0cf19822eb0a2e6577ab62"
   }
 
-  // CHANGE THIS LINE: Replace the hook call
-  // Katana SqrtPrice OHLC Data Hook (NEW - uses accurate pool pricing)
+  // Katana Candle OHLC Data Hook (uses pre-computed candles from backend)
   const {
     data: ohlcData,
     isLoading: ohlcLoading,
@@ -81,17 +59,16 @@ export const useChartData = ({
     currentTimeframe,
     changeTimeframe,
     isProcessingTimeframe,
-  } = useKatanaSwapOHLC({
+  } = useKatanaCandleOHLC({
     tokenAddress: tokenAddress || '',
-    resolution,
+    timeframe,
     days: 365,
     autoRefresh: isKatanaChain,
     refreshInterval: 300000,
     enabled: isKatanaChain && !!tokenAddress,
   });
 
-  // Debug OHLC data
-  console.log('OHLC Data from sqrt prices:', { ohlcData, ohlcLoading, ohlcError, isSupported });
+  console.log('OHLC Data from candles:', { ohlcData, ohlcLoading, ohlcError, isSupported });
 
   // Current price from Sushi API
   const {
@@ -111,25 +88,14 @@ export const useChartData = ({
     }
   );
 
-  // Debug price data
   console.log('Price Data:', { currentPrice, priceLoading, priceHasError });
-  
-  // If we have pool price from sqrt data, log comparison
-  // if (ohlcData?.metadata?.currentPoolPrice && currentPrice) {
-  //   console.log('Price comparison:', {
-  //     sushiApiPrice: currentPrice,
-  //     poolPrice: ohlcData.metadata.currentPoolPrice,
-  //     difference: Math.abs(currentPrice - ohlcData.metadata.currentPoolPrice),
-  //     percentageDiff: Math.abs(currentPrice - ohlcData.metadata.currentPoolPrice) / currentPrice * 100
-  //   });
-  // }
 
-  // Process OHLC data for chart with memoization
+  // Process candle data for chart (backend returns ready candles!)
   const chartData = useMemo((): CandlestickData[] => {
     console.log('Processing chart data...', { ohlcData, isKatanaChain });
     
-    if (!ohlcData?.chart || !isKatanaChain) {
-      console.log('No OHLC data or not Katana chain');
+    if (!ohlcData?.candles || !isKatanaChain) {
+      console.log('No candle data or not Katana chain');
       lastProcessedData.current = null;
       lastProcessedCount.current = 0;
       return [];
@@ -138,55 +104,122 @@ export const useChartData = ({
     // Check if we already processed this exact data
     if (
       lastProcessedData.current === ohlcData && 
-      lastProcessedCount.current === ohlcData.chart.length
+      lastProcessedCount.current === ohlcData.candles.length
     ) {
       console.log('Data unchanged, skipping processing');
       return lastProcessedData.current.processedChart || [];
     }
 
     try {
-      // The sqrt price hook already returns properly formatted CandlestickData with accurate pricing
-      const processed = ohlcData.chart.filter((point) => {
-        const isValid = (
-          point.time &&
-          point.open > 0 &&
-          point.high > 0 &&
-          point.low > 0 &&
-          point.close > 0 &&
-          !isNaN(point.open) &&
-          !isNaN(point.high) &&
-          !isNaN(point.low) &&
-          !isNaN(point.close)
-        );
-        if (!isValid) {
-          console.log('Invalid OHLC point:', point);
-        }
-        return isValid;
-      });
+      // Backend returns ready-to-use CandlestickData format!
+      const processed = ohlcData.candles
+        .filter((candle: any) => {
+          const isValid = (
+            candle.timestamp &&
+            candle.open > 0 &&
+            candle.high > 0 &&
+            candle.low > 0 &&
+            candle.close > 0 &&
+            !isNaN(candle.open) &&
+            !isNaN(candle.high) &&
+            !isNaN(candle.low) &&
+            !isNaN(candle.close)
+          );
+          if (!isValid) {
+            console.log('Invalid candle:', candle);
+          }
+          return isValid;
+        })
+        .map((candle: any) => ({
+          time: Math.floor(candle.timestamp / 1000) as UTCTimestamp,
+          open: candle.open,
+          high: candle.high,
+          low: candle.low,
+          close: candle.close,
+        }));
 
-      console.log('Processed sqrt price chart data:', processed.length, 'points');
+      console.log('Processed candle chart data:', processed.length, 'points');
       if (processed.length > 0) {
-        console.log('First sqrt price point:', processed[0]);
-        console.log('Last sqrt price point:', processed[processed.length - 1]);
+        console.log('First candle:', processed[0]);
+        console.log('Last candle:', processed[processed.length - 1]);
         console.log('Price range:', {
-          min: Math.min(...processed.map(p => p.low)),
-          max: Math.max(...processed.map(p => p.high)),
+          min: Math.min(...processed.map((p: any) => p.low)),
+          max: Math.max(...processed.map((p: any) => p.high)),
           latest: processed[processed.length - 1].close
         });
       }
 
       // Cache the processed data
       lastProcessedData.current = { ...ohlcData, processedChart: processed };
-      lastProcessedCount.current = ohlcData.chart.length;
+      lastProcessedCount.current = ohlcData.candles.length;
 
       return processed;
     } catch (err) {
-      console.error('Error processing sqrt price chart data:', err);
+      console.error('Error processing candle chart data:', err);
       throw new Error(`Data processing error: ${err}`);
     }
   }, [ohlcData, isKatanaChain]);
 
-  // Calculate price change
+  // Calculate timeframe metrics from candles
+  const timeframeMetrics = useMemo((): TimeframeMetrics | null => {
+    if (!ohlcData?.candles || ohlcData.candles.length === 0) {
+      return null;
+    }
+
+    // Sort candles by timestamp to ensure oldest first, newest last
+    const candles = [...ohlcData.candles].sort((a, b) => a.timestamp - b.timestamp);
+    
+    const firstCandle = candles[0]; // Oldest candle
+    const lastCandle = candles[candles.length - 1]; // Newest candle
+
+    console.log('[TimeframeMetrics] Calculation:', {
+      firstCandle: { timestamp: firstCandle.timestamp, close: firstCandle.close },
+      lastCandle: { timestamp: lastCandle.timestamp, close: lastCandle.close },
+      totalCandles: candles.length,
+    });
+
+    // Price change (oldest close vs newest close)
+    const priceAbsolute = lastCandle.close - firstCandle.close;
+    const pricePercentage = (priceAbsolute / firstCandle.close) * 100;
+
+    console.log('[TimeframeMetrics] Price change:', {
+      firstClose: firstCandle.close,
+      lastClose: lastCandle.close,
+      absolute: priceAbsolute,
+      percentage: pricePercentage,
+    });
+
+    // Volume calculation
+    const totalVolume = candles.reduce((sum: number, candle: any) => sum + (candle.volume || 0), 0);
+    
+    // For volume change, we'll calculate first half vs second half
+    const midpoint = Math.floor(candles.length / 2);
+    const firstHalfVolume = candles.slice(0, midpoint).reduce((sum: number, c: any) => sum + (c.volume || 0), 0);
+    const secondHalfVolume = candles.slice(midpoint).reduce((sum: number, c: any) => sum + (c.volume || 0), 0);
+    const volumeAbsolute = secondHalfVolume - firstHalfVolume;
+    const volumePercentage = firstHalfVolume > 0 ? (volumeAbsolute / firstHalfVolume) * 100 : 0;
+
+    // Average price
+    const avgPrice = candles.reduce((sum: number, c: any) => {
+      return sum + (c.open + c.high + c.low + c.close) / 4;
+    }, 0) / candles.length;
+
+    return {
+      priceChange: {
+        absolute: priceAbsolute,
+        percentage: pricePercentage,
+      },
+      volumeChange: {
+        absolute: volumeAbsolute,
+        percentage: volumePercentage,
+      },
+      totalVolume,
+      avgPrice,
+      timeframe: currentTimeframe,
+    };
+  }, [ohlcData, currentTimeframe]);
+
+  // Calculate price change (for header display - overall chart range)
   const priceChange = useMemo(() => {
     if (!currentPrice || chartData.length === 0 || !isKatanaChain) {
       return { percentage: 0, absolute: 0 };
@@ -222,8 +255,7 @@ export const useChartData = ({
   }, [chartData]);
 
   const refetchAll = () => {
-    console.log('Refetching all sqrt price data...');
-    // Clear cache when refetching
+    console.log('Refetching all candle data...');
     lastProcessedData.current = null;
     lastProcessedCount.current = 0;
     refetchOHLC();
@@ -255,12 +287,12 @@ export const useChartData = ({
     refetchOHLC,
     refetchPrice,
     
-    // New timeframe functionality
+    // Timeframe functionality
     currentTimeframe,
     changeTimeframe,
     isProcessingTimeframe,
     
-    // New timeframe metrics
-    timeframeMetrics: ohlcData?.timeframeMetrics || null,
+    // Timeframe metrics (calculated from candles)
+    timeframeMetrics,
   };
-};
+}

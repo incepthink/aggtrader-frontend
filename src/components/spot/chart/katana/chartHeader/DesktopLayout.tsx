@@ -133,8 +133,8 @@ export const DesktopLayout: React.FC<ChartHeaderProps> = ({
           <div className="flex flex-col items-center">
             <p className="text-xs text-gray-400 mb-1">Total Vol</p>
             <p className="text-sm text-white font-medium">
-              {hasValidTimeframeData
-                ? `$${formatCompact(ohlcData?.metadata?.volumeUSD || 0)}`
+              {hasValidTimeframeData && timeframeMetrics?.totalVolume
+                ? `$${formatCompact(timeframeMetrics.totalVolume)}`
                 : "--"}
             </p>
           </div>
@@ -143,7 +143,11 @@ export const DesktopLayout: React.FC<ChartHeaderProps> = ({
           <div className="flex flex-col items-center">
             <p className="text-xs text-gray-400 mb-1">Pool TVL</p>
             <p className="text-sm text-white font-medium">
-              ${formatCompact(ohlcData?.metadata?.totalValueLockedUSD || 0)}
+              {ohlcData?.metadata?.pool?.totalValueLockedUSD
+                ? `$${formatCompact(
+                    ohlcData.metadata.pool.totalValueLockedUSD
+                  )}`
+                : "--"}
             </p>
           </div>
 

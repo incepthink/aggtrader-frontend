@@ -93,8 +93,8 @@ export const MetricsDisplay: React.FC<MetricsDisplayProps> = ({
       <MetricCard
         label="Total Vol"
         value={
-          hasValidTimeframeData
-            ? `$${formatCompact(ohlcData?.metadata?.volumeUSD || 0)}`
+          hasValidTimeframeData && timeframeMetrics?.totalVolume
+            ? `$${formatCompact(timeframeMetrics.totalVolume)}`
             : "--"
         }
         variant={layout}
@@ -102,9 +102,11 @@ export const MetricsDisplay: React.FC<MetricsDisplayProps> = ({
 
       <MetricCard
         label="Pool TVL"
-        value={`$${formatCompact(
-          ohlcData?.metadata?.totalValueLockedUSD || 0
-        )}`}
+        value={
+          ohlcData?.metadata?.pool?.totalValueLockedUSD
+            ? `$${formatCompact(ohlcData.metadata.pool.totalValueLockedUSD)}`
+            : "--"
+        }
         variant={layout}
       />
     </div>

@@ -11,13 +11,14 @@ import ChartDebug from "./ChartDebug";
 import ChartErrorBoundary from "./ChartErrorBoundary";
 import GlowBox from "@/components/common/ui/GlowBox";
 import TimeframeSelector from "../TimeframeSelector";
+import { TimeframeOption } from "@/components/spot/chart/katana/chartHeader/types";
 
 const KatanaCandlestickChart = () => {
   // Get tokenOne from the store
   const { tokenOne, chainId } = useSpotStore();
 
   // State
-  const [resolution, setResolution] = useState<"hour" | "day">("hour");
+  const [timeframe, setTimeframe] = useState<TimeframeOption>("1h");
   const [chartReady, setChartReady] = useState(false);
   const [renderKey, setRenderKey] = useState(0);
   const [chartError, setChartError] = useState<string | null>(null);
@@ -116,7 +117,7 @@ const KatanaCandlestickChart = () => {
   } = useChartData({
     tokenAddress,
     chainId,
-    resolution,
+    timeframe,
     isKatanaChain,
   });
 
@@ -297,14 +298,14 @@ const KatanaCandlestickChart = () => {
                 enabled={isKatanaChain}
                 chartData={chartData}
                 renderKey={renderKey}
-                resolution={resolution}
+                resolution={timeframe === "1d" ? "day" : "hour"} // Map timeframe to resolution for chart display
                 onChartReady={handleChartReady}
                 onError={handleChartError}
-                currentTimeframe={currentTimeframe} // NEW: pass current timeframe
+                currentTimeframe={currentTimeframe}
               />
             </Box>
 
-            <ChartStatusIndicators
+            {/* <ChartStatusIndicators
               chartReady={chartReady}
               chartDataLength={chartData.length}
               renderKey={renderKey}
@@ -312,7 +313,7 @@ const KatanaCandlestickChart = () => {
               currentPrice={currentPrice}
               high={high}
               low={low}
-            />
+            /> */}
           </Box>
         </GlowBox>
       </Box>

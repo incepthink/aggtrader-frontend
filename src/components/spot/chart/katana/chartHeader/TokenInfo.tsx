@@ -29,8 +29,16 @@ export const TokenInfo: React.FC<TokenInfoProps> = ({
   const titleSize = isMobile ? "text-base md:text-lg" : "text-lg";
   const priceSize = isMobile ? "text-sm" : "";
 
-  const symbol = ohlcData.metadata.poolToken0.symbol;
-  const cleanedSymbol = symbol.startsWith("vb") ? symbol.slice(2) : symbol;
+  // Add safety checks for ohlcData
+  const symbol = ohlcData?.metadata?.poolToken0?.symbol;
+  const cleanedSymbol = symbol?.startsWith("vb") ? symbol.slice(2) : symbol;
+
+  // Determine the paired token symbol
+  const pairedTokenSymbol =
+    ohlcData?.metadata?.poolToken0?.id?.toLowerCase() ===
+    tokenOne?.address?.toLowerCase()
+      ? ohlcData?.metadata?.poolToken1?.symbol
+      : cleanedSymbol || "Token";
 
   return (
     <div className="flex items-center gap-2 md:gap-3">
@@ -43,11 +51,7 @@ export const TokenInfo: React.FC<TokenInfoProps> = ({
       )}
       <div>
         <p className={`${titleSize} font-semibold text-white`}>
-          {tokenOne?.ticker || "Token"} /{" "}
-          {ohlcData.metadata.poolToken0.id.toLowerCase() ===
-          tokenOne?.address.toLowerCase()
-            ? ohlcData.metadata.poolToken1.symbol
-            : cleanedSymbol || "Token"}
+          {tokenOne?.ticker || "Token"} / {pairedTokenSymbol}
         </p>
         <div className="flex items-center gap-2">
           <span className={`text-[#00F5E0] font-semibold ${priceSize}`}>
