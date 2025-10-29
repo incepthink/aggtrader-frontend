@@ -97,12 +97,12 @@ export const DesktopLayout: React.FC<EthereumChartHeaderProps> = ({
 
       <div className="flex gap-8">
         <div className="flex items-end gap-2">
-          <TimeframeSelector
+          {/* <TimeframeSelector
             selectedTimeframe={selectedTimeframe}
             onTimeframeChange={onTimeframeChange}
             isProcessingTimeframe={isProcessingTimeframe}
             variant="desktop"
-          />
+          /> */}
         </div>
 
         <div className="flex items-center gap-6">

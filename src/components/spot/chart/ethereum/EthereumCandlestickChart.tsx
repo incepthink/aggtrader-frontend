@@ -274,12 +274,12 @@ const EthereumCandlestickChart = () => {
                   zIndex: 20,
                 }}
               >
-                <TimeframeSelector
+                {/* <TimeframeSelector
                   selectedTimeframe={currentTimeframe}
                   onTimeframeChange={changeTimeframe}
                   isProcessingTimeframe={isProcessingTimeframe}
                   variant="mobile"
-                />
+                /> */}
               </Box>
             )}
 
