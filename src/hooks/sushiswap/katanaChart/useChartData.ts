@@ -162,28 +162,29 @@ export function useChartData({
 
   // Calculate timeframe metrics from candles
   const timeframeMetrics = useMemo((): TimeframeMetrics | null => {
-    if (!ohlcData?.candles || ohlcData.candles.length === 0) {
+    if (!ohlcData?.candles || ohlcData.candles.length < 2) {
       return null;
     }
 
     // Sort candles by timestamp to ensure oldest first, newest last
     const candles = [...ohlcData.candles].sort((a, b) => a.timestamp - b.timestamp);
     
-    const firstCandle = candles[0]; // Oldest candle
-    const lastCandle = candles[candles.length - 1]; // Newest candle
+    const secondLastCandle = candles[candles.length - 2]; // Second to last candle
+    const lastCandle = candles[candles.length - 1]; // Most recent candle
 
     console.log('[TimeframeMetrics] Calculation:', {
-      firstCandle: { timestamp: firstCandle.timestamp, close: firstCandle.close },
+      secondLastCandle: { timestamp: secondLastCandle.timestamp, close: secondLastCandle.close },
       lastCandle: { timestamp: lastCandle.timestamp, close: lastCandle.close },
+      currentPrice,
       totalCandles: candles.length,
     });
 
-    // Price change (oldest close vs newest close)
-    const priceAbsolute = lastCandle.close - firstCandle.close;
-    const pricePercentage = (priceAbsolute / firstCandle.close) * 100;
+    // Price change: Compare ONLY the last two candles to show change for this specific timeframe period
+    const priceAbsolute = lastCandle.close - secondLastCandle.close;
+    const pricePercentage = (priceAbsolute / secondLastCandle.close) * 100;
 
     console.log('[TimeframeMetrics] Price change:', {
-      firstClose: firstCandle.close,
+      secondLastClose: secondLastCandle.close,
       lastClose: lastCandle.close,
       absolute: priceAbsolute,
       percentage: pricePercentage,
@@ -217,7 +218,7 @@ export function useChartData({
       avgPrice,
       timeframe: currentTimeframe,
     };
-  }, [ohlcData, currentTimeframe]);
+  }, [ohlcData, currentTimeframe]); // Removed currentPrice dependency since we only compare candles
 
   // Calculate price change (for header display - overall chart range)
   const priceChange = useMemo(() => {
