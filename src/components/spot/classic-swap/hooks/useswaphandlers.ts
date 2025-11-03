@@ -4,6 +4,7 @@ import type { Token, SnackbarSeverity } from "../types";
 import { useSushiClassic } from "./usesushiclassic";
 import { useSwapPrices } from "./useswapprices";
 import { useQuoteDebounce } from "./usequotedebounce";
+import { useSpotStore } from "@/store/spotStore";
 
 interface UseSwapHandlersProps {
   tokenOne: Token;
@@ -52,6 +53,8 @@ export function useSwapHandlers({
     fetchQuote,
     executeSwap,
   } = useSushiClassic();
+
+  const switchTokens = useSpotStore((s) => s.switchTokens);
 
   const {
     prices,
@@ -128,27 +131,23 @@ export function useSwapHandlers({
   );
 
   /* --------- Switch tokens --------- */
-  const handleSwitchTokens = useCallback(() => {
-    setTokenOneAmount("");
-    setTokenTwoAmount("");
+const handleSwitchTokens = useCallback(() => {
+  setTokenOneAmount("");
+  setTokenTwoAmount("");
 
-    // Switch tokens
-    const tempTokenOne = tokenOne;
-    const tempTokenTwo = tokenTwo;
-    setTokenOne(tempTokenTwo);
-    setTokenTwo(tempTokenOne);
+  // Use store's switchTokens method (doesn't update chartToken)
+  switchTokens();
 
-    // Fetch new prices
-    fetchPrices(tempTokenTwo.address, tempTokenOne.address);
-  }, [
-    tokenOne,
-    tokenTwo,
-    setTokenOne,
-    setTokenTwo,
-    setTokenOneAmount,
-    setTokenTwoAmount,
-    fetchPrices,
-  ]);
+  // Fetch new prices
+  fetchPrices(tokenTwo.address, tokenOne.address); // Note: swapped order
+}, [
+  tokenOne,
+  tokenTwo,
+  switchTokens,
+  setTokenOneAmount,
+  setTokenTwoAmount,
+  fetchPrices,
+]);
 
   /* --------- Swap execution --------- */
   const handleSwap = useCallback(async () => {

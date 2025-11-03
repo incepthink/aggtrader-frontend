@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  useMemo,
+} from "react";
 import { Box } from "@mui/material";
 import { useSpotStore } from "@/store/spotStore";
 import { useChartData } from "@/hooks/sushiswap/katanaChart/useChartData";
@@ -12,10 +18,13 @@ import ChartErrorBoundary from "./ChartErrorBoundary";
 import GlowBox from "@/components/common/ui/GlowBox";
 import TimeframeSelector from "../TimeframeSelector";
 import { TimeframeOption } from "@/components/spot/chart/katana/chartHeader/types";
+import { getTradeMarkersForToken } from "@/utils/localStorage/tradeMarkers";
 
 const KatanaCandlestickChart = () => {
   // Get tokenOne from the store
-  const { tokenOne, chainId } = useSpotStore();
+  // const { tokenOne, chainId } = useSpotStore();
+
+  const { chartToken: tokenOne, chainId } = useSpotStore();
 
   // State
   const [timeframe, setTimeframe] = useState<TimeframeOption>("1h");
@@ -122,6 +131,38 @@ const KatanaCandlestickChart = () => {
   });
 
   console.log("CHART DATA", chartData);
+
+  const tradeMarkers = useMemo(() => {
+    if (!tokenAddress) return [];
+
+    // Normalize token address (convert native placeholder to actual address)
+    const normalizedAddress =
+      tokenAddress.toLowerCase() ===
+      "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        ? "0xee7d8bcfb72bc1880d0cf19822eb0a2e6577ab62"
+        : tokenAddress;
+
+    // Get trade markers from localStorage
+    const trades = getTradeMarkersForToken(normalizedAddress);
+
+    console.log(
+      `[Trade Markers] Loaded ${trades.length} trades for token:`,
+      normalizedAddress
+    );
+
+    // Convert trade markers to chart marker format
+    return trades.map((trade) => ({
+      time: Math.floor(trade.timestamp / 1000), // Convert milliseconds to seconds
+      position:
+        trade.type === "buy" ? ("belowBar" as const) : ("aboveBar" as const),
+      color: trade.type === "buy" ? "#2196F3" : "#e91e63",
+      shape:
+        trade.type === "buy" ? ("arrowUp" as const) : ("arrowDown" as const),
+      text: `${trade.type === "buy" ? "Buy" : "Sell"} @ $${trade.price.toFixed(
+        2
+      )}`,
+    }));
+  }, [tokenAddress]);
 
   // Handle chart ready state
   const handleChartReady = useCallback((ready: boolean) => {
@@ -298,10 +339,11 @@ const KatanaCandlestickChart = () => {
                 enabled={isKatanaChain}
                 chartData={chartData}
                 renderKey={renderKey}
-                resolution={timeframe === "1d" ? "day" : "hour"} // Map timeframe to resolution for chart display
+                resolution={timeframe === "1d" ? "day" : "hour"}
                 onChartReady={handleChartReady}
                 onError={handleChartError}
                 currentTimeframe={currentTimeframe}
+                markers={tradeMarkers} // ADD THIS LINE
               />
             </Box>
 

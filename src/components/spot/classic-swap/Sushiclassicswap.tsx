@@ -89,6 +89,8 @@ const SushiClassicSwap = memo(() => {
     setTokenOneAmount,
     setTokenTwoAmount,
     setIsInitiatingSwap,
+    tokenOneAmount,
+    tokenTwoAmount,
   });
 
   /* --------- Memoized callbacks --------- */

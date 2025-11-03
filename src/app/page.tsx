@@ -26,10 +26,7 @@ export default function Home() {
             <br />
             <span className="text-cyan-400 text-4xl md:text-6xl">Katana</span>
           </h1>
-          <p className="mt-4 text-lg sm:text-xl text-gray-300">
-            Trading is chaotic — but it doesn’t have to be.
-          </p>
-          <div className="mt-8">
+          <div className="mt-4">
             <a
               href="/spot"
               className="inline-block px-6 py-3 sm:text-xl text-base font-medium text-black bg-gradient-to-r from-[#00F5E0] to-[#00FAFF] rounded-md 

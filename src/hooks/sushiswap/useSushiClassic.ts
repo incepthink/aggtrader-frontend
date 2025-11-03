@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { ChainId } from "sushi";
 import { getQuote, getSwap } from "sushi/evm";
 import { type Address } from "viem";
@@ -9,6 +9,8 @@ import {
   useWaitForTransactionReceipt,
 } from "wagmi";
 import { useSpotStore } from "@/store/spotStore";
+import { saveTradeMarker } from "@/utils/localStorage/tradeMarkers";
+import { usePriceBackend } from "./usePriceBackend";
 
 interface Token {
   address: Address;
@@ -62,10 +64,74 @@ export const useSushiClassic = () => {
   } = useSendTransaction();
 
   const {
-    isLoading: isConfirming,
-    isSuccess: isDone,
-    error: confirmError,
-  } = useWaitForTransactionReceipt({ hash: txHash });
+  data: receiptData,
+  isLoading: isConfirming,
+  isSuccess: isDone,
+  error: confirmError,
+} = useWaitForTransactionReceipt({ hash: txHash });
+
+console.log("TRX DATA:", receiptData);
+
+// Get chartToken from store
+const chartToken = useSpotStore((s) => s.chartToken);
+
+const {
+  tokenPrice: currentPriceForMarker,
+} = usePriceBackend(
+  chartToken.address as any,
+  undefined,
+  747474,
+  {
+    enabled: true,
+    refetchInterval: 30000,
+    staleTime: 15000,
+  }
+);
+
+// Save trade marker when transaction completes
+useEffect(() => {
+  if (isDone && receiptData && quote) {
+    const saveTradeData = async () => {
+      try {
+        // Get block timestamp
+        if (!publicClient) return;
+        
+        const block = await publicClient.getBlock({
+          blockNumber: receiptData.blockNumber,
+        });
+
+        // Determine if buy or sell based on chartToken
+        const isBuy = chartToken.address.toLowerCase() === quote.tokenTo.address.toLowerCase();
+
+        const normalizedTokenAddress = chartToken.address.toLowerCase() === '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee'
+  ? '0xee7d8bcfb72bc1880d0cf19822eb0a2e6577ab62'
+  : chartToken.address;
+
+  const needsInversion = chartToken.address.toLowerCase() !== quote.tokenFrom.address.toLowerCase();
+const finalPrice = needsInversion ? (1 / quote.swapPrice) : quote.swapPrice;
+        
+        const tradeMarker = {
+          id: receiptData.transactionHash,
+          timestamp: Number(block.timestamp) * 1000, // Convert to milliseconds
+          tokenAddress: normalizedTokenAddress,
+          price: currentPriceForMarker || finalPrice,
+          amount: isBuy ? quote.amountOut : quote.amountIn,
+          type: isBuy ? 'buy' as const : 'sell' as const,
+          txHash: receiptData.transactionHash,
+          blockNumber: Number(receiptData.blockNumber),
+        };
+
+        console.log('Saving trade marker:', tradeMarker);
+        saveTradeMarker(tradeMarker);
+        
+      } catch (error) {
+        console.error('Error saving trade marker:', error);
+      }
+    };
+
+    saveTradeData();
+  }
+}, [isDone, receiptData, quote, chartToken, publicClient]);
 
   // Convert chainId to Sushi ChainId
   const getSushiChainId = useCallback(() => {

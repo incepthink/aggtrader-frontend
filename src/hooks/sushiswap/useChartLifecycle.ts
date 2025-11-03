@@ -287,6 +287,27 @@ export const useChartLifecycle = ({
     }
   }, [onError, currentTimeframe]); // CHANGED: added currentTimeframe
 
+  // Set markers on the candlestick series
+const setMarkers = useCallback((markers: Array<{
+  time: number;
+  position: 'aboveBar' | 'belowBar' | 'inBar';
+  color: string;
+  shape: 'arrowUp' | 'arrowDown' | 'circle' | 'square';
+  text?: string;
+}>) => {
+  if (!candlestickSeriesRef.current) {
+    console.log('Series not ready for markers');
+    return;
+  }
+
+  try {
+    candlestickSeriesRef.current.setMarkers(markers);
+    console.log('Markers set on chart:', markers.length);
+  } catch (err) {
+    console.error('Error setting markers:', err);
+  }
+}, []);
+
   return {
     chartContainerRef,
     chartRef,
@@ -294,5 +315,6 @@ export const useChartLifecycle = ({
     initializeChart,
     cleanupChart,
     updateChartData,
+    setMarkers
   };
 };

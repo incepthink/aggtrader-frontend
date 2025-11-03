@@ -6,6 +6,8 @@ import { useSwapPrices } from "./useswapprices";
 interface UseSwapEffectsProps {
   tokenOne: Token;
   tokenTwo: Token;
+  tokenOneAmount: string; // ADD THIS
+  tokenTwoAmount: string; // ADD THIS
   isSending: boolean;
   isConfirming: boolean;
   showSnackbar: (message: string, severity: SnackbarSeverity) => void;
@@ -23,8 +25,10 @@ export function useSwapEffects({
   setTokenOneAmount,
   setTokenTwoAmount,
   setIsInitiatingSwap,
+  tokenOneAmount,
+  tokenTwoAmount
 }: UseSwapEffectsProps) {
-  const { quoteError, isDone, sendError, confirmError } = useSushiClassic();
+  const { quoteError, isDone, sendError, confirmError, txHash, quote } = useSushiClassic(); 
   const { fetchPrices, binancePriceError } = useSwapPrices(tokenOne, tokenTwo);
 
   /* --------- Initial price load --------- */
@@ -53,6 +57,16 @@ export function useSwapEffects({
   /* --------- Transaction completion --------- */
   useEffect(() => {
     if (isDone) {
+      console.log("TRADE COMPLETED DATA:", {
+      txHash,
+      quote,
+      tokenOne,
+      tokenTwo,
+      tokenOneAmount,
+      tokenTwoAmount,
+      timestamp: Date.now(),
+    });
+
       showSnackbar("Transaction successful!", "success");
       setTokenOneAmount("");
       setTokenTwoAmount("");
@@ -63,12 +77,18 @@ export function useSwapEffects({
     }
   }, [
     isDone,
-    sendError,
-    confirmError,
-    showSnackbar,
-    setTokenOneAmount,
-    setTokenTwoAmount,
-    setIsInitiatingSwap,
+  sendError,
+  confirmError,
+  txHash,
+  quote,
+  tokenOne,
+  tokenTwo,
+  tokenOneAmount,
+  tokenTwoAmount,
+  showSnackbar,
+  setTokenOneAmount,
+  setTokenTwoAmount,
+  setIsInitiatingSwap,
   ]);
 
   /* --------- Binance price error (silent) --------- */
@@ -78,4 +98,6 @@ export function useSwapEffects({
       // Don't show error to user, just use fallback prices
     }
   }, [binancePriceError]);
+
+  
 }

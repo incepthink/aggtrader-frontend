@@ -1,19 +1,22 @@
 import { Token, TOKENS, KATANA_TOKENS } from "@/utils/spot/TokenList";
 import { create } from "zustand";
 
-type ChainId =  747474 | 1;
+type ChainId = 747474 | 1;
 
 type TokenPosition = "tokenOne" | "tokenTwo";
 
 type spotStore = {
   tokenOne: Token;
   tokenTwo: Token;
+  chartToken: Token; // NEW: Token displayed on chart (independent of swap)
   setTokenOne: (token: Token) => void;
   setTokenTwo: (token: Token) => void;
+  setChartToken: (token: Token) => void; // NEW: Update chart token
+  switchTokens: () => void; // NEW: Switch tokenOne <-> tokenTwo without affecting chart
 
   // Unified modal state
   modalOpen: boolean;
-  modalTokenPosition: TokenPosition | null; // Which token is being selected
+  modalTokenPosition: TokenPosition | null;
   openModal: (position: TokenPosition) => void;
   closeModal: () => void;
 
@@ -34,24 +37,20 @@ const getDefaultTokensForChain = (chainId: ChainId): [Token, Token] => {
 
 // Helper function to validate and convert chain ID
 const getValidChainId = (chainId: number): ChainId => {
-  // Only allow supported chains, fallback to Ethereum
   if (chainId === 747474) return 747474;
-  return 747474; // Default to Ethereum for any unsupported chain
+  return 747474;
 };
 
 // Get initial chain ID from window if available (for hydration)
 const getInitialChainId = (): ChainId => {
-  // Check if we're in browser environment
   if (typeof window !== "undefined") {
     try {
-      // Try to get from localStorage for persistence
       const savedChainId = localStorage.getItem("selectedChainId");
       if (savedChainId) {
         const parsed = parseInt(savedChainId, 10);
         return getValidChainId(parsed);
       }
 
-      // Try to get from ethereum provider if available
       if (window.ethereum?.chainId) {
         const chainId = parseInt(window.ethereum.chainId, 16);
         return getValidChainId(chainId);
@@ -61,25 +60,42 @@ const getInitialChainId = (): ChainId => {
     }
   }
 
-  // Fallback to Ethereum
   return 747474;
 };
 
 const initialChainId = getInitialChainId();
-const [initialTokenOne, initialTokenTwo] =
-  getDefaultTokensForChain(initialChainId);
+const [initialTokenOne, initialTokenTwo] = getDefaultTokensForChain(initialChainId);
 
 export const useSpotStore = create<spotStore>((set, get) => ({
-  // Initialize with connected chain or fallback to Ethereum
   tokenOne: initialTokenOne,
   tokenTwo: initialTokenTwo,
+  chartToken: initialTokenOne, // NEW: Initialize chart token same as tokenOne
   chainId: initialChainId,
 
   setTokenOne: (token: Token) => {
-    set(() => ({ tokenOne: token }));
+    set(() => ({ 
+      tokenOne: token,
+      chartToken: token // When tokenOne changes manually, update chart
+    }));
   },
+  
   setTokenTwo: (token: Token) => {
     set(() => ({ tokenTwo: token }));
+    // Chart stays on chartToken (doesn't change)
+  },
+
+  setChartToken: (token: Token) => {
+    set(() => ({ chartToken: token }));
+  },
+
+  // NEW: Switch tokens without affecting chart
+  switchTokens: () => {
+    const { tokenOne, tokenTwo } = get();
+    set(() => ({
+      tokenOne: tokenTwo,
+      tokenTwo: tokenOne,
+      // chartToken stays unchanged!
+    }));
   },
 
   modalOpen: false,
@@ -89,10 +105,8 @@ export const useSpotStore = create<spotStore>((set, get) => ({
   closeModal: () => set({ modalOpen: false, modalTokenPosition: null }),
 
   setChainId: (chainId: ChainId) => {
-    const [defaultTokenOne, defaultTokenTwo] =
-      getDefaultTokensForChain(chainId);
+    const [defaultTokenOne, defaultTokenTwo] = getDefaultTokensForChain(chainId);
 
-    // Persist to localStorage
     if (typeof window !== "undefined") {
       localStorage.setItem("selectedChainId", chainId.toString());
     }
@@ -101,20 +115,17 @@ export const useSpotStore = create<spotStore>((set, get) => ({
       chainId,
       tokenOne: defaultTokenOne,
       tokenTwo: defaultTokenTwo,
+      chartToken: defaultTokenOne, // Reset chart token too
     }));
   },
 
-  // Method to sync store with connected wallet chain
   syncWithConnectedChain: (connectedChainId: number) => {
     const validChainId = getValidChainId(connectedChainId);
     const currentChainId = get().chainId;
 
-    // Only update if the connected chain is different from current
     if (validChainId !== currentChainId) {
-      const [defaultTokenOne, defaultTokenTwo] =
-        getDefaultTokensForChain(validChainId);
+      const [defaultTokenOne, defaultTokenTwo] = getDefaultTokensForChain(validChainId);
 
-      // Persist to localStorage
       if (typeof window !== "undefined") {
         localStorage.setItem("selectedChainId", validChainId.toString());
       }
@@ -123,6 +134,7 @@ export const useSpotStore = create<spotStore>((set, get) => ({
         chainId: validChainId,
         tokenOne: defaultTokenOne,
         tokenTwo: defaultTokenTwo,
+        chartToken: defaultTokenOne, // Reset chart token too
       }));
     }
   },
