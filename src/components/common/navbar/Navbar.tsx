@@ -11,7 +11,7 @@ import KatanaLogo from "./KatanaLogo";
 
 const navItems = [
   {
-    href: ["/spot"],
+    href: ["/spot/swap", "/spot/pools"],
     label: "SPOT",
   },
   { href: ["/lend/earn", "/lend/borrow", "/lend/vault"], label: "EARN" },

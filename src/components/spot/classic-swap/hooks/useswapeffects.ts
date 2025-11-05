@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import type { Token, SnackbarSeverity } from "../types";
 import { useSushiClassic } from "./usesushiclassic";
 import { useSwapPrices } from "./useswapprices";
@@ -6,8 +7,8 @@ import { useSwapPrices } from "./useswapprices";
 interface UseSwapEffectsProps {
   tokenOne: Token;
   tokenTwo: Token;
-  tokenOneAmount: string; // ADD THIS
-  tokenTwoAmount: string; // ADD THIS
+  tokenOneAmount: string;
+  tokenTwoAmount: string;
   isSending: boolean;
   isConfirming: boolean;
   showSnackbar: (message: string, severity: SnackbarSeverity) => void;
@@ -28,76 +29,73 @@ export function useSwapEffects({
   tokenOneAmount,
   tokenTwoAmount
 }: UseSwapEffectsProps) {
+  const queryClient = useQueryClient(); // NEW
   const { quoteError, isDone, sendError, confirmError, txHash, quote } = useSushiClassic(); 
   const { fetchPrices, binancePriceError } = useSwapPrices(tokenOne, tokenTwo);
 
-  /* --------- Initial price load --------- */
   useEffect(() => {
     fetchPrices(tokenOne.address, tokenTwo.address);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tokenOne.address, tokenTwo.address]);
+  }, [tokenOne.address, tokenTwo.address, fetchPrices]);
 
-  /* --------- Quote error notifications --------- */
   useEffect(() => {
     if (quoteError) {
       showSnackbar(`Quote error: ${quoteError}`, "error");
     }
   }, [quoteError, showSnackbar]);
 
-  /* --------- Transaction status notifications --------- */
   useEffect(() => {
     if (isSending) {
-      setIsInitiatingSwap(false); // Reset since transaction is now being sent
+      setIsInitiatingSwap(false);
       showSnackbar("Sending tx…", "info");
     } else if (isConfirming) {
       showSnackbar("Confirming…", "info");
     }
   }, [isSending, isConfirming, showSnackbar, setIsInitiatingSwap]);
 
-  /* --------- Transaction completion --------- */
+  // UPDATED: Add balance refresh
   useEffect(() => {
     if (isDone) {
       console.log("TRADE COMPLETED DATA:", {
-      txHash,
-      quote,
-      tokenOne,
-      tokenTwo,
-      tokenOneAmount,
-      tokenTwoAmount,
-      timestamp: Date.now(),
-    });
+        txHash,
+        quote,
+        tokenOne,
+        tokenTwo,
+        tokenOneAmount,
+        tokenTwoAmount,
+        timestamp: Date.now(),
+      });
 
       showSnackbar("Transaction successful!", "success");
       setTokenOneAmount("");
       setTokenTwoAmount("");
       setIsInitiatingSwap(false);
+
+      // NEW: Refresh all balance queries
+      queryClient.invalidateQueries({ queryKey: ['balance'] });
     } else if (sendError || confirmError) {
       showSnackbar("Transaction failed", "error");
       setIsInitiatingSwap(false);
     }
   }, [
     isDone,
-  sendError,
-  confirmError,
-  txHash,
-  quote,
-  tokenOne,
-  tokenTwo,
-  tokenOneAmount,
-  tokenTwoAmount,
-  showSnackbar,
-  setTokenOneAmount,
-  setTokenTwoAmount,
-  setIsInitiatingSwap,
+    sendError,
+    confirmError,
+    txHash,
+    quote,
+    tokenOne,
+    tokenTwo,
+    tokenOneAmount,
+    tokenTwoAmount,
+    showSnackbar,
+    setTokenOneAmount,
+    setTokenTwoAmount,
+    setIsInitiatingSwap,
+    queryClient,
   ]);
 
-  /* --------- Binance price error (silent) --------- */
   useEffect(() => {
     if (binancePriceError) {
       console.warn("Binance price error:", binancePriceError);
-      // Don't show error to user, just use fallback prices
     }
   }, [binancePriceError]);
-
-  
 }

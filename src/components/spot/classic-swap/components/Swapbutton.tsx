@@ -9,7 +9,12 @@ interface SwapButtonProps {
   isConfirming: boolean;
   isInitiatingSwap: boolean;
   isLoadingQuote: boolean;
+  needsApproval: boolean; // NEW
+  isApproving: boolean; // NEW
+  isConfirmingApproval: boolean; // NEW
+  tokenOneTicker: string; // NEW
   onSwap: () => void;
+  onApprove: () => void; // NEW
 }
 
 export const SwapButton = memo(
@@ -21,7 +26,12 @@ export const SwapButton = memo(
     isConfirming,
     isInitiatingSwap,
     isLoadingQuote,
+    needsApproval,
+    isApproving,
+    isConfirmingApproval,
+    tokenOneTicker,
     onSwap,
+    onApprove,
   }: SwapButtonProps) => {
     if (!isConnected) {
       return <GradientConnectButton />;
@@ -29,6 +39,11 @@ export const SwapButton = memo(
 
     const getButtonText = () => {
       if (isLoadingPrices) return "Loading prices…";
+      if (needsApproval) {
+        if (isApproving) return "Approving in wallet…";
+        if (isConfirmingApproval) return "Confirming approval…";
+        return `Approve ${tokenOneTicker}`;
+      }
       if (isSending) return "Sending…";
       if (isConfirming) return "Confirming…";
       if (isInitiatingSwap) return "Preparing…";
@@ -36,13 +51,23 @@ export const SwapButton = memo(
       return "Swap";
     };
 
+    const handleClick = () => {
+      if (needsApproval) {
+        onApprove();
+      } else {
+        onSwap();
+      }
+    };
+
+    const isButtonDisabled = isDisabled || isApproving || isConfirmingApproval;
+
     return (
       <div
-        className={`swapButton ${isDisabled ? "disabled" : ""}`}
-        onClick={isDisabled ? undefined : onSwap}
+        className={`swapButton ${isButtonDisabled ? "disabled" : ""}`}
+        onClick={isButtonDisabled ? undefined : handleClick}
         style={{
-          opacity: isDisabled ? 0.6 : 1,
-          cursor: isDisabled ? "not-allowed" : "pointer",
+          opacity: isButtonDisabled ? 0.6 : 1,
+          cursor: isButtonDisabled ? "not-allowed" : "pointer",
         }}
       >
         {getButtonText()}

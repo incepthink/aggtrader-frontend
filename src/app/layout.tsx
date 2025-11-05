@@ -12,6 +12,7 @@ import { GoogleAnalytics } from "@next/third-parties/google";
 import { DerivedStateTwapProvider } from "@/store/limit-order/derivedstate-twap-provider";
 import { VaultProviders } from "@/lib/yearnfi/lib/contexts/Providers";
 import Script from "next/script";
+import { ConditionalSpotNavbar } from "@/components/common/navbar/ConditionalSpotNavbar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -74,6 +75,7 @@ export default function RootLayout({
                   </div>
                   <Navbar />
                   <ConditionalMorphoNavbar />
+                  <ConditionalSpotNavbar />
                   {children}
                 </VaultProviders>
               </DerivedStateTwapProvider>

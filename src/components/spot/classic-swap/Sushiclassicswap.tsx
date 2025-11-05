@@ -7,7 +7,6 @@ import { useAccount } from "wagmi";
 import { useSpotStore } from "@/store/spotStore";
 import { GradientConnectButton } from "@/components/common/navbar/Navbar";
 
-// Local components
 import { SwapSettings } from "./components/SwapSettings";
 import { SwapInputSection } from "./components/Swapinputsection";
 import { SwapDetails } from "./components/SwapDetails";
@@ -15,7 +14,6 @@ import { TokenSelectionModal } from "./components/TokenSelectionModal";
 import { SwapButton } from "./components/Swapbutton";
 import { NotificationSnackbar } from "./components/Notificationsnackbar";
 
-// Hooks
 import { useSwapState } from "./hooks/useswapstate";
 import { useSwapHandlers } from "./hooks/useswaphandlers";
 import { useSwapEffects } from "./hooks/useswapeffects";
@@ -25,14 +23,12 @@ import "./styles/index.css";
 const SushiClassicSwap = memo(() => {
   const { address, isConnected } = useAccount();
 
-  /* --------- Global token selection from store --------- */
   const tokenOne = useSpotStore((s) => s.tokenOne);
   const tokenTwo = useSpotStore((s) => s.tokenTwo);
   const setTokenOne = useSpotStore((s) => s.setTokenOne);
   const setTokenTwo = useSpotStore((s) => s.setTokenTwo);
   const openModal = useSpotStore((s) => s.openModal);
 
-  /* --------- Local state managed by custom hook --------- */
   const {
     tokenOneAmount,
     tokenTwoAmount,
@@ -47,13 +43,13 @@ const SushiClassicSwap = memo(() => {
     closeSnackbar,
   } = useSwapState();
 
-  /* --------- Swap handlers --------- */
   const {
     handleSellAmountChange,
     handleBuyAmountChange,
     handleMaxBalance,
     handleSwitchTokens,
     handleSwap,
+    handleApprove, // NEW
     quote,
     isLoadingQuote,
     isSending,
@@ -62,6 +58,9 @@ const SushiClassicSwap = memo(() => {
     isLoadingPrices,
     tokenOnePrice,
     tokenTwoPrice,
+    needsApproval, // NEW
+    isApproving, // NEW
+    isConfirmingApproval, // NEW
   } = useSwapHandlers({
     tokenOne,
     tokenTwo,
@@ -79,7 +78,6 @@ const SushiClassicSwap = memo(() => {
     showSnackbar,
   });
 
-  /* --------- Side effects (notifications, price loading) --------- */
   useSwapEffects({
     tokenOne,
     tokenTwo,
@@ -93,7 +91,6 @@ const SushiClassicSwap = memo(() => {
     tokenTwoAmount,
   });
 
-  /* --------- Memoized callbacks --------- */
   const handleSlippageChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       setSlippage(parseFloat(e.target.value));
@@ -109,7 +106,7 @@ const SushiClassicSwap = memo(() => {
     openModal("tokenTwo");
   }, [openModal]);
 
-  /* --------- Computed values --------- */
+  // UPDATED: Don't disable if needsApproval (user needs to click to approve)
   const isSwapDisabled =
     !tokenOneAmount ||
     !isConnected ||
@@ -120,11 +117,9 @@ const SushiClassicSwap = memo(() => {
     isLoadingQuote ||
     !quote;
 
-  /* ---------- Render ---------- */
   return (
     <>
       <div className="tradeBox px-2">
-        {/* Header */}
         <div className="flex justify-between items-center mb-4 lg:mb-4">
           <h4 className="text-xl">Classic Swap</h4>
           <SwapSettings
@@ -133,7 +128,6 @@ const SushiClassicSwap = memo(() => {
           />
         </div>
 
-        {/* Swap Inputs Section */}
         <SwapInputSection
           tokenOne={tokenOne}
           tokenTwo={tokenTwo}
@@ -151,7 +145,6 @@ const SushiClassicSwap = memo(() => {
           onOpenTokenTwoModal={handleOpenTokenTwoModal}
         />
 
-        {/* Swap Details */}
         {quote && tokenOneAmount && (
           <SwapDetails
             quote={quote}
@@ -161,7 +154,7 @@ const SushiClassicSwap = memo(() => {
           />
         )}
 
-        {/* Swap Button */}
+        {/* UPDATED: Pass new props */}
         <SwapButton
           isConnected={isConnected}
           isDisabled={isSwapDisabled}
@@ -170,14 +163,17 @@ const SushiClassicSwap = memo(() => {
           isConfirming={isConfirming}
           isInitiatingSwap={isInitiatingSwap}
           isLoadingQuote={isLoadingQuote}
+          needsApproval={needsApproval}
+          isApproving={isApproving}
+          isConfirmingApproval={isConfirmingApproval}
+          tokenOneTicker={tokenOne.ticker}
           onSwap={handleSwap}
+          onApprove={handleApprove}
         />
       </div>
 
-      {/* Token Selection Modal */}
       <TokenSelectionModal />
 
-      {/* Notifications */}
       <NotificationSnackbar
         open={snackbarState.open}
         message={snackbarState.message}

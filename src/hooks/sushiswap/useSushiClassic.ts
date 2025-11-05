@@ -55,6 +55,7 @@ export const useSushiClassic = () => {
   const [quote, setQuote] = useState<QuoteData | null>(null);
   const [isLoadingQuote, setIsLoadingQuote] = useState(false);
   const [quoteError, setQuoteError] = useState<string | null>(null);
+  const [routerAddress, setRouterAddress] = useState<Address | null>(null); // NEW
 
   const {
     data: txHash,
@@ -64,55 +65,51 @@ export const useSushiClassic = () => {
   } = useSendTransaction();
 
   const {
-  data: receiptData,
-  isLoading: isConfirming,
-  isSuccess: isDone,
-  error: confirmError,
-} = useWaitForTransactionReceipt({ hash: txHash });
+    data: receiptData,
+    isLoading: isConfirming,
+    isSuccess: isDone,
+    error: confirmError,
+  } = useWaitForTransactionReceipt({ hash: txHash });
 
-console.log("TRX DATA:", receiptData);
+  console.log("TRX DATA:", receiptData);
 
-// Get chartToken from store
-const chartToken = useSpotStore((s) => s.chartToken);
+  const chartToken = useSpotStore((s) => s.chartToken);
 
-const {
-  tokenPrice: currentPriceForMarker,
-} = usePriceBackend(
-  chartToken.address as any,
-  undefined,
-  747474,
-  {
-    enabled: true,
-    refetchInterval: 30000,
-    staleTime: 15000,
-  }
-);
+  const {
+    tokenPrice: currentPriceForMarker,
+  } = usePriceBackend(
+    chartToken.address as any,
+    undefined,
+    747474,
+    {
+      enabled: true,
+      refetchInterval: 30000,
+      staleTime: 15000,
+    }
+  );
 
-// Save trade marker when transaction completes
-useEffect(() => {
+  useEffect(() => {
   if (isDone && receiptData && quote) {
     const saveTradeData = async () => {
       try {
-        // Get block timestamp
         if (!publicClient) return;
         
         const block = await publicClient.getBlock({
           blockNumber: receiptData.blockNumber,
         });
 
-        // Determine if buy or sell based on chartToken
         const isBuy = chartToken.address.toLowerCase() === quote.tokenTo.address.toLowerCase();
 
         const normalizedTokenAddress = chartToken.address.toLowerCase() === '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee'
-  ? '0xee7d8bcfb72bc1880d0cf19822eb0a2e6577ab62'
-  : chartToken.address;
+          ? '0xee7d8bcfb72bc1880d0cf19822eb0a2e6577ab62'
+          : chartToken.address;
 
-  const needsInversion = chartToken.address.toLowerCase() !== quote.tokenFrom.address.toLowerCase();
-const finalPrice = needsInversion ? (1 / quote.swapPrice) : quote.swapPrice;
+        const needsInversion = chartToken.address.toLowerCase() !== quote.tokenFrom.address.toLowerCase();
+        const finalPrice = needsInversion ? (1 / quote.swapPrice) : quote.swapPrice;
         
         const tradeMarker = {
           id: receiptData.transactionHash,
-          timestamp: Number(block.timestamp) * 1000, // Convert to milliseconds
+          timestamp: Number(block.timestamp) * 1000,
           tokenAddress: normalizedTokenAddress,
           price: currentPriceForMarker || finalPrice,
           amount: isBuy ? quote.amountOut : quote.amountIn,
@@ -133,16 +130,16 @@ const finalPrice = needsInversion ? (1 / quote.swapPrice) : quote.swapPrice;
   }
 }, [isDone, receiptData, quote, chartToken, publicClient]);
 
-  // Convert chainId to Sushi ChainId
   const getSushiChainId = useCallback(() => {
     return chainId === 1 ? ChainId.ETHEREUM : ChainId.KATANA;
   }, [chainId]);
 
-  // Get quote from Sushi API
+  // UPDATED: Now fetches router address too
   const fetchQuote = useCallback(
     async ({ tokenIn, tokenOut, amount, slippage }: SwapParams) => {
       if (!amount || parseFloat(amount) === 0) {
         setQuote(null);
+        setRouterAddress(null);
         return null;
       }
 
@@ -161,12 +158,33 @@ const finalPrice = needsInversion ? (1 / quote.swapPrice) : quote.swapPrice;
           tokenIn: tokenIn.address,
           tokenOut: tokenOut.address,
           amount: amountWei,
-          maxSlippage: slippage / 100, // Convert percentage to decimal
+          maxSlippage: slippage / 100,
         });
 
         console.log("Quote response:", quoteData);
 
-        // Check if the response has the expected structure
+        // Also get swap to extract router address for approval
+        if (address && quoteData && quoteData.status === "Success") {
+  try {
+    const swapData = await getSwap({
+      chainId: getSushiChainId(),
+      tokenIn: tokenIn.address,
+      tokenOut: tokenOut.address,
+      sender: address,
+      amount: amountWei,
+      maxSlippage: slippage / 100,
+    });
+    
+    // Type guard: check if response has tx property
+    if (swapData && 'tx' in swapData && swapData.tx?.to) {
+      setRouterAddress(swapData.tx.to);
+      console.log("Router address:", swapData.tx.to);
+    }
+  } catch (swapError) {
+    console.warn("Failed to get router address:", swapError);
+  }
+}
+
         if (quoteData && quoteData.status === "Success") {
           const quote: QuoteData = {
             amountOut: quoteData.assumedAmountOut,
@@ -189,15 +207,16 @@ const finalPrice = needsInversion ? (1 / quote.swapPrice) : quote.swapPrice;
           error instanceof Error ? error.message : "Failed to fetch quote";
         setQuoteError(errorMessage);
         setQuote(null);
+        setRouterAddress(null);
         return null;
       } finally {
         setIsLoadingQuote(false);
       }
     },
-    [getSushiChainId]
+    [getSushiChainId, address]
   );
 
-  // Execute swap
+  // UPDATED: Stores router address
   const executeSwap = useCallback(
     async ({ tokenIn, tokenOut, amount, slippage }: SwapParams) => {
       if (!address || !isConnected || !publicClient) {
@@ -213,23 +232,23 @@ const finalPrice = needsInversion ? (1 / quote.swapPrice) : quote.swapPrice;
           (parseFloat(amount) * 10 ** tokenIn.decimals).toFixed(0)
         );
 
-        // Get swap transaction data from Sushi API
         const swapData = await getSwap({
           chainId: getSushiChainId(),
           tokenIn: tokenIn.address,
           tokenOut: tokenOut.address,
           sender: address,
           amount: amountWei,
-          maxSlippage: slippage / 100, // Convert percentage to decimal
+          maxSlippage: slippage / 100,
         });
 
         console.log("Swap response:", swapData);
 
-        // Check if the response has the expected structure
-        if (swapData && swapData.status === "Success" && swapData.tx) {
+        if (swapData && 'tx' in swapData && swapData.tx) {
           const { tx } = swapData;
 
-          // Optional: Simulate the transaction first
+          // Store router address
+          setRouterAddress(tx.to!);
+
           try {
             const callResult = await publicClient.call({
               account: address,
@@ -240,10 +259,8 @@ const finalPrice = needsInversion ? (1 / quote.swapPrice) : quote.swapPrice;
             console.log("Simulation output:", callResult);
           } catch (simulationError) {
             console.warn("Simulation failed:", simulationError);
-            // Continue with the transaction even if simulation fails
           }
 
-          // Execute the transaction
           return sendTransaction({
             to: tx.to!,
             data: tx.data!,
@@ -260,7 +277,6 @@ const finalPrice = needsInversion ? (1 / quote.swapPrice) : quote.swapPrice;
     [address, isConnected, publicClient, sendTransaction, getSushiChainId]
   );
 
-  // Calculate price ratio for UI
   const getPriceRatio = useCallback(
     (tokenIn: Token, tokenOut: Token, amountIn: string) => {
       if (!quote || !amountIn || parseFloat(amountIn) === 0) return 0;
@@ -275,26 +291,20 @@ const finalPrice = needsInversion ? (1 / quote.swapPrice) : quote.swapPrice;
   );
 
   return {
-    // Quote state
     quote,
     isLoadingQuote,
     quoteError,
-
-    // Transaction state
     txHash,
     isSending,
     isConfirming,
     isDone,
     sendError,
     confirmError,
-
-    // Functions
     fetchQuote,
     executeSwap,
     getPriceRatio,
-
-    // Helpers
     isConnected,
     chainId: getSushiChainId(),
+    routerAddress, // NEW
   };
 };

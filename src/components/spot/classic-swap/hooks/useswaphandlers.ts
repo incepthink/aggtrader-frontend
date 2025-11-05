@@ -1,9 +1,10 @@
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { formatUnits } from "viem";
 import type { Token, SnackbarSeverity } from "../types";
 import { useSushiClassic } from "./usesushiclassic";
-import { useSwapPrices } from "./useswapprices";
+import { usePriceBackend } from "@/hooks/sushiswap/usePriceBackend";
 import { useQuoteDebounce } from "./usequotedebounce";
+import { useTokenApproval, ApprovalState } from "./useTokenApproval";
 import { useSpotStore } from "@/store/spotStore";
 
 interface UseSwapHandlersProps {
@@ -39,7 +40,6 @@ export function useSwapHandlers({
   setIsInitiatingSwap,
   showSnackbar,
 }: UseSwapHandlersProps) {
-  /* --------- Custom hooks --------- */
   const {
     quote,
     isLoadingQuote,
@@ -52,20 +52,75 @@ export function useSwapHandlers({
     confirmError,
     fetchQuote,
     executeSwap,
+    routerAddress,
   } = useSushiClassic();
 
   const switchTokens = useSpotStore((s) => s.switchTokens);
+  const chainId = useSpotStore((s) => s.chainId);
+
+  // CHANGED: Use usePriceBackend for both tokens with optimized settings
+  const {
+    tokenPrice: tokenOnePrice,
+    isLoading: isLoadingTokenOnePrice,
+    isError: tokenOnePriceError,
+  } = usePriceBackend(
+    tokenOne.address as any,
+    undefined,
+    chainId,
+    {
+      enabled: true,
+      refetchInterval: 30000, // 30 seconds - matches your chart
+      staleTime: 15000, // 15 seconds cache
+    }
+  );
 
   const {
-    prices,
-    isLoadingPrices,
-    tokenOnePrice,
-    tokenTwoPrice,
-    binancePriceError,
-    fetchPrices,
-  } = useSwapPrices(tokenOne, tokenTwo);
+    tokenPrice: tokenTwoPrice,
+    isLoading: isLoadingTokenTwoPrice,
+    isError: tokenTwoPriceError,
+  } = usePriceBackend(
+    tokenTwo.address as any,
+    undefined,
+    chainId,
+    {
+      enabled: true,
+      refetchInterval: 30000,
+      staleTime: 15000,
+    }
+  );
 
-  /* --------- Quote fetching with debounce --------- */
+  // CHANGED: Calculate prices object manually
+  const prices = useMemo(() => {
+    if (!tokenOnePrice || !tokenTwoPrice) return null;
+    
+    return {
+      ratio: tokenOnePrice / tokenTwoPrice,
+      tokenOne: tokenOnePrice,
+      tokenTwo: tokenTwoPrice,
+    };
+  }, [tokenOnePrice, tokenTwoPrice]);
+
+  const isLoadingPrices = isLoadingTokenOnePrice || isLoadingTokenTwoPrice;
+  const binancePriceError = tokenOnePriceError || tokenTwoPriceError;
+
+  // Token approval hook
+  const {
+    state: approvalState,
+    approve,
+    isApproving,
+    isConfirmingApproval,
+    isApprovalConfirmed,
+    approvalError,
+  } = useTokenApproval({
+    token: tokenOne,
+    spender: routerAddress,
+    amount: tokenOneAmount,
+    enabled: !!tokenOneAmount && !!routerAddress && isConnected,
+    approveMax: false,
+  });
+
+  const needsApproval = approvalState === ApprovalState.NOT_APPROVED;
+
   useQuoteDebounce({
     tokenOneAmount,
     tokenOne,
@@ -75,7 +130,6 @@ export function useSwapHandlers({
     setTokenTwoAmount,
   });
 
-  /* --------- Amount change handlers --------- */
   const handleSellAmountChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const value = e.target.value;
@@ -93,7 +147,6 @@ export function useSwapHandlers({
       const value = e.target.value;
       setTokenTwoAmount(value);
 
-      // Use price ratio for reverse calculation
       if (value && prices) {
         setTokenOneAmount((parseFloat(value) / prices.ratio).toFixed(6));
       } else {
@@ -103,7 +156,6 @@ export function useSwapHandlers({
     [prices, setTokenOneAmount, setTokenTwoAmount]
   );
 
-  /* --------- Max balance handler --------- */
   const handleMaxBalance = useCallback(
     async (balance: string) => {
       setTokenOneAmount(balance);
@@ -130,28 +182,33 @@ export function useSwapHandlers({
     [tokenOne, tokenTwo, slippage, fetchQuote, setTokenOneAmount, setTokenTwoAmount]
   );
 
-  /* --------- Switch tokens --------- */
-const handleSwitchTokens = useCallback(() => {
-  setTokenOneAmount("");
-  setTokenTwoAmount("");
+  const handleSwitchTokens = useCallback(() => {
+    setTokenOneAmount("");
+    setTokenTwoAmount("");
+    switchTokens();
+    // No need to fetch prices - hooks will auto-update when tokens change
+  }, [
+    switchTokens,
+    setTokenOneAmount,
+    setTokenTwoAmount,
+  ]);
 
-  // Use store's switchTokens method (doesn't update chartToken)
-  switchTokens();
+  const handleApprove = useCallback(async () => {
+    if (isApproving || isConfirmingApproval) return;
 
-  // Fetch new prices
-  fetchPrices(tokenTwo.address, tokenOne.address); // Note: swapped order
-}, [
-  tokenOne,
-  tokenTwo,
-  switchTokens,
-  setTokenOneAmount,
-  setTokenTwoAmount,
-  fetchPrices,
-]);
+    try {
+      await approve();
+      showSnackbar(`Approving ${tokenOne.ticker}...`, "info");
+    } catch (error: any) {
+      console.error("Approval error:", error);
+      showSnackbar(
+        error?.message || "Approval failed",
+        "error"
+      );
+    }
+  }, [approve, isApproving, isConfirmingApproval, tokenOne, showSnackbar]);
 
-  /* --------- Swap execution --------- */
   const handleSwap = useCallback(async () => {
-    // Prevent multiple calls
     if (isInitiatingSwap || isSending || isConfirming) {
       return;
     }
@@ -161,7 +218,6 @@ const handleSwitchTokens = useCallback(() => {
       return;
     }
 
-    // Set loading state immediately
     setIsInitiatingSwap(true);
 
     try {
@@ -176,8 +232,6 @@ const handleSwitchTokens = useCallback(() => {
       const errorMessage =
         error instanceof Error ? error.message : "Swap failed";
       showSnackbar(errorMessage, "error");
-
-      // Reset loading state on error
       setIsInitiatingSwap(false);
     }
   }, [
@@ -201,6 +255,7 @@ const handleSwitchTokens = useCallback(() => {
     handleMaxBalance,
     handleSwitchTokens,
     handleSwap,
+    handleApprove,
     quote,
     isLoadingQuote,
     quoteError,
@@ -215,5 +270,10 @@ const handleSwitchTokens = useCallback(() => {
     tokenOnePrice,
     tokenTwoPrice,
     binancePriceError,
+    approvalState,
+    needsApproval,
+    isApproving,
+    isConfirmingApproval,
+    approvalError,
   };
 }

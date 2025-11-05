@@ -9,8 +9,8 @@ interface SwapInputSectionProps {
   tokenTwo: Token;
   tokenOneAmount: string;
   tokenTwoAmount: string;
-  tokenOnePrice: number | null;
-  tokenTwoPrice: number | null;
+  tokenOnePrice: number | null | undefined;
+  tokenTwoPrice: number | null | undefined;
   isLoadingPrices: boolean;
   isLoadingQuote: boolean;
   onSellAmountChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
