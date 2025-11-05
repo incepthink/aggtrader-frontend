@@ -16,6 +16,12 @@ const navItems = [
   },
   { href: ["/lend/earn", "/lend/borrow", "/lend/vault"], label: "EARN" },
   { href: ["/profile"], label: "ACCOUNT" },
+  {
+    href: [
+      "https://relay.link/bridge/katana?fromChainId=1&fromCurrency=0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48&toCurrency=0x203a662b0bd271a6ed5a60edfbd04bfce608fd36",
+    ],
+    label: "BRIDGE",
+  },
 ];
 
 interface GradientConnectButtonProps {

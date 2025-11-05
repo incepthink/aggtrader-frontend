@@ -18,9 +18,15 @@ export default function NavLink({ href, children }: NavLinkProps) {
   // Use the first href as the primary link destination
   const primaryHref = href[0];
 
+  let newTab = false;
+  if (primaryHref.startsWith("https:")) {
+    newTab = true;
+  }
+
   return (
     <Link
       href={primaryHref}
+      target={newTab ? "_blank" : ""}
       className={`text-lg relative pb-3 px-2 after:absolute after:inset-x-0 after:bottom-0 hover:text-[#00ffe9] transition after:bg-gradient-to-r after:from-[#00FFE9] after:to-[#003B3C] ${
         isActive ? "text-[#00ffe9]" : "text-white"
       }`}
