@@ -26,6 +26,10 @@ export function useSwapState() {
         message,
         severity,
       });
+
+      setTimeout(() => {
+    setSnackbarState(prev => ({ ...prev, open: false }));
+  }, 3000);
     },
     []
   );

@@ -27,7 +27,6 @@ export function saveTradeMarker(trade: TradeMarker): void {
   try {
     const existing = getTradeMarkers();
     
-    // Check if txHash already exists
     const duplicate = existing.some(t => t.txHash === trade.txHash);
     if (duplicate) {
       console.log('Trade marker already exists, skipping:', trade.txHash);
@@ -37,10 +36,14 @@ export function saveTradeMarker(trade: TradeMarker): void {
     const updated = [...existing, trade];
     localStorage.setItem(TRADES_KEY, JSON.stringify(updated));
     console.log('Trade marker saved:', trade);
+    
+    // NEW: Dispatch custom event to notify chart
+    window.dispatchEvent(new Event('tradeMarkerSaved'));
   } catch (error) {
     console.error('Error saving trade marker:', error);
   }
 }
+
 
 export function getTradeMarkersForToken(tokenAddress: string): TradeMarker[] {
   const all = getTradeMarkers();

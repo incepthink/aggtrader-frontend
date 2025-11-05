@@ -132,17 +132,17 @@ const KatanaCandlestickChart = () => {
 
   console.log("CHART DATA", chartData);
 
+  const [markersRefreshKey, setMarkersRefreshKey] = useState(0);
+
   const tradeMarkers = useMemo(() => {
     if (!tokenAddress) return [];
 
-    // Normalize token address (convert native placeholder to actual address)
     const normalizedAddress =
       tokenAddress.toLowerCase() ===
       "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
         ? "0xee7d8bcfb72bc1880d0cf19822eb0a2e6577ab62"
         : tokenAddress;
 
-    // Get trade markers from localStorage
     const trades = getTradeMarkersForToken(normalizedAddress);
 
     console.log(
@@ -150,9 +150,8 @@ const KatanaCandlestickChart = () => {
       normalizedAddress
     );
 
-    // Convert trade markers to chart marker format
     return trades.map((trade) => ({
-      time: Math.floor(trade.timestamp / 1000), // Convert milliseconds to seconds
+      time: Math.floor(trade.timestamp / 1000),
       position:
         trade.type === "buy" ? ("belowBar" as const) : ("aboveBar" as const),
       color: trade.type === "buy" ? "#2196F3" : "#e91e63",
@@ -162,7 +161,37 @@ const KatanaCandlestickChart = () => {
         2
       )}`,
     }));
-  }, [tokenAddress]);
+  }, [tokenAddress, markersRefreshKey]);
+
+  // NEW: Add this useEffect to listen for localStorage changes
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "katana_trade_markers") {
+        console.log(
+          "[Trade Markers] LocalStorage updated, refreshing markers..."
+        );
+        setMarkersRefreshKey((prev) => prev + 1);
+      }
+    };
+
+    // Listen for storage events from other tabs/windows
+    window.addEventListener("storage", handleStorageChange);
+
+    // Listen for custom event from same tab
+    const handleCustomEvent = () => {
+      console.log(
+        "[Trade Markers] Custom event received, refreshing markers..."
+      );
+      setMarkersRefreshKey((prev) => prev + 1);
+    };
+
+    window.addEventListener("tradeMarkerSaved", handleCustomEvent);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("tradeMarkerSaved", handleCustomEvent);
+    };
+  }, []);
 
   // Handle chart ready state
   const handleChartReady = useCallback((ready: boolean) => {

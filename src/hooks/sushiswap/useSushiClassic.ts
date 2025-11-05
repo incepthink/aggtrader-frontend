@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect,useRef } from "react";
 import { ChainId } from "sushi";
 import { getQuote, getSwap } from "sushi/evm";
 import { type Address } from "viem";
@@ -8,6 +8,7 @@ import {
   useSendTransaction,
   useWaitForTransactionReceipt,
 } from "wagmi";
+import { useQueryClient } from "@tanstack/react-query"; // NEW
 import { useSpotStore } from "@/store/spotStore";
 import { saveTradeMarker } from "@/utils/localStorage/tradeMarkers";
 import { usePriceBackend } from "./usePriceBackend";
@@ -47,15 +48,23 @@ interface SwapParams {
   slippage: number;
 }
 
-export const useSushiClassic = () => {
+// NEW: Add callback types
+interface UseSushiClassicCallbacks {
+  onSuccess?: () => void;
+  showSnackbar?: (message: string, severity: "success" | "error" | "info") => void;
+}
+
+export const useSushiClassic = (callbacks?: UseSushiClassicCallbacks) => {
   const { address, isConnected } = useAccount();
   const publicClient = usePublicClient();
   const chainId = useSpotStore((s) => s.chainId);
+  const queryClient = useQueryClient(); // NEW
+  const hasNotified = useRef(false); 
 
   const [quote, setQuote] = useState<QuoteData | null>(null);
   const [isLoadingQuote, setIsLoadingQuote] = useState(false);
   const [quoteError, setQuoteError] = useState<string | null>(null);
-  const [routerAddress, setRouterAddress] = useState<Address | null>(null); // NEW
+  const [routerAddress, setRouterAddress] = useState<Address | null>(null);
 
   const {
     data: txHash,
@@ -88,53 +97,67 @@ export const useSushiClassic = () => {
     }
   );
 
+  // UPDATED: Combined effect for trade marker + notifications + balance refresh
   useEffect(() => {
-  if (isDone && receiptData && quote) {
-    const saveTradeData = async () => {
-      try {
-        if (!publicClient) return;
-        
-        const block = await publicClient.getBlock({
-          blockNumber: receiptData.blockNumber,
-        });
+    if (isDone && receiptData && quote && !hasNotified.current) {
+      hasNotified.current = true; // Set flag immediately
+      
+      const saveTradeData = async () => {
+        try {
+          if (!publicClient) return;
+          
+          const block = await publicClient.getBlock({
+            blockNumber: receiptData.blockNumber,
+          });
 
-        const isBuy = chartToken.address.toLowerCase() === quote.tokenTo.address.toLowerCase();
+          const isBuy = chartToken.address.toLowerCase() === quote.tokenTo.address.toLowerCase();
 
-        const normalizedTokenAddress = chartToken.address.toLowerCase() === '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee'
-          ? '0xee7d8bcfb72bc1880d0cf19822eb0a2e6577ab62'
-          : chartToken.address;
+          const normalizedTokenAddress = chartToken.address.toLowerCase() === '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee'
+            ? '0xee7d8bcfb72bc1880d0cf19822eb0a2e6577ab62'
+            : chartToken.address;
 
-        const needsInversion = chartToken.address.toLowerCase() !== quote.tokenFrom.address.toLowerCase();
-        const finalPrice = needsInversion ? (1 / quote.swapPrice) : quote.swapPrice;
-        
-        const tradeMarker = {
-          id: receiptData.transactionHash,
-          timestamp: Number(block.timestamp) * 1000,
-          tokenAddress: normalizedTokenAddress,
-          price: currentPriceForMarker || finalPrice,
-          amount: isBuy ? quote.amountOut : quote.amountIn,
-          type: isBuy ? 'buy' as const : 'sell' as const,
-          txHash: receiptData.transactionHash,
-          blockNumber: Number(receiptData.blockNumber),
-        };
+          const needsInversion = chartToken.address.toLowerCase() !== quote.tokenFrom.address.toLowerCase();
+          const finalPrice = needsInversion ? (1 / quote.swapPrice) : quote.swapPrice;
+          
+          const tradeMarker = {
+            id: receiptData.transactionHash,
+            timestamp: Number(block.timestamp) * 1000,
+            tokenAddress: normalizedTokenAddress,
+            price: currentPriceForMarker || finalPrice,
+            amount: isBuy ? quote.amountOut : quote.amountIn,
+            type: isBuy ? 'buy' as const : 'sell' as const,
+            txHash: receiptData.transactionHash,
+            blockNumber: Number(receiptData.blockNumber),
+          };
 
-        console.log('Saving trade marker:', tradeMarker);
-        saveTradeMarker(tradeMarker);
-        
-      } catch (error) {
-        console.error('Error saving trade marker:', error);
-      }
-    };
+          console.log('Saving trade marker:', tradeMarker);
+          saveTradeMarker(tradeMarker);
 
-    saveTradeData();
-  }
-}, [isDone, receiptData, quote, chartToken, publicClient]);
+          callbacks?.showSnackbar?.("Transaction successful!", "success");
+          console.log("Invalidating balance queries...");
+          queryClient.invalidateQueries({ queryKey: ['balance'] });
+          callbacks?.onSuccess?.();
+          
+        } catch (error) {
+          console.error('Error saving trade marker:', error);
+        }
+      };
+
+      saveTradeData();
+    }
+  }, [isDone, receiptData, quote, chartToken, publicClient, queryClient, callbacks]);
+
+  // NEW: Reset flag when starting new transaction
+  useEffect(() => {
+    if (isSending) {
+      hasNotified.current = false;
+    }
+  }, [isSending]);
 
   const getSushiChainId = useCallback(() => {
     return chainId === 1 ? ChainId.ETHEREUM : ChainId.KATANA;
   }, [chainId]);
 
-  // UPDATED: Now fetches router address too
   const fetchQuote = useCallback(
     async ({ tokenIn, tokenOut, amount, slippage }: SwapParams) => {
       if (!amount || parseFloat(amount) === 0) {
@@ -163,27 +186,25 @@ export const useSushiClassic = () => {
 
         console.log("Quote response:", quoteData);
 
-        // Also get swap to extract router address for approval
         if (address && quoteData && quoteData.status === "Success") {
-  try {
-    const swapData = await getSwap({
-      chainId: getSushiChainId(),
-      tokenIn: tokenIn.address,
-      tokenOut: tokenOut.address,
-      sender: address,
-      amount: amountWei,
-      maxSlippage: slippage / 100,
-    });
-    
-    // Type guard: check if response has tx property
-    if (swapData && 'tx' in swapData && swapData.tx?.to) {
-      setRouterAddress(swapData.tx.to);
-      console.log("Router address:", swapData.tx.to);
-    }
-  } catch (swapError) {
-    console.warn("Failed to get router address:", swapError);
-  }
-}
+          try {
+            const swapData = await getSwap({
+              chainId: getSushiChainId(),
+              tokenIn: tokenIn.address,
+              tokenOut: tokenOut.address,
+              sender: address,
+              amount: amountWei,
+              maxSlippage: slippage / 100,
+            });
+            
+            if (swapData && 'tx' in swapData && swapData.tx?.to) {
+              setRouterAddress(swapData.tx.to);
+              console.log("Router address:", swapData.tx.to);
+            }
+          } catch (swapError) {
+            console.warn("Failed to get router address:", swapError);
+          }
+        }
 
         if (quoteData && quoteData.status === "Success") {
           const quote: QuoteData = {
@@ -216,7 +237,6 @@ export const useSushiClassic = () => {
     [getSushiChainId, address]
   );
 
-  // UPDATED: Stores router address
   const executeSwap = useCallback(
     async ({ tokenIn, tokenOut, amount, slippage }: SwapParams) => {
       if (!address || !isConnected || !publicClient) {
@@ -246,7 +266,6 @@ export const useSushiClassic = () => {
         if (swapData && 'tx' in swapData && swapData.tx) {
           const { tx } = swapData;
 
-          // Store router address
           setRouterAddress(tx.to!);
 
           try {
@@ -305,6 +324,6 @@ export const useSushiClassic = () => {
     getPriceRatio,
     isConnected,
     chainId: getSushiChainId(),
-    routerAddress, // NEW
+    routerAddress,
   };
 };

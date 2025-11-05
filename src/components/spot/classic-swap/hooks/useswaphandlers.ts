@@ -53,7 +53,15 @@ export function useSwapHandlers({
     fetchQuote,
     executeSwap,
     routerAddress,
-  } = useSushiClassic();
+  } = useSushiClassic({
+    // NEW: Pass callbacks
+    showSnackbar,
+    onSuccess: () => {
+      setTokenOneAmount("");
+      setTokenTwoAmount("");
+      setIsInitiatingSwap(false);
+    },
+  });
 
   const switchTokens = useSpotStore((s) => s.switchTokens);
   const chainId = useSpotStore((s) => s.chainId);

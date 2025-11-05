@@ -53,45 +53,6 @@ export function useSwapEffects({
   }, [isSending, isConfirming, showSnackbar, setIsInitiatingSwap]);
 
   // UPDATED: Add balance refresh
-  useEffect(() => {
-    if (isDone) {
-      console.log("TRADE COMPLETED DATA:", {
-        txHash,
-        quote,
-        tokenOne,
-        tokenTwo,
-        tokenOneAmount,
-        tokenTwoAmount,
-        timestamp: Date.now(),
-      });
-
-      showSnackbar("Transaction successful!", "success");
-      setTokenOneAmount("");
-      setTokenTwoAmount("");
-      setIsInitiatingSwap(false);
-
-      // NEW: Refresh all balance queries
-      queryClient.invalidateQueries({ queryKey: ['balance'] });
-    } else if (sendError || confirmError) {
-      showSnackbar("Transaction failed", "error");
-      setIsInitiatingSwap(false);
-    }
-  }, [
-    isDone,
-    sendError,
-    confirmError,
-    txHash,
-    quote,
-    tokenOne,
-    tokenTwo,
-    tokenOneAmount,
-    tokenTwoAmount,
-    showSnackbar,
-    setTokenOneAmount,
-    setTokenTwoAmount,
-    setIsInitiatingSwap,
-    queryClient,
-  ]);
 
   useEffect(() => {
     if (binancePriceError) {
