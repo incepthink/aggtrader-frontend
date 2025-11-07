@@ -37,7 +37,7 @@ export function useEquityTrend(
       }
 
       const response = await axios.get(
-        `${BACKEND_URL}/api/user/equity-trend/${walletAddress}`,
+        `${BACKEND_URL}/user/equity-trend/${walletAddress}`,
         { timeout: 10000 }
       );
 

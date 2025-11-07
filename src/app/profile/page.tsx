@@ -23,7 +23,7 @@ import { useAccount, useBalance } from "wagmi";
 import axios from "axios";
 import { PieChartComp } from "@/components/profile/PieChartComp";
 import EstimatedBalanceCard from "@/components/profile/EstimatedBalanceCard";
-import EquityTrendChart from "@/components/profile/EquityTrendChart";
+import EquityTrendChart from "@/components/profile/equity-chart/EquityTrendChart";
 import RecentTransactionCard from "@/components/profile/RecentTransactionCard";
 import { useSpotBalanceTotal } from "@/hooks/useSpotBalance";
 import { usePortfolioDetailed } from "@/hooks/usePortfolioDetailed";

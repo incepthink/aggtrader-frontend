@@ -29,7 +29,7 @@ const fetchTokenPriceSushi = async (
 ): Promise<number | null> => {
   console.log("ADDRESS SUSHI::", tokenAddress);
 
-  if (chainId === 747474 && tokenAddress === "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee") {
+  if (chainId === 747474 && (tokenAddress === "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" || tokenAddress === "0x0000000000000000000000000000000000000000")) {
      tokenAddress = "0xee7d8bcfb72bc1880d0cf19822eb0a2e6577ab62"
   } else if (chainId === 1 && tokenAddress === "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee") {
     tokenAddress = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"

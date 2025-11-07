@@ -35,7 +35,7 @@ export function useSwapEffects({
 
   useEffect(() => {
     fetchPrices(tokenOne.address, tokenTwo.address);
-  }, [tokenOne.address, tokenTwo.address, fetchPrices]);
+  }, [tokenOne.address, tokenTwo.address]);
 
   useEffect(() => {
     if (quoteError) {

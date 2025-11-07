@@ -449,7 +449,7 @@ export default function TokenBalancesCard() {
                 </div>
               )}
 
-              {priceStats.lastUpdated > 0 && (
+              {/* {priceStats.lastUpdated > 0 && (
                 <div className="mb-4 flex justify-between items-center text-xs text-gray-400">
                   <span>
                     Sushi prices updated:{" "}
@@ -468,7 +468,7 @@ export default function TokenBalancesCard() {
                     {isPriceLoading ? "Updating..." : "Live prices"}
                   </span>
                 </div>
-              )}
+              )} */}
 
               {/* Desktop Table View */}
               <div className="hidden md:block">
