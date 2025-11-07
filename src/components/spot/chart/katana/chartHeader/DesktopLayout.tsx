@@ -27,6 +27,9 @@ export const DesktopLayout: React.FC<ChartHeaderProps> = ({
   const hasValidTimeframeData =
     !!timeframeMetrics && timeframeMetrics.timeframe === selectedTimeframe;
 
+  // Don't show volume change for 1w timeframe
+  const shouldShowVolumeChange = selectedTimeframe !== "1w";
+
   const renderPriceChange = () => {
     if (!hasValidTimeframeData) {
       return <span className="text-gray-400">--</span>;
@@ -52,7 +55,7 @@ export const DesktopLayout: React.FC<ChartHeaderProps> = ({
 
     const { volumeChange } = timeframeMetrics!;
     const value = volumeChange.absolute;
-    const sign = value >= 0 ? "+" : "";
+    const sign = value >= 0 ? "" : "";
     return `${sign}$${formatCompact(Math.abs(value))}`;
   };
 
@@ -119,15 +122,17 @@ export const DesktopLayout: React.FC<ChartHeaderProps> = ({
             </button>
           </div>
 
-          {/* Volume Change - USD ONLY */}
-          <div className="flex flex-col items-center">
-            <p className="text-xs text-gray-400 mb-1">
-              Volume ({selectedTimeframe})
-            </p>
-            <p className={`text-sm font-medium ${getVolumeChangeColor()}`}>
-              {renderVolumeChange()}
-            </p>
-          </div>
+          {/* Volume Change - USD ONLY - HIDE FOR 1W */}
+          {shouldShowVolumeChange && (
+            <div className="flex flex-col items-center">
+              <p className="text-xs text-gray-400 mb-1">
+                Volume ({selectedTimeframe})
+              </p>
+              <p className={`text-sm font-medium ${getVolumeChangeColor()}`}>
+                {renderVolumeChange()}
+              </p>
+            </div>
+          )}
 
           {/* Total Volume */}
           <div className="flex flex-col items-center">

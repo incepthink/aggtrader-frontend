@@ -23,6 +23,9 @@ export const MetricsDisplay: React.FC<MetricsDisplayProps> = ({
   const hasValidTimeframeData =
     !!timeframeMetrics && timeframeMetrics.timeframe === selectedTimeframe;
 
+  // Don't show volume change for 1w timeframe
+  const shouldShowVolumeChange = selectedTimeframe !== "1w";
+
   const renderPriceChange = () => {
     if (!hasValidTimeframeData) {
       return <span className="text-gray-400">--</span>;
@@ -81,14 +84,16 @@ export const MetricsDisplay: React.FC<MetricsDisplayProps> = ({
         variant={layout}
       />
 
-      <MetricCard
-        label={`Volume (${selectedTimeframe})`}
-        value={renderVolumeChange()}
-        isClickable={false}
-        colorClass={getVolumeChangeColor()}
-        disabled={!hasValidTimeframeData}
-        variant={layout}
-      />
+      {shouldShowVolumeChange && (
+        <MetricCard
+          label={`Volume (${selectedTimeframe})`}
+          value={renderVolumeChange()}
+          isClickable={false}
+          colorClass={getVolumeChangeColor()}
+          disabled={!hasValidTimeframeData}
+          variant={layout}
+        />
+      )}
 
       <MetricCard
         label="Total Vol"

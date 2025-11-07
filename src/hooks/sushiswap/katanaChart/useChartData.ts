@@ -162,64 +162,72 @@ export function useChartData({
 }, [ohlcData, isKatanaChain]);
 
   // Calculate timeframe metrics from candles
-  const timeframeMetrics = useMemo((): TimeframeMetrics | null => {
-    if (!ohlcData?.candles || ohlcData.candles.length < 2) {
-      return null;
-    }
+const timeframeMetrics = useMemo((): TimeframeMetrics | null => {
+  if (!ohlcData?.candles || ohlcData.candles.length < 2) {
+    return null;
+  }
 
-    // Sort candles by timestamp to ensure oldest first, newest last
-    const candles = [...ohlcData.candles].sort((a, b) => a.timestamp - b.timestamp);
-    
-    const secondLastCandle = candles[candles.length - 2]; // Second to last candle
-    const lastCandle = candles[candles.length - 1]; // Most recent candle
+  // Sort candles by timestamp to ensure oldest first, newest last
+  const candles = [...ohlcData.candles].sort((a, b) => a.timestamp - b.timestamp);
+  
+  const lastCandle = candles[candles.length - 1]; // Most recent candle
+  const secondLastCandle = candles[candles.length - 2]; // Previous candle
 
-    console.log('[TimeframeMetrics] Calculation:', {
-      secondLastCandle: { timestamp: secondLastCandle.timestamp, close: secondLastCandle.close },
-      lastCandle: { timestamp: lastCandle.timestamp, close: lastCandle.close },
-      currentPrice,
-      totalCandles: candles.length,
-    });
+  console.log('[TimeframeMetrics] Calculation:', {
+    secondLastCandle: { timestamp: secondLastCandle.timestamp, close: secondLastCandle.close, volume: secondLastCandle.volume },
+    lastCandle: { timestamp: lastCandle.timestamp, close: lastCandle.close, volume: lastCandle.volume },
+    currentPrice,
+    totalCandles: candles.length,
+    currentTimeframe,
+  });
 
-    // Price change: Compare ONLY the last two candles to show change for this specific timeframe period
-    const priceAbsolute = lastCandle.close - secondLastCandle.close;
-    const pricePercentage = (priceAbsolute / secondLastCandle.close) * 100;
+  // Price change: Compare last two candles for this timeframe period
+  const priceAbsolute = lastCandle.close - secondLastCandle.close;
+  const pricePercentage = (priceAbsolute / secondLastCandle.close) * 100;
 
-    console.log('[TimeframeMetrics] Price change:', {
-      secondLastClose: secondLastCandle.close,
-      lastClose: lastCandle.close,
+  console.log('[TimeframeMetrics] Price change:', {
+    secondLastClose: secondLastCandle.close,
+    lastClose: lastCandle.close,
+    absolute: priceAbsolute,
+    percentage: pricePercentage,
+  });
+
+  // Volume calculation: Compare last candle volume to previous candle volume
+  const lastVolume = lastCandle.volume || 0;
+  const previousVolume = secondLastCandle.volume || 0;
+  const volumeAbsolute = lastVolume - previousVolume;
+  const volumePercentage = previousVolume > 0 ? (volumeAbsolute / previousVolume) * 100 : 0;
+
+  // Total volume across all candles
+  const totalVolume = candles.reduce((sum: number, candle: any) => sum + (candle.volume || 0), 0);
+  
+  // Average price across all candles
+  const avgPrice = candles.reduce((sum: number, c: any) => {
+    return sum + (c.open + c.high + c.low + c.close) / 4;
+  }, 0) / candles.length;
+
+  console.log('[TimeframeMetrics] Volume change:', {
+    lastVolume,
+    previousVolume,
+    absolute: volumeAbsolute,
+    percentage: volumePercentage,
+    totalVolume,
+  });
+
+  return {
+    priceChange: {
       absolute: priceAbsolute,
       percentage: pricePercentage,
-    });
-
-    // Volume calculation
-    const totalVolume = candles.reduce((sum: number, candle: any) => sum + (candle.volume || 0), 0);
-    
-    // For volume change, we'll calculate first half vs second half
-    const midpoint = Math.floor(candles.length / 2);
-    const firstHalfVolume = candles.slice(0, midpoint).reduce((sum: number, c: any) => sum + (c.volume || 0), 0);
-    const secondHalfVolume = candles.slice(midpoint).reduce((sum: number, c: any) => sum + (c.volume || 0), 0);
-    const volumeAbsolute = secondHalfVolume - firstHalfVolume;
-    const volumePercentage = firstHalfVolume > 0 ? (volumeAbsolute / firstHalfVolume) * 100 : 0;
-
-    // Average price
-    const avgPrice = candles.reduce((sum: number, c: any) => {
-      return sum + (c.open + c.high + c.low + c.close) / 4;
-    }, 0) / candles.length;
-
-    return {
-      priceChange: {
-        absolute: priceAbsolute,
-        percentage: pricePercentage,
-      },
-      volumeChange: {
-        absolute: volumeAbsolute,
-        percentage: volumePercentage,
-      },
-      totalVolume,
-      avgPrice,
-      timeframe: currentTimeframe,
-    };
-  }, [ohlcData, currentTimeframe]); // Removed currentPrice dependency since we only compare candles
+    },
+    volumeChange: {
+      absolute: volumeAbsolute,
+      percentage: volumePercentage,
+    },
+    totalVolume,
+    avgPrice,
+    timeframe: currentTimeframe,
+  };
+}, [ohlcData, currentTimeframe, currentPrice]);
 
   // Calculate price change (for header display - overall chart range)
   const priceChange = useMemo(() => {
