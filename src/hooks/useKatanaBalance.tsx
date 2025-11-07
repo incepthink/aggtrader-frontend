@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
+import { BACKEND_URL } from "@/utils/constants";
 
 interface BalanceResponse {
   data: TokenBalance[];
@@ -15,7 +16,8 @@ interface ErrorResponse {
   details?: any;
 }
 
-export function useKatanaBalance(address: string | null, backendUrl: string) {
+export function useKatanaBalance(address: string | null) {
+  let backendUrl = BACKEND_URL;
   const [balances, setBalances] = useState<TokenBalance[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -30,24 +32,24 @@ export function useKatanaBalance(address: string | null, backendUrl: string) {
     const fetchBalance = async () => {
       setLoading(true);
       setError(null);
-      
+
       try {
         const response = await fetch(
-          `${backendUrl}/api/balance/katana?address=${encodeURIComponent(address)}`
+          `${backendUrl}/user/balance/katana/${encodeURIComponent(address)}`
         );
-        
+
         const data: BalanceResponse | ErrorResponse = await response.json();
-        
-        if (response.ok && 'data' in data) {
+
+        if (response.ok && "data" in data) {
           setBalances(data.data);
           setError(null);
         } else {
           const errorResponse = data as ErrorResponse;
-          setError(errorResponse.message || 'Failed to fetch balances');
+          setError(errorResponse.message || "Failed to fetch balances");
           setBalances([]);
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unknown error occurred');
+        setError(err instanceof Error ? err.message : "Unknown error occurred");
         setBalances([]);
       } finally {
         setLoading(false);
@@ -62,24 +64,26 @@ export function useKatanaBalance(address: string | null, backendUrl: string) {
       const fetchBalance = async () => {
         setLoading(true);
         setError(null);
-        
+
         try {
           const response = await fetch(
-            `${backendUrl}/api/balance/katana?address=${encodeURIComponent(address)}`
+            `${backendUrl}/user/balance/katana/${encodeURIComponent(address)}`
           );
-          
+
           const data: BalanceResponse | ErrorResponse = await response.json();
-          
-          if (response.ok && 'data' in data) {
+
+          if (response.ok && "data" in data) {
             setBalances(data.data);
             setError(null);
           } else {
             const errorResponse = data as ErrorResponse;
-            setError(errorResponse.message || 'Failed to fetch balances');
+            setError(errorResponse.message || "Failed to fetch balances");
             setBalances([]);
           }
         } catch (err) {
-          setError(err instanceof Error ? err.message : 'Unknown error occurred');
+          setError(
+            err instanceof Error ? err.message : "Unknown error occurred"
+          );
           setBalances([]);
         } finally {
           setLoading(false);
@@ -94,6 +98,6 @@ export function useKatanaBalance(address: string | null, backendUrl: string) {
     balances,
     loading,
     error,
-    refetch
+    refetch,
   };
 }

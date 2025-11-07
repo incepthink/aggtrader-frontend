@@ -35,7 +35,7 @@ const VaultRow: React.FC<VaultRowProps> = ({
   console.log("VAULT::", vault);
 
   const handleVaultClick = (vaultAddress: string) => {
-    router.push(`/lend/earn/${vaultAddress}`);
+    router.push(`/earn/lend/${vaultAddress}`);
   };
 
   return (

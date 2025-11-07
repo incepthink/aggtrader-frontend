@@ -48,7 +48,7 @@ const ResponsiveVaultsContainer: React.FC<ResponsiveVaultsContainerProps> = ({
   const router = useRouter();
 
   const handleVaultClick = (vaultAddress: string) => {
-    router.push(`/lend/earn/${vaultAddress}`);
+    router.push(`/earn/lend/${vaultAddress}`);
   };
 
   // Mobile Layout (Card-based)

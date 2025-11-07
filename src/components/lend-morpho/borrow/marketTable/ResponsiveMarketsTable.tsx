@@ -107,7 +107,7 @@ const ResponsiveMarketsTable: React.FC = () => {
 
   const handleRowClick = useCallback(
     (market: any) => {
-      router.push(`/lend/borrow/${market.uniqueKey}`);
+      router.push(`/earn/borrow/${market.uniqueKey}`);
     },
     [router]
   );

@@ -5,7 +5,7 @@ import { MorphoNavbar } from "./MorphoNavbar";
 
 export const ConditionalMorphoNavbar: React.FC = () => {
   const pathname = usePathname();
-  const shouldShowMorphoNavbar = pathname.startsWith("/lend");
+  const shouldShowMorphoNavbar = pathname.startsWith("/earn");
 
   if (!shouldShowMorphoNavbar) return null;
 

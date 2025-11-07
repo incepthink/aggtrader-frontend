@@ -11,19 +11,19 @@ export const MorphoNavbar: React.FC = () => {
   const scrollUp = useScrollDirection();
   const { chainName, switchChain, isLoading } = useChain();
 
-  const activeTab = pathname.includes("/lend/borrow")
+  const activeTab = pathname.includes("/earn/borrow")
     ? "borrow"
-    : pathname.includes("/lend/earn")
-    ? "earn"
+    : pathname.includes("/earn/lend")
+    ? "lend"
     : "vault";
 
-  const handleTabClick = (tab: "earn" | "borrow" | "vault") => {
+  const handleTabClick = (tab: "lend" | "borrow" | "vault") => {
     if (tab === "borrow") {
-      router.push("/lend/borrow");
-    } else if (tab === "earn") {
-      router.push("/lend/earn");
+      router.push("/earn/borrow");
+    } else if (tab === "lend") {
+      router.push("/earn/lend");
     } else if (tab === "vault") {
-      router.push("/lend/vault");
+      router.push("/earn/vault");
     }
   };
 
@@ -51,11 +51,11 @@ export const MorphoNavbar: React.FC = () => {
         {/* Center - Navigation tabs */}
         <div className="flex md:-ml-18">
           <Button
-            onClick={() => handleTabClick("earn")}
+            onClick={() => handleTabClick("lend")}
             sx={{
-              color: activeTab === "earn" ? "#00F5E0" : "#8b949e",
+              color: activeTab === "lend" ? "#00F5E0" : "#8b949e",
               borderBottom:
-                activeTab === "earn"
+                activeTab === "lend"
                   ? "2px solid #00F5E0"
                   : "2px solid transparent",
               borderRadius: 0,
@@ -63,7 +63,7 @@ export const MorphoNavbar: React.FC = () => {
               height: "48px", // match Toolbar height
               lineHeight: "48px", // align text vertically
               fontSize: "16px",
-              fontWeight: activeTab === "earn" ? "600" : "400",
+              fontWeight: activeTab === "lend" ? "600" : "400",
               "&:hover": {
                 backgroundColor: "rgba(0, 245, 224, 0.1)",
               },

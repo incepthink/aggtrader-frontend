@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useKatanaBalance } from "./useKatanaBalance";
 import { getTokenInfoBySymbol } from "@/utils/katanaTokens";
-import { BACKEND_URL } from "@/utils/constants";
+import { useBatchPriceBackend } from "./sushiswap/usePriceBackend";
+import { Address } from "viem";
 
 export interface KatanaPortfolioToken {
   symbol: string;
@@ -20,7 +21,7 @@ export interface KatanaPortfolioData {
   totalValue: number;
   isLoading: boolean;
   error: string | null;
-  refresh: () => void; // Added refresh function
+  refresh: () => void;
 }
 
 export function useKatanaPortfolio(
@@ -30,133 +31,120 @@ export function useKatanaPortfolio(
     balances,
     loading: balancesLoading,
     error: balancesError,
-    refetch: refetchBalances, // Get refetch from useKatanaBalance
-  } = useKatanaBalance(address, BACKEND_URL);
-  console.log("KATANA BAALNMCES", balances);
+    refetch: refetchBalances,
+  } = useKatanaBalance(address);
+  console.log("KATANA BALANCES", balances);
 
   const [portfolioTokens, setPortfolioTokens] = useState<
     KatanaPortfolioToken[]
   >([]);
-  const [pricesLoading, setPricesLoading] = useState(false);
-  const [pricesError, setPricesError] = useState<string | null>(null);
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  // Refresh function that triggers both balance and price refetch
-  const refresh = useCallback(() => {
-    if (refetchBalances) {
-      refetchBalances(); // Refetch balances
+  // Prepare token addresses for batch price fetching
+  const tokenPairs = useMemo(() => {
+    return balances
+      .map((balance) => {
+        const tokenInfo = getTokenInfoBySymbol(balance.symbol);
+        if (!tokenInfo) {
+          console.warn(`Token info not found for symbol: ${balance.symbol}`);
+          return null;
+        }
+
+        // For native ETH, use wETH address for price lookup
+        const priceAddress =
+          balance.symbol === "ETH"
+            ? "0xEE7D8BCFb72bC1880D0Cf19822eB0A2e6577aB62"
+            : tokenInfo.address;
+
+        return {
+          addressOne: priceAddress as Address,
+          chainId: 747474 as const,
+          symbol: balance.symbol,
+          balance: balance.balance,
+          tokenInfo,
+        };
+      })
+      .filter((item): item is NonNullable<typeof item> => item !== null);
+  }, [balances]);
+
+  // Fetch all prices using batch hook
+  const {
+    data: priceResults,
+    isLoading: pricesLoading,
+    error: pricesError,
+    refetch: refetchPrices,
+  } = useBatchPriceBackend(
+    tokenPairs.map(({ addressOne, chainId }) => ({ addressOne, chainId })),
+    {
+      enabled: tokenPairs.length > 0,
+      refetchInterval: 30000, // 30 seconds
+      staleTime: 15000, // 15 seconds
     }
-    setRefreshTrigger((prev) => prev + 1); // Trigger price refetch
-  }, [refetchBalances]);
+  );
 
-  // Get prices for all tokens with balances
+  // Process balances and prices into portfolio tokens
   useEffect(() => {
     if (!balances.length) {
       setPortfolioTokens([]);
       return;
     }
 
-    const fetchPrices = async () => {
-      setPricesLoading(true);
-      setPricesError(null);
+    if (!priceResults) {
+      return;
+    }
 
-      try {
-        const tokenPromises = balances.map(async (balance) => {
-          // Get token info from our mapping
-          const tokenInfo = getTokenInfoBySymbol(balance.symbol);
+    const processedTokens = tokenPairs
+      .map((tokenPair, index) => {
+        const priceResult = priceResults[index];
+        const price = priceResult?.success ? priceResult.data || 0 : 0;
 
-          if (!tokenInfo) {
-            console.warn(`Token info not found for symbol: ${balance.symbol}`);
-            return null;
-          }
+        if (priceResult && !priceResult.success) {
+          console.error(
+            `Error fetching price for ${tokenPair.symbol}:`,
+            priceResult.error
+          );
+        }
 
-          // For native ETH, use zero address for price lookup but wETH address for token info
-          const priceAddress =
-            balance.symbol === "ETH"
-              ? "0xEE7D8BCFb72bC1880D0Cf19822eB0A2e6577aB62"
-              : tokenInfo.address;
+        console.log("PRICE", tokenPair.symbol, price);
 
-          try {
-            const response = await fetch(
-              `${BACKEND_URL}/api/price/katana?tokenAddress=${encodeURIComponent(
-                priceAddress
-              )}&_t=${Date.now()}` // Add cache busting parameter
-            );
+        const balanceNum = parseFloat(tokenPair.balance);
 
-            const priceData = await response.json();
+        return {
+          symbol: tokenPair.symbol,
+          name: tokenPair.tokenInfo.name,
+          address: tokenPair.tokenInfo.address || tokenPair.addressOne,
+          balance: balanceNum,
+          price,
+          value: balanceNum * price,
+          logoUrl: tokenPair.tokenInfo.logoUrl,
+          decimals: tokenPair.tokenInfo.decimals,
+          chain_id: 747474,
+        } as KatanaPortfolioToken;
+      })
+      .filter((token) => token.balance > 0); // Filter out tokens with zero balance
 
-            const price =
-              response.ok && priceData.status === "ok" ? priceData.price : 0;
-            console.log("PRICE", price);
+    setPortfolioTokens(processedTokens);
+  }, [balances, priceResults, tokenPairs]);
 
-            const balanceNum = parseFloat(balance.balance);
-
-            return {
-              symbol: balance.symbol,
-              name: tokenInfo.name,
-              address: tokenInfo.address || priceAddress,
-              balance: balanceNum,
-              price,
-              value: balanceNum * price,
-              logoUrl: tokenInfo.logoUrl,
-              decimals: tokenInfo.decimals,
-              chain_id: 747474, // Katana chain ID
-            } as KatanaPortfolioToken;
-          } catch (priceError) {
-            console.error(
-              `Error fetching price for ${balance.symbol}:`,
-              priceError
-            );
-            const balanceNum = parseFloat(balance.balance);
-
-            return {
-              symbol: balance.symbol,
-              name: tokenInfo.name,
-              address: tokenInfo.address || "",
-              balance: balanceNum,
-              price: 0,
-              value: 0,
-              logoUrl: tokenInfo.logoUrl,
-              decimals: tokenInfo.decimals,
-              chain_id: 747474,
-            } as KatanaPortfolioToken;
-          }
-        });
-
-        const results = await Promise.all(tokenPromises);
-        const validTokens = results.filter(
-          (token): token is KatanaPortfolioToken => token !== null
-        );
-
-        // Filter out tokens with zero balance
-        const nonZeroTokens = validTokens.filter((token) => token.balance > 0);
-
-        setPortfolioTokens(nonZeroTokens);
-      } catch (error) {
-        setPricesError(
-          error instanceof Error ? error.message : "Failed to fetch prices"
-        );
-        console.error("Error fetching portfolio prices:", error);
-      } finally {
-        setPricesLoading(false);
-      }
-    };
-
-    fetchPrices();
-  }, [balances, BACKEND_URL, refreshTrigger]); // Added refreshTrigger dependency
+  // Refresh function that triggers both balance and price refetch
+  const refresh = useCallback(() => {
+    if (refetchBalances) {
+      refetchBalances();
+    }
+    refetchPrices();
+  }, [refetchBalances, refetchPrices]);
 
   const totalValue = useMemo(() => {
     return portfolioTokens.reduce((total, token) => total + token.value, 0);
   }, [portfolioTokens]);
 
   const isLoading = balancesLoading || pricesLoading;
-  const error = balancesError || pricesError;
+  const error = balancesError || (pricesError ? String(pricesError) : null);
 
   return {
     tokens: portfolioTokens,
     totalValue,
     isLoading,
     error,
-    refresh, // Return the refresh function
+    refresh,
   };
 }

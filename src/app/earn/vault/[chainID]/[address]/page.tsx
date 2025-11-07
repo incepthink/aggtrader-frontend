@@ -73,7 +73,7 @@ export default function VaultDetailPage() {
     >
       <Button
         component={Link}
-        href="/lend/vault"
+        href="/earn/vault"
         sx={{ mb: 4 }}
         startIcon={<span>←</span>}
       >
