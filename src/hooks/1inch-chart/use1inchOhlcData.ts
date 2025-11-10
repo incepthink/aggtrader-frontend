@@ -87,7 +87,7 @@ export const use1inchOhlcData = ({
   limit = 1000,
   autoRefresh = false,
   refreshInterval = 300000, // 5 minutes
-  chainId = 1,
+  chainId = 747474,
   includePriceData = true,
   enablePricePolling = true,
 }: Use1inchOHLCDataProps): Use1inchOHLCDataReturn => {
@@ -282,7 +282,7 @@ export const useBatch1inchOhlcData = () => {
       tokenAddresses: Address[],
       resolution: "minute" | "hour" | "day" = "hour",
       limit: number = 1000,
-      chainId: SupportedChain = 1
+      chainId: SupportedChain = 747474
     ) => {
       if (!tokenAddresses.length) return;
 

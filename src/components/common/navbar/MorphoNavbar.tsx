@@ -3,13 +3,11 @@ import React from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { AppBar, Toolbar, Button, Box } from "@mui/material";
 import { useScrollDirection } from "@/hooks/useScrollDirection";
-import { useChain, SUPPORTED_CHAINS, ChainName } from "@/context/ChainContext";
 
 export const MorphoNavbar: React.FC = () => {
   const pathname = usePathname();
   const router = useRouter();
   const scrollUp = useScrollDirection();
-  const { chainName, switchChain, isLoading } = useChain();
 
   const activeTab = pathname.includes("/earn/borrow")
     ? "borrow"
@@ -24,12 +22,6 @@ export const MorphoNavbar: React.FC = () => {
       router.push("/earn/lend");
     } else if (tab === "vault") {
       router.push("/earn/vault");
-    }
-  };
-
-  const handleChainSwitch = (newChainName: ChainName) => {
-    if (newChainName !== chainName) {
-      switchChain(newChainName);
     }
   };
 

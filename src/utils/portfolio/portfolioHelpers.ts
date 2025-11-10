@@ -105,10 +105,9 @@ export const createTokenPairs = (
       const key = tokenAddress.toLowerCase();
       if (!uniqueAddresses.has(key)) {
         uniqueAddresses.add(key);
-        const cid = (chainId === 1 ? 1 : 747474) as 1 | 747474;
         pairs.push({
           addressOne: tokenAddress as `0x${string}`,
-          chainId: cid,
+          chainId: 747474,
         });
       }
     }

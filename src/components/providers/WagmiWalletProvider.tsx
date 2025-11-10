@@ -15,11 +15,10 @@ import {
   injectedWallet,
 } from "@rainbow-me/rainbowkit/wallets";
 import { WagmiProvider } from "wagmi";
-import { mainnet, polygon, optimism, arbitrum, base } from "wagmi/chains";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 import { createConfig, http } from "wagmi";
 
-// Define Katana chain (replace with actual values)
+// Katana chain - the only supported chain
 export const katana = {
   id: 747474,
   name: "Katana",
@@ -39,11 +38,10 @@ export const katana = {
       url: "https://explorer.katanarpc.com",
     },
   },
-  // ADD THIS:
   contracts: {
     multicall3: {
       address: "0xcA11bde05977b3631167028862bE2a173976CA11",
-      blockCreated: 1, // Add appropriate block number if known
+      blockCreated: 1,
     },
   },
 } as const;
@@ -83,15 +81,10 @@ const connectors = connectorsForWallets(
 
 export const config = createConfig({
   connectors,
-  // Add Katana chain to the supported chains
-  chains: [mainnet, katana, polygon, optimism, arbitrum, base],
+  // Katana is the only supported chain
+  chains: [katana],
   transports: {
-    [mainnet.id]: http(),
-    [katana.id]: http(), // Add Katana transport
-    [polygon.id]: http(),
-    [optimism.id]: http(),
-    [arbitrum.id]: http(),
-    [base.id]: http(),
+    [katana.id]: http(),
   },
   ssr: true,
 });

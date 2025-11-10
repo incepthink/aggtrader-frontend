@@ -4,10 +4,8 @@
 import { ChainSync } from "@/components/common/ChainSync";
 import GlowBox from "@/components/common/ui/GlowBox";
 import OneInchCandlestickChart from "@/components/spot/chart/1inch/OneInchCandlestickChart";
-import EthereumCandlestickChart from "@/components/spot/chart/ethereum/EthereumCandlestickChart";
 import KatanaCandlestickChart from "@/components/spot/chart/katana/KatanaCandlestickChart";
 import ChartSpot, { ChartHeader } from "@/components/spot/ChartSpot";
-import EthereumPoolCandlestickChart from "@/components/spot/EthereumPoolCandlestickChart";
 import { LimitWidget } from "@/components/spot/limit-widget/LimitWidget";
 import { SwapModeButtons } from "@/components/spot/limit-widget/SwapModeButtons";
 import OneInchSwap from "@/components/spot/OneInchSwap";
@@ -16,12 +14,10 @@ import TokenBalancesCard from "@/components/spot/tokenBalance/TokenBalancesCard"
 import TokenSelect from "@/components/spot/TokenSelect";
 import { TokenSelectModal } from "@/components/spot/TokenSelectModal";
 import { TokenSelectModalProvider } from "@/context/TokenSelectModalContext";
-import { useSpotStore } from "@/store/spotStore";
 import { Box, Container, Stack } from "@mui/material";
 import React, { useState } from "react";
 
 const page = () => {
-  const { chainId } = useSpotStore();
   const [activeTab, setActiveTab] = useState<"swap" | "limit">("swap");
 
   return (
@@ -61,9 +57,8 @@ const page = () => {
                 gap: { xs: 1, sm: 2 },
               }}
             >
-              {/* Chart Components */}
-              {/* {chainId === 1 && <EthereumCandlestickChart />} */}
-              {chainId === 747474 && <KatanaCandlestickChart />}
+              {/* Katana Chart - Always displayed */}
+              <KatanaCandlestickChart />
             </Box>
 
             {/* Swap Section - Fixed height issue */}

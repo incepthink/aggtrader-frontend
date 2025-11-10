@@ -63,7 +63,7 @@ export default function RootLayout({
 
         <WagmiWalletProvider>
           <MuiThemeProvider>
-            <ChainProvider defaultChain="ETHEREUM">
+            <ChainProvider>
               <DerivedStateTwapProvider isLimitOrder={true}>
                 <VaultProviders>
                   <div className="fixed inset-0 -z-10 overflow-hidden">

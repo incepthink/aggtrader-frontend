@@ -155,8 +155,8 @@ export const useSushiClassic = (callbacks?: UseSushiClassicCallbacks) => {
   }, [isSending]);
 
   const getSushiChainId = useCallback(() => {
-    return chainId === 1 ? ChainId.ETHEREUM : ChainId.KATANA;
-  }, [chainId]);
+    return ChainId.KATANA; // Katana is the only supported chain
+  }, []);
 
   const fetchQuote = useCallback(
     async ({ tokenIn, tokenOut, amount, slippage }: SwapParams) => {

@@ -23,5 +23,5 @@ export interface PriceStats {
 
 export interface TokenPair {
   addressOne: `0x${string}`;
-  chainId: 1 | 747474;
+  chainId: 747474;
 }

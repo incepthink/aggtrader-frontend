@@ -76,7 +76,7 @@ const EthereumCandlestickChart = () => {
   };
 
   const tokenAddress = getTokenAddress(tokenOne);
-  const isEthereumChain = chainId === 1;
+  const isEthereumChain = false; // Unused - app is Katana-only now
 
   // Only force re-render when token actually changes
   useEffect(() => {

@@ -5,8 +5,6 @@ import React, { useState } from "react";
 import NavLink from "./Navlink";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { Menu, Close } from "@mui/icons-material";
-import { NetworkSelector } from "./NetworkSelector";
-import { Typography } from "@mui/material";
 import KatanaLogo from "./KatanaLogo";
 
 const navItems = [

@@ -5,7 +5,7 @@ import { Address } from "viem";
 import { fetchTokenPriceFromSushiV3, fetchTokenPairPriceFromSushiV3 } from "../../utils/spot/sushiswapV3Fallback";
 
 // Supported chains type - using chainId numbers for Sushi API
-export type SupportedChain = 1 | 747474; // Ethereum mainnet | Katana
+export type SupportedChain = 747474; // Katana only
 
 // Sushi API response type
 export interface SushiPriceResponse {
@@ -29,10 +29,9 @@ const fetchTokenPriceSushi = async (
 ): Promise<number | null> => {
   console.log("ADDRESS SUSHI::", tokenAddress);
 
-  if (chainId === 747474 && (tokenAddress === "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" || tokenAddress === "0x0000000000000000000000000000000000000000")) {
+  // Normalize native ETH address for Katana
+  if (tokenAddress === "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" || tokenAddress === "0x0000000000000000000000000000000000000000") {
      tokenAddress = "0xee7d8bcfb72bc1880d0cf19822eb0a2e6577ab62"
-  } else if (chainId === 1 && tokenAddress === "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee") {
-    tokenAddress = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
   }
 
   try {
@@ -90,7 +89,7 @@ const fetchTokenPriceSushi = async (
 export function usePriceBackend(
   address: Address | undefined,
   compareToAddress?: Address, // This parameter is kept for backward compatibility but not used
-  chainId = 1,
+  chainId = 747474,
   options: UsePriceBackendOptions = {}
 ) {
   const {
@@ -134,10 +133,10 @@ export function usePriceBackend(
     compareTokenPrice: undefined, // Not applicable with Sushi API
     ratio: undefined, // Not applicable with single token price
 
-    // Chain info (simplified since we just have chainId)
-    chain: { id: chainId, name: chainId === 1 ? "Ethereum" : "Katana" },
+    // Chain info (Katana only)
+    chain: { id: chainId, name: "Katana" },
     chainId: chainId,
-    chainName: chainId === 1 ? "Ethereum" : "Katana",
+    chainName: "Katana",
 
     // Convenience getters (backward compatibility)
     tokenOnePrice: query.data,
@@ -165,7 +164,7 @@ export function usePriceBackend(
 export function usePriceComparison(
   addressOne: Address | undefined,
   addressTwo: Address | undefined,
-  chainId: SupportedChain = 1,
+  chainId: SupportedChain = 747474,
   options: UsePriceBackendOptions = {}
 ) {
   const {
@@ -252,9 +251,9 @@ export function usePriceComparison(
     inverseRatio: query.data?.ratio ? 1 / query.data.ratio : undefined,
 
     // Chain info
-    chain: { id: chainId, name: chainId === 1 ? "Ethereum" : "Katana" },
+    chain: { id: chainId, name: "Katana" },
     chainId: chainId,
-    chainName: chainId === 1 ? "Ethereum" : "Katana",
+    chainName: "Katana",
 
     // Comparison helpers
     tokenOneIsHigher:
@@ -284,7 +283,7 @@ export function usePriceComparison(
 export function usePriceBackendManual() {
   const queryClient = useQueryClient();
 
-  const fetchPrice = async (address: Address, chainId: SupportedChain = 1) => {
+  const fetchPrice = async (address: Address, chainId: SupportedChain = 747474) => {
     try {
       const price = await fetchTokenPriceSushi(address, chainId);
 
@@ -313,7 +312,7 @@ export function usePriceBackendManual() {
       });
     },
     // Helper to get cached price data
-    getCachedPrice: (address: Address, chainId: SupportedChain = 1) => {
+    getCachedPrice: (address: Address, chainId: SupportedChain = 747474) => {
       return queryClient.getQueryData(["sushiTokenPrice", address, chainId]);
     },
   };
@@ -340,7 +339,7 @@ export function useBatchPriceBackend(
   const fetchBatchPrices = async () => {
     const results = await Promise.allSettled(
       tokenPairs.map(({ addressOne, chainId }) =>
-        fetchTokenPriceSushi(addressOne, chainId || 1)
+        fetchTokenPriceSushi(addressOne, chainId || 747474)
       )
     );
 
@@ -380,7 +379,7 @@ export function useBatchPriceBackend(
     // Helper to group results by chain
     resultsByChain:
       query.data?.reduce((acc, result) => {
-        const chainId = result.pair.chainId || 1;
+        const chainId = result.pair.chainId || 747474;
         if (!acc[chainId]) acc[chainId] = [];
         acc[chainId].push(result);
         return acc;
@@ -392,7 +391,7 @@ export function useBatchPriceBackend(
 export function useMultiChainPriceComparison(
   address: Address | undefined,
   compareToAddress?: Address, // Not used with Sushi API
-  chains: SupportedChain[] = [1, 747474],
+  chains: SupportedChain[] = [747474],
   options: UsePriceBackendOptions = {}
 ) {
   const tokenPairs = chains.map((chainId) => ({
@@ -418,7 +417,7 @@ export function useMultiChainPriceComparison(
           tokenPrice: result.data,
           chain: {
             id: result.pair.chainId,
-            name: result.pair.chainId === 1 ? "Ethereum" : "Katana",
+            name: "Katana",
           },
           ratio: 1, // Not applicable for single token prices
         };
@@ -433,10 +432,10 @@ export function useMultiChainPriceComparison(
           return {
             price: result.data,
             chain: {
-              id: result.pair.chainId || 1,
-              name: (result.pair.chainId || 1) === 1 ? "Ethereum" : "Katana",
+              id: result.pair.chainId || 747474,
+              name: "Katana",
             },
-            chainId: result.pair.chainId || 1,
+            chainId: result.pair.chainId || 747474,
           };
         }
       }
@@ -500,7 +499,7 @@ export function usePriceFormatter() {
 export function useChainPriceCache() {
   const queryClient = useQueryClient();
 
-  const prefetchPrice = (address: Address, chainId: SupportedChain = 1) => {
+  const prefetchPrice = (address: Address, chainId: SupportedChain = 747474) => {
     return queryClient.prefetchQuery({
       queryKey: ["sushiTokenPrice", address, chainId],
       queryFn: () => fetchTokenPriceSushi(address, chainId),

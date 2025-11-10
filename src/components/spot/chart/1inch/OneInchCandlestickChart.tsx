@@ -207,7 +207,7 @@ const OneInchCandlestickChart = () => {
     limit: 1000,
     autoRefresh: true,
     refreshInterval: 300000,
-    chainId: 1, // Ethereum mainnet
+    chainId: 747474, // Katana network
     includePriceData: true,
     enablePricePolling: true,
   });
