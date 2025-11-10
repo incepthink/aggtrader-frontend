@@ -25,7 +25,7 @@ const ViewCode = ({ code }: viewCodeProps) => {
   };
 
   const handleCopyLink = async () => {
-    const link = `http://localhost:3000/join/${referralCode}`;
+    const link = `https://aggtrade.xyz/join/${referralCode}`;
     try {
       await navigator.clipboard.writeText(link);
       setCopied("link");
