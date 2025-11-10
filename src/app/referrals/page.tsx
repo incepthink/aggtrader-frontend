@@ -10,6 +10,7 @@ import { ReferredUser, useUserReferralData } from "@/hooks/useUserReferralData";
 import { Container } from "@mui/material";
 import { useAccount } from "wagmi";
 import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 
 interface Trade {
   coin: string;
@@ -22,18 +23,18 @@ interface Trade {
   terminate: string;
 }
 
-const Page = () => {
+function ReferralsContent() {
   const searchParams = useSearchParams();
   const referralCode = searchParams.get("code");
 
   const columns: Column<ReferredUser>[] = [
     {
-      key: "address", // Changed from "coin"
+      key: "address",
       header: "Address",
       align: "left",
     },
     {
-      key: "dateReferred", // Changed from "dateJoined"
+      key: "dateReferred",
       header: "Date Joined",
       align: "left",
       render: (row) => (
@@ -43,13 +44,13 @@ const Page = () => {
       ),
     },
     {
-      key: "volumeTraded", // Changed from "totalVolume"
+      key: "volumeTraded",
       header: "Total Volume",
       align: "left",
       render: (row) => <span>${parseFloat(row.volumeTraded).toFixed(2)}</span>,
     },
     {
-      key: "rewardsGenerated", // Changed from "yourRewards"
+      key: "rewardsGenerated",
       header: "Your Rewards",
       align: "left",
       render: (row) => (
@@ -83,46 +84,60 @@ const Page = () => {
   }
 
   return (
-    <>
-      <Container className="p-4 md:pt-9">
-        <Heading referralCode={referralCode} data={referralData} />
+    <Container className="p-4 md:pt-9">
+      <Heading referralCode={referralCode} data={referralData} />
 
-        <div className="mt-6">
-          <div className="flex gap-4 *:min-w-xs mb-4">
-            {[
-              {
-                heading: "Traders Referred",
-                value: referralData.stats.tradersReferred,
-              },
-              {
-                heading: "Rewards Earned",
-                value: `$${referralData.stats.rewardsEarned}`,
-              },
-              {
-                heading: "Claimable Rewards",
-                value: `$${(
-                  parseFloat(referralData.stats.rewardsEarned) -
-                  parseFloat(referralData.stats.rewardsClaimed)
-                ).toFixed(2)}`,
-              },
-            ].map((item: any, index) => {
-              return (
-                <Card key={index} heading={item.heading} value={item.value} />
-              );
-            })}
-          </div>
-          <GlowBox spread={16} padding={1}>
-            <GenericTable
-              columns={columns}
-              data={referralData.referred}
-              keyExtractor={(row, index) => `${row.address}-${index}`}
-              emptyMessage="No Referrals Yet"
-              hoverable={true}
-            />
-          </GlowBox>
+      <div className="mt-6">
+        <div className="flex gap-4 *:min-w-xs mb-4">
+          {[
+            {
+              heading: "Traders Referred",
+              value: referralData.stats.tradersReferred,
+            },
+            {
+              heading: "Rewards Earned",
+              value: `$${referralData.stats.rewardsEarned}`,
+            },
+            {
+              heading: "Claimable Rewards",
+              value: `$${(
+                parseFloat(referralData.stats.rewardsEarned) -
+                parseFloat(referralData.stats.rewardsClaimed)
+              ).toFixed(2)}`,
+            },
+          ].map((item: any, index) => {
+            return (
+              <Card key={index} heading={item.heading} value={item.value} />
+            );
+          })}
         </div>
-      </Container>
-    </>
+        <GlowBox spread={16} padding={1}>
+          <GenericTable
+            columns={columns}
+            data={referralData.referred}
+            keyExtractor={(row, index) => `${row.address}-${index}`}
+            emptyMessage="No Referrals Yet"
+            hoverable={true}
+          />
+        </GlowBox>
+      </div>
+    </Container>
+  );
+}
+
+const Page = () => {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <p className="text-2xl sm:text-3xl lg:text-4xl font-semibold text-center px-4">
+            Loading...
+          </p>
+        </div>
+      }
+    >
+      <ReferralsContent />
+    </Suspense>
   );
 };
 
