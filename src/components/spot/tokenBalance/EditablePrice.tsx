@@ -1,4 +1,4 @@
-// components/EditablePrice.tsx
+// components/spot/tokenBalance/EditablePrice.tsx
 "use client";
 
 import { useState } from "react";

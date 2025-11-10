@@ -1,23 +1,15 @@
-// src/components/profile/EquityTrendChart.tsx
+// src/components/profile/equity-chart/EquityTrendChart.tsx
 import { useMemo } from "react";
 import { useAccount } from "wagmi";
 import { useEquityTrend } from "@/hooks/useEquityTrend";
 import ChartHeader from "./ChartHeader";
 import EquityChart from "./EquityChart";
 import EmptyState from "./EmptyState";
-import XAxisLabels from "./XAxisLabels";
-import { useScreenSize } from "./useScreenSize";
-import {
-  getPortfolioStats,
-  calculateYAxisTicks,
-  getUniqueDates,
-} from "./chartUtils";
+import { getPortfolioStats } from "./chartUtils";
 
 export default function EquityTrendChart() {
   const { address, isConnected } = useAccount();
-  const { isMobile, screenWidth } = useScreenSize();
 
-  // Fetch equity trend data
   const { data, isLoading, error, isSuccess, refetch } =
     useEquityTrend(address);
 
@@ -27,26 +19,57 @@ export default function EquityTrendChart() {
     isSuccess && data?.data?.history && data.data.history.length > 0;
   const chartData = hasRealData ? data.data.history : [];
 
-  // Get unique dates for X-axis labels
-  const uniqueDates = useMemo(() => {
+  // Convert to lightweight-charts format with proper timestamp conversion and deduplication
+  const lightweightChartData = useMemo(() => {
     if (!hasRealData) return [];
-    return getUniqueDates(chartData);
+
+    // Create a map to handle duplicate timestamps
+    const dataMap = new Map<number, number>();
+
+    chartData.forEach((point: any) => {
+      const timestamp = Math.floor(new Date(point.timestamp).getTime() / 1000);
+      const balance = Number(point.balance);
+
+      // Only add valid data points
+      if (!isNaN(timestamp) && !isNaN(balance)) {
+        // If duplicate timestamp exists, use the later value (or average them)
+        if (dataMap.has(timestamp)) {
+          // Option 1: Use latest value
+          dataMap.set(timestamp, balance);
+
+          // Option 2: Average the values (uncomment if preferred)
+          // const existingBalance = dataMap.get(timestamp)!;
+          // dataMap.set(timestamp, (existingBalance + balance) / 2);
+        } else {
+          dataMap.set(timestamp, balance);
+        }
+      }
+    });
+
+    // Convert map to array and sort
+    const converted = Array.from(dataMap.entries())
+      .map(([time, value]) => ({
+        time: time as any,
+        value: value,
+      }))
+      .sort((a, b) => a.time - b.time);
+
+    console.log("Converted chart data:", {
+      original: chartData.length,
+      converted: converted.length,
+      sample: converted.slice(0, 3),
+    });
+
+    return converted;
   }, [chartData, hasRealData]);
 
-  // Calculate percentage change and stats
   const stats = useMemo(() => {
     if (!hasRealData) return null;
     return getPortfolioStats(chartData);
   }, [chartData, hasRealData]);
 
-  // Calculate dynamic Y-axis ticks
-  const yAxisTicks = useMemo(() => {
-    if (!hasRealData) return [0, 5, 10, 15, 20];
-    return calculateYAxisTicks(chartData);
-  }, [chartData, hasRealData]);
-
   return (
-    <div className="neon-panel h-[400px] relative">
+    <div className="neon-panel h-full relative">
       <ChartHeader
         isLoading={isLoading}
         hasRealData={hasRealData}
@@ -61,44 +84,17 @@ export default function EquityTrendChart() {
         </div>
       )}
 
-      {/* Chart Container */}
-      <div className="relative">
-        {hasRealData ? (
-          <>
-            <EquityChart
-              chartData={chartData}
-              screenWidth={screenWidth}
-              isMobile={isMobile}
-              yAxisTicks={yAxisTicks}
-            />
-
-            {/* Absolute positioned X-axis labels */}
-            <XAxisLabels
-              uniqueDates={uniqueDates}
-              screenWidth={screenWidth}
-              isMobile={isMobile}
-            />
-          </>
+      <div className="relative" style={{ height: "320px" }}>
+        {hasRealData && lightweightChartData.length > 0 ? (
+          <EquityChart chartData={lightweightChartData} />
         ) : (
           <EmptyState isLoading={isLoading} isConnected={isConnected} />
         )}
       </div>
 
-      {/* Loading shimmer effect */}
       {isLoading && (
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-400/5 to-transparent animate-pulse rounded-lg pointer-events-none"></div>
       )}
-
-      <style jsx global>{`
-        @keyframes spin {
-          0% {
-            transform: rotate(0deg);
-          }
-          100% {
-            transform: rotate(360deg);
-          }
-        }
-      `}</style>
     </div>
   );
 }

@@ -29,7 +29,7 @@ export const PortfolioHeader: React.FC<PortfolioHeaderProps> = ({
   const { chainId } = useSpotStore();
 
   return (
-    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2 sm:mb-2 gap-3 sm:gap-0">
+    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2 sm:mb-2 gap-3 sm:gap-0 px-0 sm:px-4">
       <div className="text-lg sm:text-xl font-semibold flex items-center gap-2">
         Token Balances ({chainId === 1 ? "Ethereum" : "Katana"})
         <Tooltip title="Refresh Data" arrow>

@@ -1,3 +1,4 @@
+// components/charts/CommonPieChart.tsx
 import {
   ResponsiveContainer,
   PieChart,
@@ -7,16 +8,8 @@ import {
   Sector,
 } from "recharts";
 import React, { useState, useEffect } from "react";
-import { useAccount } from "wagmi";
-import { useKatanaPortfolio } from "@/hooks/useKatanaPortfolio";
-import { useWallet } from "@/lib/yearnfi/lib/contexts/useWallet";
 
-type PropType = {
-  isLoading?: boolean;
-};
-
-// Explicit pie data item type
-interface PieDataItem {
+export interface PieDataItem {
   name: string;
   value: number;
   color: string;
@@ -24,102 +17,32 @@ interface PieDataItem {
   symbol: string;
 }
 
-export function PieChartComp({ isLoading = false }: PropType) {
-  const { address } = useAccount();
-  const { tokens: katanaTokens, isLoading: katanaLoading } = useKatanaPortfolio(
-    address || null
-  );
-  const { cumulatedValueInV3Vaults, isLoading: vaultsLoading } = useWallet();
+interface CommonPieChartProps {
+  data: PieDataItem[];
+  isLoading?: boolean;
+  centerLabel?: string;
+}
+
+export function CommonPieChart({
+  data,
+  isLoading = false,
+  centerLabel = "Total Portfolio",
+}: CommonPieChartProps) {
   const [activeIndex, setActiveIndex] = useState<number | undefined>(undefined);
   const [isMobile, setIsMobile] = useState(false);
+  const [isTablet, setIsTablet] = useState(false);
 
-  // Check if mobile on client side
   useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
+    const checkScreenSize = () => {
+      const width = window.innerWidth;
+      setIsMobile(width < 768);
+      setIsTablet(width >= 1280 && width < 1600);
     };
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
+    checkScreenSize();
+    window.addEventListener("resize", checkScreenSize);
+    return () => window.removeEventListener("resize", checkScreenSize);
   }, []);
 
-  // Generate colors for tokens
-  const generateColors = (count: number) => {
-    const colors = [
-      "#0088FE",
-      "#00C49F",
-      "#FFBB28",
-      "#FF8042",
-      "#8884D8",
-      "#82CA9D",
-      "#FFC658",
-      "#FF7C7C",
-      "#8DD1E1",
-      "#D084D0",
-      "#87D068",
-      "#FFA500",
-    ];
-    return colors.slice(0, count);
-  };
-
-  // Pie chart data, fully typed!
-  const createPieData = (): PieDataItem[] => {
-    const symbolMap = new Map<string, PieDataItem>();
-
-    // Add Katana tokens
-    if (katanaTokens && katanaTokens.length > 0) {
-      katanaTokens.forEach((token) => {
-        if (token.value > 0.01) {
-          if (symbolMap.has(token.symbol)) {
-            const existing = symbolMap.get(token.symbol)!;
-            existing.balance += token.balance;
-            existing.value += token.value;
-          } else {
-            symbolMap.set(token.symbol, {
-              name: token.symbol,
-              value: token.value,
-              color: "#0088FE",
-              balance: token.balance,
-              symbol: token.symbol,
-            });
-          }
-        }
-      });
-    }
-
-    // Add Yearn V3 Vaults as a single entry
-    if (cumulatedValueInV3Vaults > 0.01) {
-      symbolMap.set("Yearn V3", {
-        name: "Yearn V3 Vaults",
-        value: cumulatedValueInV3Vaults,
-        color: "#00C49F",
-        balance: cumulatedValueInV3Vaults,
-        symbol: "V3",
-      });
-    }
-
-    const pieData: PieDataItem[] = Array.from(symbolMap.values());
-
-    // Assign colors
-    const colorList = generateColors(pieData.length);
-    pieData.forEach((item, index) => {
-      item.color = colorList[index];
-    });
-
-    return pieData.length > 0
-      ? pieData
-      : [
-          {
-            name: "No Data",
-            value: 0,
-            color: "#666666",
-            balance: 0,
-            symbol: "",
-          },
-        ];
-  };
-
-  const data: PieDataItem[] = createPieData();
   const totalValue = data.reduce((sum, item) => sum + item.value, 0);
 
   const handleMouseEnter = (_: any, index: number) => {
@@ -131,8 +54,7 @@ export function PieChartComp({ isLoading = false }: PropType) {
   };
 
   const renderActiveShape = (props: any) => {
-    const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill } =
-      props;
+    const { cx, cy, innerRadius, outerRadius, startAngle, endAngle } = props;
     return (
       <g>
         <Sector
@@ -162,12 +84,9 @@ export function PieChartComp({ isLoading = false }: PropType) {
     );
   };
 
-  // Responsive chart dimensions
-  const chartSize = isMobile ? 280 : 400;
-  const innerRadius = isMobile ? 70 : 100;
-  const outerRadius = isMobile ? 90 : 120;
-
-  const isChartLoading = isLoading || katanaLoading || vaultsLoading;
+  const chartSize = isMobile ? 280 : isTablet ? 310 : 400;
+  const innerRadius = isMobile ? 70 : isTablet ? 70 : 100;
+  const outerRadius = isMobile ? 90 : isTablet ? 90 : 120;
 
   return (
     <div
@@ -264,7 +183,7 @@ export function PieChartComp({ isLoading = false }: PropType) {
 
         {/* Center Content */}
         <p className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
-          {isChartLoading ? (
+          {isLoading ? (
             <span
               className={`text-cyan-400 ${
                 isMobile ? "text-base" : "text-lg"
@@ -299,7 +218,7 @@ export function PieChartComp({ isLoading = false }: PropType) {
                   isMobile ? "text-xs" : "text-sm"
                 } text-gray-400`}
               >
-                Total Portfolio
+                {centerLabel}
               </span>
               <span
                 className={`block ${
@@ -313,7 +232,7 @@ export function PieChartComp({ isLoading = false }: PropType) {
         </p>
       </div>
 
-      {/* Legend Container - Token Breakdown */}
+      {/* Legend Container */}
       <div
         className={`flex ${
           isMobile ? "flex-row flex-wrap gap-2" : "flex-1 flex-col"
@@ -369,9 +288,7 @@ export function PieChartComp({ isLoading = false }: PropType) {
                     {dataItem.name}
                   </p>
                   <p className="text-xs text-gray-400">
-                    {dataItem.symbol === "V3"
-                      ? `$${dataItem.balance.toFixed(2)}`
-                      : `${dataItem.balance.toFixed(4)} ${dataItem.symbol}`}
+                    {dataItem.balance.toFixed(4)} {dataItem.symbol}
                   </p>
                 </div>
               </div>
@@ -390,13 +307,6 @@ export function PieChartComp({ isLoading = false }: PropType) {
             </div>
           );
         })}
-
-        {/* Info text */}
-        <div className={`${isMobile ? "mt-4" : "mt-6"} text-center`}>
-          <p className={`text-gray-500 ${isMobile ? "text-xs" : "text-sm"}`}>
-            Katana + Yearn V3 portfolio breakdown
-          </p>
-        </div>
       </div>
     </div>
   );

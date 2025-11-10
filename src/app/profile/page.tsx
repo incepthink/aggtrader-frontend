@@ -21,13 +21,14 @@ import {
 } from "@apollo/client";
 import { useAccount, useBalance } from "wagmi";
 import axios from "axios";
-import { PieChartComp } from "@/components/profile/PieChartComp";
+import { PieChartComp } from "@/components/profile/pie-chart/PieChartComp";
 import EstimatedBalanceCard from "@/components/profile/EstimatedBalanceCard";
 import EquityTrendChart from "@/components/profile/equity-chart/EquityTrendChart";
 import RecentTransactionCard from "@/components/profile/RecentTransactionCard";
 import { useSpotBalanceTotal } from "@/hooks/useSpotBalance";
 import { usePortfolioDetailed } from "@/hooks/usePortfolioDetailed";
 import { BACKEND_URL } from "@/utils/constants";
+import { TvlPieChart } from "@/components/profile/pie-chart/TvlPieChart";
 
 const client = new ApolloClient({
   uri: "https://api-v3.balancer.fi",
@@ -280,15 +281,22 @@ const page = () => {
             </div>
 
             {/* Pie Chart - Full width */}
-            <div className="neon-panel relative">
-              <PieChartComp
-              // isDydxFetched={dataReady ? holdingsData.isDydxFetched : false}
-              // spot={dataReady ? spotTotal : 0}
-              // perp={dataReady ? holdingsData.dydx : 0}
-              // lending={dataReady ? holdingsData.aave : 0}
-              // balancer={dataReady ? holdingsData.balancer : 0}
-              // isLoading={isLoading || spotLoading}
-              />
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
+              {/* Token Portfolio Chart */}
+              <div className="neon-panel relative">
+                <h3 className="text-lg sm:text-xl font-semibold text-white mb-4">
+                  Token Portfolio
+                </h3>
+                <PieChartComp />
+              </div>
+
+              {/* Platform TVL Chart */}
+              <div className="neon-panel relative">
+                <h3 className="text-lg sm:text-xl font-semibold text-white mb-4">
+                  Platform TVL
+                </h3>
+                <TvlPieChart />
+              </div>
             </div>
           </div>
         ) : (

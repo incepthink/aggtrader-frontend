@@ -41,6 +41,7 @@
     "ethers": "^5.8.0",
     "framer-motion": "^12.23.24",
     "graphql": "^16.11.0",
+    "html2canvas": "^1.4.1",
     "lightweight-charts": "^4.2.3",
     "next": "^15.5.2",
     "notistack": "^3.0.2",

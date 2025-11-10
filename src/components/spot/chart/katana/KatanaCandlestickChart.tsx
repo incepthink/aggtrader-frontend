@@ -157,9 +157,8 @@ const KatanaCandlestickChart = () => {
       color: trade.type === "buy" ? "#2196F3" : "#e91e63",
       shape:
         trade.type === "buy" ? ("arrowUp" as const) : ("arrowDown" as const),
-      text: `${trade.type === "buy" ? "Buy" : "Sell"} @ $${trade.price.toFixed(
-        2
-      )}`,
+      text: `${trade.type === "buy" ? "B" : "S"}`,
+      size: 0.8,
     }));
   }, [tokenAddress, markersRefreshKey]);
 
