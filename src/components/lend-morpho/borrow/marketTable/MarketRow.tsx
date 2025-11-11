@@ -11,9 +11,10 @@ import {
 } from "@mui/material";
 import StarIcon from "@mui/icons-material/Star";
 import StarBorderIcon from "@mui/icons-material/StarBorder";
+import { BorrowRateSummary } from "./BorrowRateSummary";
 
 // Helper function to get token color based on symbol
-const getTokenColor = (symbol: string): string => {
+export const getTokenColor = (symbol: string): string => {
   const colorMap: { [key: string]: string } = {
     USDC: "#2775CA",
     USDT: "#26A17B",
@@ -252,19 +253,9 @@ const MarketRow: React.FC<MarketRowProps> = ({
           py: 2,
         }}
       >
-        <Chip
-          label={`${((market.state?.borrowApy || 0) * 100).toFixed(2)}%`}
-          size="small"
-          sx={{
-            backgroundColor: "primary.main",
-            color: "primary.dark",
-            fontSize: "12px",
-            fontWeight: "600",
-            height: "24px",
-            "& .MuiChip-label": {
-              padding: "0 8px",
-            },
-          }}
+        <BorrowRateSummary
+          nativeApr={market.state?.borrowApy || 0}
+          rewards={market.state?.rewards}
         />
       </TableCell>
 

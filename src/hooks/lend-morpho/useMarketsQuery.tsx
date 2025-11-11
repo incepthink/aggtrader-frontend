@@ -143,6 +143,7 @@ export const useMarketsQuery = (
             address
             symbol
             decimals
+            priceUsd
           }
           collateralAsset {
             address
@@ -160,7 +161,18 @@ export const useMarketsQuery = (
             liquidityAssetsUsd
             utilization
             fee
+            rewards {
+              borrowApr
+              supplyApr
+              asset {
+                priceUsd
+                symbol
+                yield {
+                  apr
+                }
+            }
           }
+        }
           oracle {
             address
             type
