@@ -16,11 +16,11 @@ export type VaultYieldEntry = {
   Total: string;
 };
 
-type VaultYieldData = {
+export type VaultYieldData = {
   [address: string]: VaultYieldEntry;
 };
 
-const vaultYieldData: VaultYieldData = {
+export const vaultYieldData: VaultYieldData = {
   "0x80c34BD3A3569E126e7055831036aa7b212cB159": {
     "Extrinsic Yield": "2.10%",
     "Katana APY": "3.08%",

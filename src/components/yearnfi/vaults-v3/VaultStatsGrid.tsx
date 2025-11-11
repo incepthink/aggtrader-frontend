@@ -4,13 +4,14 @@ import { Box, Typography, Tooltip } from "@mui/material";
 import InfoIcon from "@mui/icons-material/Info";
 import type { TYDaemonVault } from "@/lib/yearnfi/lib/utils/schemas/yDaemonVaultsSchemas";
 import { Counter } from "@/components/common/Counter";
-import { RenderAmount } from "@/components/common/RenderAmount";
 import { formatAmount, toNormalizedBN } from "@/lib/yearnfi/lib/utils";
 import GlowBox from "@/components/common/ui/GlowBox";
 import { useWeb3 } from "@/lib/yearnfi/lib/contexts/useWeb3";
 import { useVaultBalance } from "@/lib/yearnfi/lib/hooks/useVaultBalance";
 import { useStakingRewards } from "@/lib/yearnfi/lib/hooks/useStakingRewards";
 import { useYearn } from "@/lib/yearnfi/lib/contexts/useYearn";
+import { CustomAPYDisplay } from "./list/CustomAPYDisplay";
+import { vaultYieldData } from "./list/VaultsV3ListRow";
 
 type VaultStatsGridProps = {
   vault: TYDaemonVault;
@@ -110,11 +111,8 @@ export function VaultStatsGrid({ vault }: VaultStatsGridProps) {
   const tvlUSD = vault.tvl?.tvl || 0;
   const tokenSymbol = vault.token.symbol || "tokens";
 
-  // APY data with staking boost
-  const baseAPY = vault.apy?.net_apy || 0;
-  const stakingAPR = vault.apr?.extra?.stakingRewardsAPR || 0;
-  const gammaAPR = vault.apr?.extra?.gammaRewardAPR || 0;
-  const totalAPY = baseAPY + stakingAPR + gammaAPR;
+  // Check if vault requires custom APY display
+  const requiresCustomAPY = vaultYieldData[vault.address] !== undefined;
 
   // User balance in tokens
   const userBalanceNormalized = toNormalizedBN(
@@ -141,20 +139,6 @@ export function VaultStatsGrid({ vault }: VaultStatsGridProps) {
   // In production, you'd fetch the actual price for the reward token
   const earnedRewardsUSD = 0; // TODO: Implement reward token price lookup
 
-  // APY tooltip content
-  const apyTooltip =
-    stakingAPR > 0 || gammaAPR > 0
-      ? `Base APY: ${formatAmount(
-          baseAPY * 100,
-          2,
-          2
-        )}%\nStaking Rewards: ${formatAmount(stakingAPR * 100, 2, 2)}%${
-          gammaAPR > 0
-            ? `\nGamma Rewards: ${formatAmount(gammaAPR * 100, 2, 2)}%`
-            : ""
-        }`
-      : undefined;
-
   return (
     <GlowBox>
       <Box
@@ -162,7 +146,7 @@ export function VaultStatsGrid({ vault }: VaultStatsGridProps) {
           display: "grid",
           gridTemplateColumns: {
             xs: "repeat(2, 1fr)",
-            md: "repeat(4, 1fr)",
+            md: "repeat(3, 1fr)",
           },
           gap: { xs: 2, md: 4 },
           py: { xs: 2, md: 3 },
@@ -181,22 +165,20 @@ export function VaultStatsGrid({ vault }: VaultStatsGridProps) {
           subValue={`$${formatAmount(tvlUSD, 2, 2)}`}
         />
 
-        {/* Historical APY with boost */}
+        {/* Estimated APR */}
         <StatItem
-          label="Historical APY"
+          label="Estimated APR"
           value={
-            vault.apy?.type === "new" ? (
-              "New"
+            requiresCustomAPY ? (
+              <CustomAPYDisplay
+                vaultYieldEntry={vaultYieldData[vault.address]}
+              />
+            ) : vault.apr?.netAPR ? (
+              `${(vault.apr.netAPR * 100).toFixed(2)}%`
             ) : (
-              <RenderAmount value={totalAPY} symbol="percent" decimals={2} />
+              "-"
             )
           }
-          subValue={
-            stakingAPR > 0 || gammaAPR > 0
-              ? `Base: ${formatAmount(baseAPY * 100, 2, 2)}% + Boost`
-              : undefined
-          }
-          tooltip={apyTooltip}
         />
 
         {/* User Holdings */}
@@ -224,7 +206,7 @@ export function VaultStatsGrid({ vault }: VaultStatsGridProps) {
         />
 
         {/* Extra Rewards (if staking available) */}
-        {vault.staking.available && hasActiveRewards ? (
+        {/* {vault.staking.available && hasActiveRewards && (
           <StatItem
             label={`Extra earned, ${rewardTokenSymbol || "rewards"}`}
             value={
@@ -245,13 +227,7 @@ export function VaultStatsGrid({ vault }: VaultStatsGridProps) {
             }
             tooltip="Rewards from staking your vault tokens"
           />
-        ) : (
-          <StatItem
-            label="Available to deposit"
-            value="∞"
-            subValue="No deposit limit"
-          />
-        )}
+        )} */}
       </Box>
     </GlowBox>
   );
