@@ -289,7 +289,7 @@ export function BorrowForm({
     >
       <Paper
         sx={{
-          backgroundColor: "rgba(30, 41, 59, 0.4)",
+          backgroundColor: "transparent",
           borderRadius: 2,
           position: "sticky",
           top: 100,
@@ -297,7 +297,7 @@ export function BorrowForm({
           width: "100%",
         }}
       >
-        <Box sx={{ p: 3 }}>
+        <Box sx={{ p: 2 }}>
           <BorrowRepayHeader
             currentTab={activeTab}
             onTabChange={handleTabChange}

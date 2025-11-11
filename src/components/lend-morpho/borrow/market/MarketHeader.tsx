@@ -58,11 +58,13 @@ export default function MarketHeader({ market }: MarketHeaderProps) {
   };
 
   const formatLLTV = () => {
-    if (!market?.lltv || typeof market.lltv !== "number") {
-      return "0.00%";
-    }
     try {
-      const lltv = Number(market.lltv);
+      if (!market?.lltv) return "0.00%";
+      const lltv =
+        typeof market.lltv === "string" ? parseFloat(market.lltv) : market.lltv;
+      if (isNaN(lltv)) return "0.00%";
+
+      // Convert from wei to percentage
       const percentage = (lltv / 1e18) * 100;
       return `${percentage.toFixed(2)}%`;
     } catch (error) {
@@ -86,41 +88,38 @@ export default function MarketHeader({ market }: MarketHeaderProps) {
     <Box>
       {/* Market Title and Assets */}
       <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
-        <Typography variant="h3" sx={{ fontWeight: "bold", color: "white" }}>
-          {formatMarketName()}
-        </Typography>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           {/* Collateral Asset Avatar */}
           <Avatar
             sx={{
-              width: 32,
-              height: 32,
+              width: 28,
+              height: 28,
               backgroundColor: getTokenColor(collateralSymbol),
-              fontSize: "14px",
+              fontSize: "10px",
               fontWeight: "600",
             }}
           >
             {collateralSymbol.substring(0, 2).toUpperCase()}
           </Avatar>
-          <Typography variant="h5" sx={{ color: "#8b949e" }}>
+          <Typography variant="h3" sx={{ color: "white" }}>
             {collateralSymbol}
           </Typography>
-          <Typography variant="h5" sx={{ color: "#8b949e", mx: 1 }}>
+          <Typography variant="h3" sx={{ color: "white", mx: 1 }}>
             /
           </Typography>
           {/* Loan Asset Avatar */}
           <Avatar
             sx={{
-              width: 32,
-              height: 32,
+              width: 28,
+              height: 28,
               backgroundColor: getTokenColor(loanSymbol),
-              fontSize: "14px",
+              fontSize: "10px",
               fontWeight: "600",
             }}
           >
             {loanSymbol.substring(0, 2).toUpperCase()}
           </Avatar>
-          <Typography variant="h5" sx={{ color: "#8b949e" }}>
+          <Typography variant="h3" sx={{ color: "white" }}>
             {loanSymbol}
           </Typography>
         </Box>
@@ -139,9 +138,6 @@ export default function MarketHeader({ market }: MarketHeaderProps) {
               fontWeight: "500",
             }}
           />
-          <Typography variant="body2" sx={{ color: "#8b949e" }}>
-            Loan-to-Value Ratio
-          </Typography>
         </Box>
 
         {/* Whitelisted Badge */}
@@ -160,38 +156,24 @@ export default function MarketHeader({ market }: MarketHeaderProps) {
           </Box>
         )}
 
+        <Tooltip title="View on Etherscan">
+          <IconButton
+            size="small"
+            onClick={handleOpenEtherscan}
+            sx={{
+              color: "#8b949e",
+              "&:hover": { color: "white" },
+            }}
+          >
+            <OpenInNew fontSize="small" />
+          </IconButton>
+        </Tooltip>
+
         {/* Market Address with Copy/Open Actions */}
-        {marketAddress && (
+        {/* {marketAddress && (
           <Box
             sx={{ display: "flex", alignItems: "center", gap: 1, ml: "auto" }}
           >
-            <Typography variant="body2" sx={{ color: "#8b949e" }}>
-              Market:
-            </Typography>
-            <Typography
-              variant="body2"
-              sx={{
-                fontFamily: "monospace",
-                color: "white",
-                fontSize: "0.875rem",
-              }}
-            >
-              {`${marketAddress.slice(0, 8)}...${marketAddress.slice(-8)}`}
-            </Typography>
-
-            <Tooltip title="Copy market address">
-              <IconButton
-                size="small"
-                onClick={handleCopyAddress}
-                sx={{
-                  color: "#8b949e",
-                  "&:hover": { color: "white" },
-                }}
-              >
-                <ContentCopy fontSize="small" />
-              </IconButton>
-            </Tooltip>
-
             <Tooltip title="View on Etherscan">
               <IconButton
                 size="small"
@@ -205,7 +187,7 @@ export default function MarketHeader({ market }: MarketHeaderProps) {
               </IconButton>
             </Tooltip>
           </Box>
-        )}
+        )} */}
       </Box>
 
       {/* Asset Details Row */}

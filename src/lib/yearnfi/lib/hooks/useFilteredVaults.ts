@@ -10,6 +10,8 @@ export function useVaultFilter(
   v3Only: boolean = true
 ) {
   const { vaults } = useYearn();
+  console.log("YEARNVAULTS::", vaults);
+  
   
 
   const filteredVaults = useMemo(() => {

@@ -213,7 +213,7 @@ const ResponsiveMarketsContainer: React.FC<ResponsiveMarketsContainerProps> = ({
               >
                 Borrow Rate
               </TableCell>
-              <TableCell
+              {/* <TableCell
                 sx={{
                   color: "text.primary",
                   borderBottom: "1px solid rgba(55, 65, 81, 0.5)",
@@ -225,7 +225,7 @@ const ResponsiveMarketsContainer: React.FC<ResponsiveMarketsContainerProps> = ({
                 }}
               >
                 Vault Listing
-              </TableCell>
+              </TableCell> */}
             </TableRow>
           </TableHead>
 

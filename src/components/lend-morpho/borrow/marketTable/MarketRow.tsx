@@ -7,11 +7,9 @@ import {
   Typography,
   Avatar,
   Chip,
-  Button,
 } from "@mui/material";
-import StarIcon from "@mui/icons-material/Star";
-import StarBorderIcon from "@mui/icons-material/StarBorder";
 import { BorrowRateSummary } from "./BorrowRateSummary";
+// import { VaultListingSummary } from "./VaultListingSummary";
 
 // Helper function to get token color based on symbol
 export const getTokenColor = (symbol: string): string => {
@@ -205,10 +203,9 @@ const MarketRow: React.FC<MarketRowProps> = ({
               fontWeight: "500",
             }}
           >
-            {formatNumber(
-              market.state?.supplyAssets || "0",
-              market.loanAsset?.decimals || 18
-            )}{" "}
+            {formatUsd(
+              (market.state?.supplyAssetsUsd || 0) / market.loanAsset.priceUsd
+            ).replace("$", "")}{" "}
             {market.loanAsset?.symbol || ""}
           </Typography>
           <Typography sx={{ color: "#8B8D98", fontSize: "12px" }}>
@@ -233,10 +230,10 @@ const MarketRow: React.FC<MarketRowProps> = ({
               fontWeight: "500",
             }}
           >
-            {formatNumber(
-              market.state?.liquidityAssets || "0",
-              market.loanAsset?.decimals || 18
-            )}{" "}
+            {formatUsd(
+              (market.state?.liquidityAssetsUsd || 0) /
+                market.loanAsset.priceUsd
+            ).replace("$", "")}{" "}
             {market.loanAsset?.symbol || ""}
           </Typography>
           <Typography sx={{ color: "#8B8D98", fontSize: "12px" }}>
@@ -260,37 +257,15 @@ const MarketRow: React.FC<MarketRowProps> = ({
       </TableCell>
 
       {/* Vault Listing */}
-      <TableCell
+      {/* <TableCell
         sx={{
           color: "white",
           borderBottom: "none",
           py: 2,
         }}
       >
-        {market.supplyingVaults && market.supplyingVaults.length > 0 ? (
-          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
-            <VaultChip vaults={market.supplyingVaults.slice(0, 2)} />
-            {market.supplyingVaults.length > 1 && (
-              <Chip
-                label={`+${market.supplyingVaults.length - 2}`}
-                size="small"
-                sx={{
-                  backgroundColor: "primary.light",
-                  color: "#FFFFFF",
-                  fontSize: "10px",
-                  fontWeight: "600",
-                  height: "20px",
-                  "& .MuiChip-label": {
-                    padding: "0 6px",
-                  },
-                }}
-              />
-            )}
-          </Box>
-        ) : (
-          <Typography sx={{ color: "#8B8D98", fontSize: "12px" }}>-</Typography>
-        )}
-      </TableCell>
+        <VaultListingSummary supplyingVaults={market.supplyingVaults} />
+      </TableCell> */}
 
       {/* Favorite Button */}
       {/* <TableCell

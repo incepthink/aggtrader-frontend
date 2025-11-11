@@ -119,7 +119,7 @@ export const useMarketsQuery = (
 
   const { chainId } = useChain();
 
-  // Simplified GraphQL query - removed some nested fields to reduce complexity
+  // Optimized GraphQL query - only fetching fields used in MarketRow
   const query = `
     query GetMarkets($first: Int!, $skip: Int!, $where: MarketFilters!, $orderBy: MarketOrderBy!, $orderDirection: OrderDirection!) {
       markets(
@@ -135,52 +135,27 @@ export const useMarketsQuery = (
         }
         items {
           uniqueKey
-          whitelisted
           lltv
-          oracleAddress
-          irmAddress
           loanAsset {
-            address
             symbol
-            decimals
             priceUsd
           }
           collateralAsset {
-            address
             symbol
-            decimals
           }
           state {
             borrowApy
-            supplyApy
-            netBorrowApy
-            netSupplyApy
-            borrowAssetsUsd
             supplyAssetsUsd
-            collateralAssetsUsd
             liquidityAssetsUsd
-            utilization
-            fee
             rewards {
               borrowApr
               supplyApr
               asset {
-                priceUsd
                 symbol
-                yield {
-                  apr
-                }
+              }
             }
           }
-        }
-          oracle {
-            address
-            type
-          }
-          warnings {
-            type
-            level
-          }
+          
         }
       }
     }

@@ -1,5 +1,6 @@
 import React from "react";
 import { Box, Typography, Chip, Avatar, Button } from "@mui/material";
+import { BorrowRateSummary } from "./BorrowRateSummary";
 
 // Helper function to get token color based on symbol
 const getTokenColor = (symbol: string): string => {
@@ -85,19 +86,18 @@ const MarketMobileCard: React.FC<MarketMobileCardProps> = ({
   return (
     <Box
       sx={{
-        backgroundColor: "rgba(31, 41, 55, 0.8)",
-        borderRadius: 2,
-        p: 3,
-        mb: 2,
-        border: "1px solid rgba(55, 65, 81, 0.3)",
-        cursor: "pointer",
+        // backgroundColor: "rgba(31, 41, 55, 0.8)",
+        // borderRadius: 2,
+        py: 3,
+        borderBottom: "2px solid rgba(55, 65, 81, 1)",
+        // cursor: "pointer",
         transition: "all 0.2s ease-in-out",
-        "&:hover": {
-          backgroundColor: "rgba(55, 65, 81, 0.4)",
-          transform: "translateY(-1px)",
-        },
+        // "&:hover": {
+        //   backgroundColor: "rgba(55, 65, 81, 0.4)",
+        //   transform: "translateY(-1px)",
+        // },
       }}
-      onClick={() => onMarketClick(market)}
+      // onClick={() => onMarketClick(market)}
     >
       {/* Header with Token Pair and Borrow Button */}
       <Box
@@ -153,7 +153,12 @@ const MarketMobileCard: React.FC<MarketMobileCardProps> = ({
           </Typography>
         </Box>
 
-        <Button
+        <BorrowRateSummary
+          nativeApr={market.state?.borrowApy || 0}
+          rewards={market.state?.rewards}
+        />
+
+        {/* <Button
           variant="contained"
           size="small"
           sx={{
@@ -175,7 +180,7 @@ const MarketMobileCard: React.FC<MarketMobileCardProps> = ({
           }}
         >
           Borrow
-        </Button>
+        </Button> */}
       </Box>
 
       {/* Stats Row */}
@@ -197,35 +202,35 @@ const MarketMobileCard: React.FC<MarketMobileCardProps> = ({
               mb: 0.5,
             }}
           >
-            {formatNumber(
-              market.state?.supplyAssets || "0",
-              market.loanAsset?.decimals || 18
-            )}{" "}
+            {formatUsd(
+              (market.state?.supplyAssetsUsd || 0) / market.loanAsset.priceUsd
+            ).replace("$", "")}{" "}
             {market.loanAsset?.symbol || ""}
           </Typography>
-          <Typography
-            variant="caption"
-            sx={{
-              color: "#9CA3AF",
-              fontSize: "0.8rem",
-            }}
-          >
-            {formatUsd(market.state?.supplyAssetsUsd || 0)}
-          </Typography>
+          <div className="flex gap-2">
+            <Typography
+              variant="caption"
+              sx={{
+                color: "#9CA3AF",
+                fontSize: "0.8rem",
+              }}
+            >
+              Market Size:
+            </Typography>
+            <Typography
+              variant="caption"
+              sx={{
+                color: "#9CA3AF",
+                fontSize: "0.8rem",
+              }}
+            >
+              {formatUsd(market.state?.supplyAssetsUsd || 0)}
+            </Typography>
+          </div>
         </Box>
 
         {/* LLTV */}
-        <Box sx={{ textAlign: "right" }}>
-          <Typography
-            sx={{
-              color: "#FFFFFF",
-              fontSize: "1rem",
-              fontWeight: "600",
-              mb: 0.5,
-            }}
-          >
-            {((market.lltv / 1e18) * 100).toFixed(2)}%
-          </Typography>
+        <div className="flex gap-2 items-end">
           <Typography
             variant="caption"
             sx={{
@@ -235,8 +240,39 @@ const MarketMobileCard: React.FC<MarketMobileCardProps> = ({
           >
             LLTV
           </Typography>
-        </Box>
+          <Typography
+            sx={{
+              color: "#FFFFFF",
+              fontSize: "1rem",
+              fontWeight: "600",
+            }}
+          >
+            {((market.lltv / 1e18) * 100).toFixed(2)}%
+          </Typography>
+        </div>
       </Box>
+      <Button
+        variant="contained"
+        sx={{
+          width: "100%",
+          backgroundColor: "#3B82F6",
+          color: "white",
+          fontSize: "0.75rem",
+          textTransform: "none",
+          borderRadius: "6px",
+          mt: 2,
+          minWidth: "60px",
+          "&:hover": {
+            backgroundColor: "#2563EB",
+          },
+        }}
+        onClick={(e) => {
+          e.stopPropagation();
+          onMarketClick(market);
+        }}
+      >
+        Borrow
+      </Button>
     </Box>
   );
 };

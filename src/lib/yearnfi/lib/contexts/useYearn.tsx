@@ -28,7 +28,7 @@ type TYearnContext = {
 
 const YearnContext = createContext<TYearnContext | undefined>(undefined);
 
-const SUPPORTED_CHAINS = [1, 747474]; // Ethereum + Katana
+const SUPPORTED_CHAINS = [747474]; // Ethereum + Katana
 
 const fetcher = async (urls: string[]) => {
   const responses = await Promise.all(

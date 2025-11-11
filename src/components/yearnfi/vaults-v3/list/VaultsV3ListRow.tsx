@@ -5,6 +5,72 @@ import { Box, Typography, useTheme, useMediaQuery } from "@mui/material";
 import type { TYDaemonVault } from "@/lib/yearnfi/lib/utils/schemas/yDaemonVaultsSchemas";
 import { formatAmount } from "@/lib/yearnfi/lib/utils";
 import Link from "next/link";
+import { CustomAPYDisplay } from "./CustomAPYDisplay";
+
+export type VaultYieldEntry = {
+  "Extrinsic Yield"?: string;
+  "T-Bill Yield"?: string;
+  "Katana APY": string;
+  "Base Rewards APR": string;
+  "App Rewards APR": string;
+  Total: string;
+};
+
+type VaultYieldData = {
+  [address: string]: VaultYieldEntry;
+};
+
+const vaultYieldData: VaultYieldData = {
+  "0x80c34BD3A3569E126e7055831036aa7b212cB159": {
+    "Extrinsic Yield": "2.10%",
+    "Katana APY": "3.08%",
+    "Base Rewards APR": "35.00%",
+    "App Rewards APR": "1.24%",
+    Total: "41.42%",
+  },
+  "0xE007CA01894c863d7898045ed5A3B4Abf0b18f37": {
+    "Extrinsic Yield": "1.30%",
+    "Katana APY": "2.70%",
+    "Base Rewards APR": "14.00%",
+    "App Rewards APR": "0.51%",
+    Total: "18.51%",
+  },
+  "0x9A6bd7B6Fd5C4F87eb66356441502fc7dCdd185B": {
+    "Extrinsic Yield": "1.70%",
+    "Katana APY": "3.04%",
+    "Base Rewards APR": "35.00%",
+    "App Rewards APR": "2.35%",
+    Total: "42.09%",
+  },
+  "0x93Fec6639717b6215A48E5a72a162C50DCC40d68": {
+    "T-Bill Yield": "3.50%",
+    "Katana APY": "2.31%",
+    "Base Rewards APR": "35.00%",
+    "App Rewards APR": "1.71%",
+    Total: "42.52%",
+  },
+  "0xAa0362eCC584B985056E47812931270b99C91f9d": {
+    "Extrinsic Yield": "0.01%",
+    "Katana APY": "0.80%",
+    "Base Rewards APR": "7.00%",
+    "App Rewards APR": "0.91%",
+    Total: "8.72%",
+  },
+  "0x8Fb1c10Ad4417EcA341a1D903Ff437d25ff87a4e": {
+    "Extrinsic Yield": "0.00%",
+    "Katana APY": "0.00%",
+    "Base Rewards APR": "0.00%",
+    "App Rewards APR": "0.00%",
+    Total: "0.00%",
+  },
+  "0x1769111aA8EA46fee3BA23EF9B57F3CBe1873408": {
+    "Extrinsic Yield": "0.00%",
+    "Katana APY": "0.00%",
+    "Base Rewards APR": "0.00%",
+    "App Rewards APR": "1.99%",
+    Total: "1.99%",
+  },
+};
 
 type VaultsV3ListRowProps = {
   currentVault: TYDaemonVault;
@@ -17,6 +83,11 @@ export function VaultsV3ListRow({
 }: VaultsV3ListRowProps) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  let requiresCustomAPY = false;
+
+  if (vaultYieldData[currentVault.address] !== undefined) {
+    requiresCustomAPY = true;
+  }
 
   // Mobile Card View
   if (isMobile) {
@@ -70,8 +141,8 @@ export function VaultsV3ListRow({
                 EST. APY
               </Typography>
               <Typography sx={{ fontSize: "0.875rem", color: "white" }}>
-                {currentVault.apy?.gross_apr
-                  ? `${formatAmount(currentVault.apy.gross_apr * 100, 2, 2)}%`
+                {currentVault.apr?.netAPR
+                  ? `${(currentVault.apr?.netAPR * 100).toFixed(2)}%`
                   : "-"}
               </Typography>
             </Box>
@@ -181,11 +252,17 @@ export function VaultsV3ListRow({
           className="col-span-2"
           sx={{ display: "flex", alignItems: "center" }}
         >
-          <Typography sx={{ fontSize: "0.875rem", color: "white" }}>
-            {currentVault.apy?.gross_apr
-              ? `${formatAmount(currentVault.apy.gross_apr * 100, 2, 2)}%`
-              : "-"}
-          </Typography>
+          {requiresCustomAPY ? (
+            <CustomAPYDisplay
+              vaultYieldEntry={vaultYieldData[currentVault.address]}
+            />
+          ) : (
+            <Typography sx={{ fontSize: "0.875rem", color: "white" }}>
+              {currentVault.apr?.netAPR
+                ? `$${(currentVault.apr?.netAPR * 100).toFixed(2)}%`
+                : "-"}
+            </Typography>
+          )}
         </Box>
 
         {/* Hist. APY */}
