@@ -46,7 +46,7 @@ const GenericTable = <T,>({
             {columns.map((column) => (
               <th
                 key={column.key}
-                className={`px-4 py-3 text-sm font-medium text-gray-400 ${getAlignment(
+                className={`px-2 md:px-4 py-2 md:py-3 text-xs md:text-sm font-medium text-gray-400 ${getAlignment(
                   column.align
                 )}`}
                 style={{ width: column.width }}
@@ -61,7 +61,7 @@ const GenericTable = <T,>({
             <tr>
               <td
                 colSpan={columns.length}
-                className="px-4 py-8 text-center text-gray-500"
+                className="px-2 md:px-4 py-12 md:py-20 text-center text-gray-500 text-xs md:text-sm"
               >
                 {emptyMessage}
               </td>
@@ -79,7 +79,7 @@ const GenericTable = <T,>({
                 {columns.map((column) => (
                   <td
                     key={column.key}
-                    className={`px-4 py-4 text-sm text-gray-200 ${getAlignment(
+                    className={`px-2 md:px-4 py-3 md:py-4 text-xs md:text-sm text-gray-200 ${getAlignment(
                       column.align
                     )}`}
                   >

@@ -1,6 +1,6 @@
 "use client";
 
-// src/components/referrals/call-to-action/EnterCode.tsx
+// src/components/referral/call-to-action/EnterCode.tsx
 
 import GenericModal from "@/components/common/ui/GenericModal";
 import GlowBox from "@/components/common/ui/GlowBox";
@@ -93,7 +93,7 @@ const EnterCode = ({ data, referralCode }: enterCodeProps) => {
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="text-primary border-primary border-2 px-4 py-2.5 cursor-pointer hover:bg-primary/10 transition-all active:bg-primary/20 rounded-lg text-sm"
+        className="text-primary border-primary border-2 px-3 md:px-4 py-2 md:py-2.5 cursor-pointer hover:bg-primary/10 transition-all active:bg-primary/20 rounded-lg text-xs md:text-sm whitespace-nowrap"
       >
         {hasReferral ? "Remove Code" : "Enter Code"}
       </button>

@@ -10,5 +10,5 @@ type PageProps = {
 
 export default async function JoinPage({ params }: PageProps) {
   const { code } = await params;
-  redirect(`/referrals?code=${code}`);
+  redirect(`/referral?code=${code}`);
 }

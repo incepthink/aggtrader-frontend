@@ -1,11 +1,11 @@
-// src/app/referrals/page.tsx
+// src/app/referral/page.tsx
 
 "use client";
 
 import GenericTable, { Column } from "@/components/common/ui/GenericTable";
 import GlowBox from "@/components/common/ui/GlowBox";
-import Card from "@/components/referrals/Card";
-import Heading from "@/components/referrals/Heading";
+import Card from "@/components/referral/Card";
+import Heading from "@/components/referral/Heading";
 import { ReferredUser, useUserReferralData } from "@/hooks/useUserReferralData";
 import { Container } from "@mui/material";
 import { useAccount } from "wagmi";
@@ -31,12 +31,12 @@ function ReferralsContent() {
     {
       key: "address",
       header: "Address",
-      align: "left",
+      align: "center",
     },
     {
       key: "dateReferred",
       header: "Date Joined",
-      align: "left",
+      align: "center",
       render: (row) => (
         <span className="text-teal-400">
           {new Date(row.dateReferred).toLocaleDateString()}
@@ -46,17 +46,17 @@ function ReferralsContent() {
     {
       key: "volumeTraded",
       header: "Total Volume",
-      align: "left",
+      align: "center",
       render: (row) => <span>${parseFloat(row.volumeTraded).toFixed(2)}</span>,
     },
-    {
-      key: "rewardsGenerated",
-      header: "Your Rewards",
-      align: "left",
-      render: (row) => (
-        <span>${parseFloat(row.rewardsGenerated).toFixed(2)}</span>
-      ),
-    },
+    // {
+    //   key: "rewardsGenerated",
+    //   header: "Your Rewards",
+    //   align: "left",
+    //   render: (row) => (
+    //     <span>${parseFloat(row.rewardsGenerated).toFixed(2)}</span>
+    //   ),
+    // },
   ];
 
   const { address, isConnected } = useAccount();
@@ -85,26 +85,30 @@ function ReferralsContent() {
 
   return (
     <Container className="p-4 md:pt-9">
-      <Heading referralCode={referralCode} data={referralData} />
+      <Heading
+        tradersReffered={referralData.stats.tradersReferred}
+        referralCode={referralCode}
+        data={referralData}
+      />
 
-      <div className="mt-6">
+      <div className="mt-2">
         <div className="flex gap-4 *:min-w-xs mb-4">
           {[
-            {
-              heading: "Traders Referred",
-              value: referralData.stats.tradersReferred,
-            },
-            {
-              heading: "Rewards Earned",
-              value: `$${referralData.stats.rewardsEarned}`,
-            },
-            {
-              heading: "Claimable Rewards",
-              value: `$${(
-                parseFloat(referralData.stats.rewardsEarned) -
-                parseFloat(referralData.stats.rewardsClaimed)
-              ).toFixed(2)}`,
-            },
+            // {
+            //   heading: "Traders Referred",
+            //   value: referralData.stats.tradersReferred,
+            // },
+            // {
+            //   heading: "Rewards Earned",
+            //   value: `$${referralData.stats.rewardsEarned}`,
+            // },
+            // {
+            //   heading: "Claimable Rewards",
+            //   value: `$${(
+            //     parseFloat(referralData.stats.rewardsEarned) -
+            //     parseFloat(referralData.stats.rewardsClaimed)
+            //   ).toFixed(2)}`,
+            // },
           ].map((item: any, index) => {
             return (
               <Card key={index} heading={item.heading} value={item.value} />
