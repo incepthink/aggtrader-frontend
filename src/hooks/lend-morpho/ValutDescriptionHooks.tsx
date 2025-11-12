@@ -243,16 +243,12 @@ export const useVaultDetail = (
   const query = `
     query GetVaultDetails($address: String!, $chainId: Int!) {
       vaultByAddress(address: $address, chainId: $chainId) {
-      id
         address
         name
         symbol
-        whitelisted
         asset {
-          id
           address
           symbol
-          name
           decimals
           yield {
             apr
@@ -260,7 +256,6 @@ export const useVaultDetail = (
         }
         metadata {
           description
-          forumLink
           image
           curators {
             image
@@ -268,76 +263,22 @@ export const useVaultDetail = (
             url
           }
         }
-        allocators {
-          address
-        }
         state {
           totalAssets
           totalAssetsUsd
           totalSupply
-          sharePrice
           sharePriceUsd
-          apy
           netApy
-          netApyWithoutRewards
+          avgNetApy
           dailyApy
           dailyNetApy
-          avgNetApy
           weeklyApy
-          weeklyNetApy
           monthlyApy
-          monthlyNetApy
-          owner
           curator
-          guardian
-          timelock
           fee
-          rewards {
-            asset {
-              address
-              symbol
-              name
-            }
-            supplyApr
-            yearlySupplyTokens
-          }
           allocation {
-            supplyQueueIndex
-            withdrawQueueIndex
-            supplyCap
             supplyAssets
             supplyAssetsUsd
-            market {
-              uniqueKey
-              loanAsset {
-                name
-                symbol
-                address
-              }
-              collateralAsset {
-                name
-                symbol
-                address
-              }
-              oracleAddress
-              irmAddress
-              lltv
-              state {
-                supplyAssets
-                borrowAssets
-                borrowApy
-                supplyApy
-                utilization
-                rewards {
-                  asset {
-                    address
-                    symbol
-                  }
-                  supplyApr
-                  borrowApr
-                }
-              }
-            }
           }
         }
         liquidity {

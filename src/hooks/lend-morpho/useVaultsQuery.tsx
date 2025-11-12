@@ -45,8 +45,6 @@ export interface Market {
   uniqueKey: string;
   loanAsset: LoanAsset | null;
   collateralAsset: CollateralAsset | null;
-  oracleAddress: string;
-  irmAddress: string;
   lltv: number;
   state: MarketState;
 }
@@ -59,13 +57,8 @@ export interface Allocation {
 }
 
 export interface VaultState {
-  owner: string;
   curator: string;
-  guardian: string;
-  timelock: string;
-  apy: number;
   netApy: number;
-  netApyWithoutRewards: number;
   dailyApy: number;
   dailyNetApy: number;
   avgNetApy: number;
@@ -172,18 +165,10 @@ export const useVaultsQuery = (
               url
             }
           }
-          allocators {
-            address
-          }
           state {
-            owner
             curator
-            guardian
-            timelock
-            apy
             netApy
             avgNetApy
-            netApyWithoutRewards
             dailyApy
             dailyNetApy
             weeklyApy
@@ -210,8 +195,6 @@ export const useVaultsQuery = (
                 collateralAsset {
                   name
                 }
-                oracleAddress
-                irmAddress
                 lltv
                 state {
                   rewards {

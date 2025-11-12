@@ -5,7 +5,8 @@
       "Bash(findstr:*)",
       "Bash(tree:*)",
       "Bash(npm run build:*)",
-      "WebFetch(domain:docs.morpho.org)"
+      "WebFetch(domain:docs.morpho.org)",
+      "Bash(done)"
     ],
     "deny": [],
     "ask": []

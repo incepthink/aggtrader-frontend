@@ -41,7 +41,7 @@ const BorrowSummary: React.FC = () => {
       <GlowBox sx={{ marginBottom: 2 }}>
         <Box
           sx={{
-            p: 3,
+            p: { xs: 2, sm: 3 },
             backgroundColor: "transparent",
             color: "white",
             borderRadius: 0,
@@ -50,8 +50,10 @@ const BorrowSummary: React.FC = () => {
           <Box
             sx={{
               display: "flex",
+              flexDirection: { xs: "column", md: "row" },
               justifyContent: "space-between",
-              alignItems: "flex-start",
+              alignItems: { xs: "flex-start", md: "flex-start" },
+              gap: { xs: 3, md: 0 },
             }}
           >
             <Box>
@@ -68,38 +70,55 @@ const BorrowSummary: React.FC = () => {
                   }}
                 />
               </Box>
-              <Skeleton
-                variant="text"
-                width={180}
-                height={72}
-                sx={{ bgcolor: "rgba(55, 65, 81, 0.3)" }}
-              />
-            </Box>
-
-            <Box sx={{ display: "flex", alignItems: "center", gap: 3 }}>
-              <Box sx={{ textAlign: "right" }}>
-                <Typography variant="body2" sx={{ color: "#9CA3AF", mb: 1 }}>
-                  Net Rate
-                </Typography>
+              <Box
+                sx={{ width: { xs: 140, sm: 180 }, height: { xs: 56, sm: 72 } }}
+              >
                 <Skeleton
                   variant="text"
-                  width={80}
-                  height={32}
-                  sx={{ bgcolor: "rgba(55, 65, 81, 0.3)", mb: 2 }}
+                  width="100%"
+                  height="100%"
+                  sx={{ bgcolor: "rgba(55, 65, 81, 0.3)" }}
                 />
-                <Box sx={{ width: 200 }}>
-                  <LinearProgress
-                    variant="indeterminate"
-                    sx={{
-                      height: 8,
-                      borderRadius: 4,
-                      backgroundColor: "rgba(55, 65, 81, 0.6)",
-                      "& .MuiLinearProgress-bar": {
-                        backgroundColor: "#EF4444",
-                      },
-                    }}
-                  />
-                </Box>
+              </Box>
+            </Box>
+
+            <Box
+              sx={{
+                textAlign: { xs: "left", md: "right" },
+                width: { xs: "100%", md: "auto" },
+              }}
+            >
+              <Typography variant="body2" sx={{ color: "#9CA3AF", mb: 1 }}>
+                Net Rate
+              </Typography>
+              <Box
+                sx={{
+                  width: { xs: 60, sm: 80 },
+                  height: { xs: 28, sm: 32 },
+                  mb: 2,
+                }}
+              >
+                <Skeleton
+                  variant="text"
+                  width="100%"
+                  height="100%"
+                  sx={{ bgcolor: "rgba(55, 65, 81, 0.3)" }}
+                />
+              </Box>
+              <Box
+                sx={{ width: { xs: "100%", sm: "200px" }, maxWidth: "100%" }}
+              >
+                <LinearProgress
+                  variant="indeterminate"
+                  sx={{
+                    height: 8,
+                    borderRadius: 4,
+                    backgroundColor: "rgba(55, 65, 81, 0.6)",
+                    "& .MuiLinearProgress-bar": {
+                      backgroundColor: "#EF4444",
+                    },
+                  }}
+                />
               </Box>
             </Box>
           </Box>
@@ -120,7 +139,7 @@ const BorrowSummary: React.FC = () => {
     <GlowBox sx={{ marginBottom: 2 }}>
       <Box
         sx={{
-          p: 3,
+          p: { xs: 2, sm: 3 },
           backgroundColor: "transparent",
           color: "white",
           borderRadius: 0,
@@ -129,12 +148,22 @@ const BorrowSummary: React.FC = () => {
         <Box
           sx={{
             display: "flex",
+            flexDirection: { xs: "column", md: "row" },
             justifyContent: "space-between",
-            alignItems: "center",
+            alignItems: { xs: "flex-start", md: "center" },
+            gap: { xs: 3, md: 0 },
           }}
         >
           <Box>
-            <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                mb: 1,
+                flexWrap: "wrap",
+                gap: 0.5,
+              }}
+            >
               <Typography variant="body2" sx={{ color: "#9CA3AF", mr: 1 }}>
                 Your loans
               </Typography>
@@ -153,7 +182,7 @@ const BorrowSummary: React.FC = () => {
                   sx={{
                     color: "#9CA3AF",
                     ml: 1,
-                    fontSize: "0.75rem",
+                    fontSize: { xs: "0.7rem", sm: "0.75rem" },
                   }}
                 >
                   {loanCount} loan{loanCount !== 1 ? "s" : ""}
@@ -165,7 +194,7 @@ const BorrowSummary: React.FC = () => {
               variant="h3"
               sx={{
                 fontWeight: "bold",
-                fontSize: "3rem",
+                fontSize: { xs: "2rem", sm: "2.5rem", md: "3rem" },
                 color: "#ffffff",
               }}
             >
@@ -204,7 +233,12 @@ const BorrowSummary: React.FC = () => {
           </Box>
 
           <Box sx={{ display: "flex", alignItems: "center", gap: 3 }}>
-            <Box sx={{ textAlign: "right" }}>
+            <Box
+              sx={{
+                textAlign: { xs: "left", md: "right" },
+                width: { xs: "100%", md: "auto" },
+              }}
+            >
               <Typography variant="body2" sx={{ color: "#9CA3AF", mb: 0.5 }}>
                 Net Rate
               </Typography>
@@ -212,13 +246,20 @@ const BorrowSummary: React.FC = () => {
                 variant="h6"
                 sx={{
                   fontWeight: "bold",
+                  fontSize: { xs: "1.25rem", sm: "1.5rem" },
                   color: netRate > 0 ? "#EF4444" : "#ffffff", // Red for borrowing costs
                 }}
               >
                 {netRate > 0 ? `${(netRate * 100).toFixed(2)}%` : "0%"}
               </Typography>
 
-              <Box sx={{ width: 200, mt: 1 }}>
+              <Box
+                sx={{
+                  width: { xs: "100%", sm: "200px" },
+                  maxWidth: "100%",
+                  mt: 1,
+                }}
+              >
                 <LinearProgress
                   variant="determinate"
                   value={progressValue}
@@ -235,7 +276,7 @@ const BorrowSummary: React.FC = () => {
                   <Typography
                     sx={{
                       color: "#9CA3AF",
-                      fontSize: "0.75rem",
+                      fontSize: { xs: "0.7rem", sm: "0.75rem" },
                       mt: 2,
                       display: "block",
                     }}

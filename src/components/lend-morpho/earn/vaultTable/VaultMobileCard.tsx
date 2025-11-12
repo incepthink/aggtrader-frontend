@@ -22,17 +22,10 @@ const VaultMobileCard: React.FC<VaultMobileCardProps> = ({
   return (
     <Box
       sx={{
-        backgroundColor: "rgba(31, 41, 55, 0.8)",
-        borderRadius: 2,
-        p: 3,
-        mb: 2,
-        border: "1px solid rgba(55, 65, 81, 0.3)",
-        cursor: "pointer",
+        py: 3,
+        borderBottom: "2px solid rgba(55, 65, 81, 1)",
+        // cursor: "pointer",
         transition: "all 0.2s ease-in-out",
-        "&:hover": {
-          backgroundColor: "rgba(55, 65, 81, 0.4)",
-          transform: "translateY(-1px)",
-        },
       }}
       onClick={() => onVaultClick(vault.address)}
     >
