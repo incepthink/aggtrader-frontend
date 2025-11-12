@@ -62,6 +62,27 @@ export function useBorrowCalculations({
       ? currentBorrowed + borrowAmountNum
       : Math.max(0, currentBorrowed - repayAmountNum);
 
+  console.log("=== useBorrowCalculations DEBUG ===");
+  console.log("Inputs:", {
+    collateralAmount,
+    borrowAmount,
+    collateralAmountNum,
+    borrowAmountNum,
+    activeTab,
+  });
+  console.log("Current Position:", {
+    currentCollateral,
+    currentBorrowed,
+  });
+  console.log("Projected Position:", {
+    projectedCollateral,
+    projectedBorrowed,
+  });
+  console.log("Prices:", {
+    collateralPrice,
+    loanTokenPrice,
+  });
+
   // Calculate current and projected LTV
   const currentLTV = calculateCurrentLTV(
     currentBorrowed,

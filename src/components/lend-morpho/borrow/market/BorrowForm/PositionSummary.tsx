@@ -2,7 +2,7 @@
 "use client";
 
 import React from "react";
-import { Box, Typography, Divider, Slider } from "@mui/material";
+import { Box, Typography, Divider } from "@mui/material";
 import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import TrendingDownIcon from "@mui/icons-material/TrendingDown";
 
@@ -85,18 +85,6 @@ export const PositionSummary: React.FC<PositionSummaryProps> = ({
 
   const safeFormatAmount = formatAmount || defaultFormatAmount;
 
-  // Parse current LTV percentage
-  const currentLtvDecimal = parseFloat(ltv.replace("%", "")) / 100;
-  const liquidationLtvDecimal =
-    parseFloat(liquidationLtv.replace("%", "")) / 100;
-
-  const handleSliderChange = (_event: Event, newValue: number | number[]) => {
-    if (onLtvChange && typeof newValue === "number") {
-      const newLtvDecimal = newValue / 100;
-      onLtvChange(newLtvDecimal);
-    }
-  };
-
   return (
     <Box
       sx={{
@@ -110,7 +98,7 @@ export const PositionSummary: React.FC<PositionSummaryProps> = ({
       {/* ✅ Collateral Position with Arrows */}
       <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
         <Typography variant="body2" sx={{ color: "#8b949e" }}>
-          {mode === "repay" ? "Current debt" : "Your collateral position"} (
+          {mode === "repay" ? "Current debt" : "Collateral"} (
           {mode === "repay" ? loanSymbol : collateralSymbol})
         </Typography>
         <Box sx={{ display: "flex", alignItems: "baseline", gap: 1 }}>
@@ -145,7 +133,7 @@ export const PositionSummary: React.FC<PositionSummaryProps> = ({
       {/* ✅ Borrow/Loan Position with Arrows */}
       <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
         <Typography variant="body2" sx={{ color: "#8b949e" }}>
-          {mode === "repay" ? "Collateral" : "Your loan position"} (
+          {mode === "repay" ? "Collateral" : "Loan"} (
           {mode === "repay" ? collateralSymbol : loanSymbol})
         </Typography>
         <Box sx={{ display: "flex", alignItems: "baseline", gap: 1 }}>
@@ -223,86 +211,53 @@ export const PositionSummary: React.FC<PositionSummaryProps> = ({
             </Box>
           </Box>
 
-          {/* LTV Slider */}
-          {onLtvChange && (
-            <Box sx={{ px: 1, mb: 1 }}>
-              <Slider
-                value={currentLtvDecimal * 100}
-                onChange={handleSliderChange}
-                min={0}
-                max={maxSafeLTV * 100} // Max at 91.5%
-                step={0.1}
-                sx={{
-                  color: "#3b82f6",
-                  height: 6,
-                  "& .MuiSlider-track": {
-                    border: "none",
-                    background: `#3b82f6`,
-                  },
-                  "& .MuiSlider-rail": {
-                    backgroundColor: "#30363d",
-                    border: "none",
-                  },
-                  "& .MuiSlider-thumb": {
-                    height: 16,
-                    width: 16,
-                    backgroundColor: "white",
-                    border: "2px solid currentColor",
-                    "&:focus, &:hover, &.Mui-active, &.Mui-focusVisible": {
-                      boxShadow: "inherit",
-                    },
-                    "&:before": {
-                      display: "none",
-                    },
-                  },
-                }}
-              />
-            </Box>
-          )}
-
           {/* ✅ Health Factor with Arrow (for borrow mode if you want to show it) */}
-          {hasAnyChange && (
-            <Box
-              sx={{ display: "flex", justifyContent: "space-between", mt: 1 }}
-            >
-              <Typography variant="body2" sx={{ color: "#8b949e" }}>
-                Health Factor
-              </Typography>
-              <Box sx={{ display: "flex", alignItems: "baseline", gap: 1 }}>
-                <Typography
-                  variant="body2"
-                  fontWeight="600"
-                  sx={{ color: getHealthFactorColor(currentHealthFactor) }}
-                >
-                  {formatHealthFactor(currentHealthFactor)}
+          {hasAnyChange &&
+            !(
+              currentHealthFactor === Infinity &&
+              projectedHealthFactor === Infinity
+            ) && (
+              <Box
+                sx={{ display: "flex", justifyContent: "space-between", mt: 1 }}
+              >
+                <Typography variant="body2" sx={{ color: "#8b949e" }}>
+                  Health Factor
                 </Typography>
-                <>
-                  <Typography variant="caption" sx={{ color: "#8b949e" }}>
-                    →
-                  </Typography>
+                <Box sx={{ display: "flex", alignItems: "baseline", gap: 1 }}>
                   <Typography
                     variant="body2"
                     fontWeight="600"
-                    sx={{
-                      color: getHealthFactorColor(projectedHealthFactor),
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 0.25,
-                    }}
+                    sx={{ color: getHealthFactorColor(currentHealthFactor) }}
                   >
-                    {formatHealthFactor(projectedHealthFactor)}
-                    {projectedHealthFactor > currentHealthFactor ? (
-                      <TrendingUpIcon sx={{ fontSize: 14, color: "#4caf50" }} />
-                    ) : projectedHealthFactor < currentHealthFactor ? (
-                      <TrendingDownIcon
-                        sx={{ fontSize: 14, color: "#f44336" }}
-                      />
-                    ) : null}
+                    {formatHealthFactor(currentHealthFactor)}
                   </Typography>
-                </>
+                  <>
+                    <Typography variant="caption" sx={{ color: "#8b949e" }}>
+                      →
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      fontWeight="600"
+                      sx={{
+                        color: getHealthFactorColor(projectedHealthFactor),
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 0.25,
+                      }}
+                    >
+                      {formatHealthFactor(projectedHealthFactor)}
+                      {projectedHealthFactor > currentHealthFactor ? (
+                        <TrendingUpIcon sx={{ fontSize: 14, color: "#4caf50" }} />
+                      ) : projectedHealthFactor < currentHealthFactor ? (
+                        <TrendingDownIcon
+                          sx={{ fontSize: 14, color: "#f44336" }}
+                        />
+                      ) : null}
+                    </Typography>
+                  </>
+                </Box>
               </Box>
-            </Box>
-          )}
+            )}
         </>
       ) : (
         <Box sx={{ display: "flex", justifyContent: "space-between" }}>

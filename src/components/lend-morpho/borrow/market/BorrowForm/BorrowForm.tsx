@@ -6,7 +6,7 @@ import { Box, Paper, Alert, Button, CircularProgress } from "@mui/material";
 import { MarketData } from "@/hooks/lend-morpho/MarketDetailHooks";
 import { useAccount, useBalance } from "wagmi";
 import { formatUnits, Address } from "viem";
-import { useCoinGeckoPrice } from "@/hooks/useCoinGeckoPrice";
+import { usePriceBackend } from "@/hooks/sushiswap/usePriceBackend";
 import { useBorrowCalculations } from "@/hooks/lend-morpho/useBorrowCalculations";
 import { useMorphoBorrow } from "@/hooks/lend-morpho/useMorphoBorrow";
 import { useMorphoRepay } from "@/hooks/lend-morpho/useMorphoRepay";
@@ -39,16 +39,16 @@ export function BorrowForm({
 
   // Get token prices first (needed for position hook)
   const {
-    price: collateralTokenPrice,
+    tokenPrice: collateralTokenPrice,
     isLoading: isLoadingCollateralPrice,
     error: collateralPriceError,
-  } = useCoinGeckoPrice(market.collateralAsset.address);
+  } = usePriceBackend(market.collateralAsset.address as Address);
 
   const {
-    price: loanTokenPrice,
+    tokenPrice: loanTokenPrice,
     isLoading: isLoadingLoanPrice,
     error: loanPriceError,
-  } = useCoinGeckoPrice(market.loanAsset.address);
+  } = usePriceBackend(market.loanAsset.address as Address);
 
   // Morpho hooks
   const morphoBorrow = useMorphoBorrow();
@@ -64,7 +64,12 @@ export function BorrowForm({
     isLoading: isLoadingPosition,
     error: positionError,
     refetch: refetchPosition,
-  } = useMorphoPosition(market, address, collateralTokenPrice, loanTokenPrice);
+  } = useMorphoPosition(
+    market,
+    address,
+    collateralTokenPrice || 0,
+    loanTokenPrice || 0
+  );
 
   // Get wallet balances
   const collateralBalanceQuery = useBalance({
@@ -102,13 +107,13 @@ export function BorrowForm({
   const currentCollateral = userPosition?.collateralAmount || 0;
   const currentBorrowed = userPosition?.borrowedAmount || 0;
 
-  // Use calculations hook
+  // Use calculations hook (with fallback for prices)
   const calculations = useBorrowCalculations({
     collateralAmount,
     borrowAmount,
     repayAmount,
-    collateralPrice: collateralTokenPrice,
-    loanTokenPrice,
+    collateralPrice: collateralTokenPrice || 0,
+    loanTokenPrice: loanTokenPrice || 0,
     lltv: parseFloat(market.lltv) / 1e18,
     currentCollateral,
     currentBorrowed,
@@ -424,8 +429,8 @@ export function BorrowForm({
               isLoading={isLoading}
               formattedCollateralBalance={formattedCollateralBalance}
               formattedLoanBalance={formattedLoanBalance}
-              collateralTokenPrice={collateralTokenPrice}
-              loanTokenPrice={loanTokenPrice}
+              collateralTokenPrice={collateralTokenPrice || 0}
+              loanTokenPrice={loanTokenPrice || 0}
               isLoadingCollateralBalance={collateralBalanceQuery.isLoading}
               calculations={calculations}
               needsApproval={
@@ -449,11 +454,11 @@ export function BorrowForm({
               isLoading={isLoading}
               isLoadingData={isLoadingData}
               formattedLoanBalance={formattedLoanBalance}
-              loanTokenPrice={loanTokenPrice}
+              loanTokenPrice={loanTokenPrice || 0}
               hasDebt={hasDebt}
               userPosition={userPosition || null}
               calculations={calculations}
-              collateralTokenPrice={collateralTokenPrice}
+              collateralTokenPrice={collateralTokenPrice || 0}
               needsApproval={
                 !repayTokenApproval.isApproved && parseFloat(repayAmount) > 0
               }

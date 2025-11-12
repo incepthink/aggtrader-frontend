@@ -5,6 +5,7 @@ import React from "react";
 import { Box, Typography, Paper, Tooltip, IconButton } from "@mui/material";
 import { InfoOutlined, TrendingUp } from "@mui/icons-material";
 import { MarketData } from "@/hooks/lend-morpho/MarketDetailHooks";
+import { BorrowRateSummary } from "../BorrowRateSummary";
 
 interface MarketStatsProps {
   market: MarketData;
@@ -179,18 +180,11 @@ export default function MarketStats({ market }: MarketStatsProps) {
           </Tooltip>
         </Box>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <Typography
-            variant="h4"
-            sx={{
-              fontWeight: "bold",
-              color: "#f44336",
-            }}
-          >
-            {formatPercentage(borrowApy)}
-          </Typography>
-          {borrowApy > 0 && (
-            <TrendingUp sx={{ color: "#4caf50", fontSize: 20 }} />
-          )}
+          <BorrowRateSummary
+            nativeApr={market.state?.borrowApy || 0}
+            rewards={market.state?.rewards}
+            displayMode="inline"
+          />
         </Box>
       </Paper>
 

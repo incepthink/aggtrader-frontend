@@ -8,7 +8,7 @@ import {
   Avatar,
   Chip,
 } from "@mui/material";
-import { BorrowRateSummary } from "./BorrowRateSummary";
+import { BorrowRateSummary } from "../BorrowRateSummary";
 // import { VaultListingSummary } from "./VaultListingSummary";
 
 // Helper function to get token color based on symbol

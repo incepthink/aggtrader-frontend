@@ -27,6 +27,18 @@ export interface MarketWarning {
   level: "YELLOW" | "RED";
 }
 
+export interface Asset {
+  address: string;
+  symbol: string;
+  decimals: number;
+}
+
+export interface MarketReward {
+  asset: Asset;
+  supplyApr: number;
+  borrowApr: number;
+}
+
 export interface MarketData {
   uniqueKey: string;
   lltv: string;
@@ -55,6 +67,7 @@ export interface MarketData {
     liquidityAssets: string;
     liquidityAssetsUsd: number;
     fee: number;
+    rewards: MarketReward[];
   };
   // Computed fields
   ltv: number;
@@ -113,6 +126,13 @@ const GET_MARKET_QUERY = `
         liquidityAssets
         liquidityAssetsUsd
         fee
+        rewards {
+              borrowApr
+              supplyApr
+              asset {
+                symbol
+              }
+            }
       }
       warnings {
         type

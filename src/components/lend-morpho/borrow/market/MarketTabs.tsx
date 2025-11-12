@@ -149,8 +149,8 @@ export default function MarketTabs({ market }: MarketTabsProps) {
             }}
           >
             <Tab label="Your Position" />
-            <Tab label="Overview" />
-            <Tab label="Advanced" />
+            {/* <Tab label="Overview" />
+            <Tab label="Advanced" /> */}
             <Tab label="Activity" />
           </Tabs>
         </Box>
@@ -163,7 +163,7 @@ export default function MarketTabs({ market }: MarketTabsProps) {
           </TabPanel>
 
           {/* Overview Tab */}
-          <TabPanel value={value} index={1}>
+          {/* <TabPanel value={value} index={1}>
             <Typography
               variant="h6"
               gutterBottom
@@ -293,10 +293,10 @@ export default function MarketTabs({ market }: MarketTabsProps) {
                   sx={{ color: "white", fontWeight: "600" }}
                 >
                   {formatPercentage(market.utilization)}
-                </Typography>
+                </Typography> */}
 
-                {/* Utilization Bar */}
-                <Box
+          {/* Utilization Bar */}
+          {/* <Box
                   sx={{
                     width: "100%",
                     height: 6,
@@ -350,10 +350,10 @@ export default function MarketTabs({ market }: MarketTabsProps) {
                 </Typography>
               </Box>
             </Box>
-          </TabPanel>
+          </TabPanel> */}
 
           {/* Advanced Tab */}
-          <TabPanel value={value} index={2}>
+          {/* <TabPanel value={value} index={2}>
             <Typography
               variant="h6"
               gutterBottom
@@ -477,10 +477,10 @@ export default function MarketTabs({ market }: MarketTabsProps) {
                 >
                   {formatPercentage(market.state.fee)}
                 </Typography>
-              </Box>
+              </Box> */}
 
-              {/* Collateral Asset Details */}
-              <Box
+          {/* Collateral Asset Details */}
+          {/* <Box
                 sx={{
                   p: 3,
                   backgroundColor: "rgba(0, 245, 224, 0.1)",
@@ -508,10 +508,10 @@ export default function MarketTabs({ market }: MarketTabsProps) {
                       )}...${market.collateralAsset.address.slice(-8)}`
                     : "Not available"}
                 </Typography>
-              </Box>
+              </Box> */}
 
-              {/* Loan Asset Details */}
-              <Box
+          {/* Loan Asset Details */}
+          {/* <Box
                 sx={{
                   p: 3,
                   backgroundColor: "rgba(0, 245, 224, 0.1)",
@@ -540,10 +540,10 @@ export default function MarketTabs({ market }: MarketTabsProps) {
                     : "Not available"}
                 </Typography>
               </Box>
-            </Box>
+            </Box> */}
 
-            {/* Warnings Section */}
-            {market.warnings && market.warnings.length > 0 && (
+          {/* Warnings Section */}
+          {/* {market.warnings && market.warnings.length > 0 && (
               <Box sx={{ mt: 4 }}>
                 <Typography
                   variant="h6"
@@ -579,10 +579,10 @@ export default function MarketTabs({ market }: MarketTabsProps) {
                 </Box>
               </Box>
             )}
-          </TabPanel>
+          </TabPanel> */}
 
           {/* Activity Tab */}
-          <TabPanel value={value} index={3}>
+          <TabPanel value={value} index={1}>
             <Typography
               variant="h6"
               gutterBottom

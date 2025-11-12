@@ -109,7 +109,6 @@ export const BorrowActionButton: React.FC<BorrowActionButtonProps> = ({
       }
       disabled={isDisabled()}
       sx={{
-        mt: 2,
         py: 1.5,
         backgroundColor: getButtonColor(),
         "&:hover": {

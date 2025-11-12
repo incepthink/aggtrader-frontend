@@ -236,7 +236,7 @@ const PositionTab: React.FC<PositionTabProps> = ({ market }) => {
         </Box>
 
         {/* Market Limits */}
-        <Box
+        {/* <Box
           sx={{
             mt: 3,
             p: 3,
@@ -277,7 +277,7 @@ const PositionTab: React.FC<PositionTabProps> = ({ market }) => {
               </Typography>
             </Box>
           </Box>
-        </Box>
+        </Box> */}
       </Box>
     );
   }

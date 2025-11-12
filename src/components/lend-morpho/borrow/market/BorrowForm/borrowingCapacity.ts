@@ -51,14 +51,36 @@ export function calculateCurrentLTV(
   collateralAmount: number,
   collateralPrice: number
 ): number {
-  if (!collateralAmount || !collateralPrice) {
+  console.log("=== calculateCurrentLTV DEBUG ===");
+  console.log("Inputs:", {
+    borrowedAmount,
+    loanTokenPrice,
+    collateralAmount,
+    collateralPrice,
+  });
+
+  if (!collateralAmount || collateralAmount === 0) {
+    console.log("Returning 0: No collateral");
+    return 0;
+  }
+
+  if (!collateralPrice || collateralPrice === 0) {
+    console.log("ERROR: collateralPrice is 0 or falsy");
     return 0;
   }
 
   const borrowedValueUSD = borrowedAmount * loanTokenPrice;
   const collateralValueUSD = collateralAmount * collateralPrice;
 
-  return borrowedValueUSD / collateralValueUSD;
+  console.log("Calculated values:", {
+    borrowedValueUSD,
+    collateralValueUSD,
+  });
+
+  const ltv = borrowedValueUSD / collateralValueUSD;
+  console.log("Final LTV:", ltv, `(${(ltv * 100).toFixed(2)}%)`);
+
+  return ltv;
 }
 
 /**

@@ -68,18 +68,18 @@ export const BorrowTabContent: React.FC<BorrowTabContentProps> = ({
 
   // Handle LTV slider change
   const handleLtvChange = (newLtvDecimal: number) => {
-    console.log("=== LTV SLIDER CHANGE ===");
-    console.log("New LTV:", newLtvDecimal);
-    console.log("User Position:", userPosition);
-    console.log("Collateral Amount Input:", collateralAmount);
-    console.log("Prices:", { collateralTokenPrice, loanTokenPrice });
+    // console.log("=== LTV SLIDER CHANGE ===");
+    // console.log("New LTV:", newLtvDecimal);
+    // console.log("User Position:", userPosition);
+    // console.log("Collateral Amount Input:", collateralAmount);
+    // console.log("Prices:", { collateralTokenPrice, loanTokenPrice });
 
     // Calculate total collateral (existing + new input)
     const existingCollateral = userPosition?.collateralAmount || 0;
     const newCollateralAmount = parseFloat(collateralAmount) || 0;
     const totalCollateral = existingCollateral + newCollateralAmount;
 
-    console.log("Total Collateral:", totalCollateral);
+    // console.log("Total Collateral:", totalCollateral);
 
     if (totalCollateral > 0 && collateralTokenPrice > 0 && loanTokenPrice > 0) {
       // Calculate desired borrow amount based on LTV
@@ -91,11 +91,11 @@ export const BorrowTabContent: React.FC<BorrowTabContentProps> = ({
       const desiredTotalBorrowAmount =
         desiredTotalBorrowValueUSD / loanTokenPrice;
 
-      console.log("Calculation:", {
-        collateralValueUSD,
-        desiredTotalBorrowValueUSD,
-        desiredTotalBorrowAmount,
-      });
+      // console.log("Calculation:", {
+      //   collateralValueUSD,
+      //   desiredTotalBorrowValueUSD,
+      //   desiredTotalBorrowAmount,
+      // });
 
       // Subtract existing borrowed amount to get new borrow amount
       const existingBorrowed = userPosition?.borrowedAmount || 0;
@@ -108,12 +108,12 @@ export const BorrowTabContent: React.FC<BorrowTabContentProps> = ({
       const maxBorrowable = calculations.maxBorrowableAmount;
       const finalBorrowAmount = Math.min(newBorrowAmount, maxBorrowable);
 
-      console.log("Final amounts:", {
-        existingBorrowed,
-        newBorrowAmount,
-        maxBorrowable,
-        finalBorrowAmount,
-      });
+      // console.log("Final amounts:", {
+      //   existingBorrowed,
+      //   newBorrowAmount,
+      //   maxBorrowable,
+      //   finalBorrowAmount,
+      // });
 
       onBorrowAmountChange(finalBorrowAmount.toString());
     } else {
@@ -154,9 +154,7 @@ export const BorrowTabContent: React.FC<BorrowTabContentProps> = ({
     ? calculations.formatNumber(calculations.projectedBorrowed)
     : calculations.formatNumber(parseFloat(borrowAmount) || 0);
 
-  const displayLTV = userPosition?.hasPosition
-    ? calculations.formatPercentage(calculations.projectedLTV)
-    : calculations.formatPercentage(calculations.projectedLTV);
+  const displayLTV = calculations.formatPercentage(calculations.projectedLTV);
 
   return (
     <>
@@ -233,13 +231,13 @@ export const BorrowTabContent: React.FC<BorrowTabContentProps> = ({
         buttonText={needsApproval ? "Approve Collateral" : "Borrow"}
       />
 
-      <Divider sx={{ borderColor: "#2d3748", my: 3 }} />
+      {/* <Divider sx={{ borderColor: "#2d3748", my: 3 }} /> */}
 
-      <MarketInfoDisplay
+      {/* <MarketInfoDisplay
         borrowApy={market.borrowApy}
         maxLtv={calculations.formatPercentage(calculations.maxSafeLTV)}
         mode="borrow"
-      />
+      /> */}
     </>
   );
 };

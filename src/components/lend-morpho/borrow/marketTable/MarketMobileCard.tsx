@@ -1,6 +1,6 @@
 import React from "react";
 import { Box, Typography, Chip, Avatar, Button } from "@mui/material";
-import { BorrowRateSummary } from "./BorrowRateSummary";
+import { BorrowRateSummary } from "../BorrowRateSummary";
 
 // Helper function to get token color based on symbol
 const getTokenColor = (symbol: string): string => {
