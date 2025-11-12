@@ -267,14 +267,14 @@ const VaultRow: React.FC<VaultRowProps> = ({
         <Box>
           <Typography
             sx={{
-              color: (vault.state?.netApy || 0) > 0 ? "#10B981" : "#EF4444",
+              color: (vault.state?.avgNetApy || 0) > 0 ? "#10B981" : "#EF4444",
               fontWeight: "bold",
               fontSize: "0.95rem",
               mb: 0.5,
             }}
           >
-            {vault.state?.netApy
-              ? `${(vault.state.netApy * 100).toFixed(2)}%`
+            {vault.state?.avgNetApy
+              ? `${(vault.state.avgNetApy * 100).toFixed(2)}%`
               : "0.00%"}
           </Typography>
           {vault.asset?.yield?.apr && (

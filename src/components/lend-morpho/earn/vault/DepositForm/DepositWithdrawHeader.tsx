@@ -33,7 +33,7 @@ export const DepositWithdrawHeader: React.FC<DepositWithdrawHeaderProps> = ({
         <Typography variant="h6" sx={{ color: "white", fontWeight: "bold" }}>
           Deposit {symbol}
         </Typography>
-        <InfoIcon sx={{ color: "#8b949e", fontSize: 16 }} />
+        {/* <InfoIcon sx={{ color: "#8b949e", fontSize: 16 }} /> */}
       </Box>
     );
   }

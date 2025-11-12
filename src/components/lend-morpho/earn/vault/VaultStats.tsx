@@ -38,7 +38,7 @@ const VaultStats: React.FC<VaultStatsProps> = ({ vault }) => {
     ) || 0;
 
   // Liquidity = Total Assets - Allocated Assets (money not currently deployed)
-  const liquidityUsd = Math.max(totalDepositsUsd - allocatedUsd, 0);
+  const liquidityUsd = vault.liquidity.usd;
 
   // Calculate liquidity in native token terms
   const totalAssetsInToken =
@@ -113,11 +113,6 @@ const VaultStats: React.FC<VaultStatsProps> = ({ vault }) => {
           <Typography variant="body2" sx={{ color: "#8b949e" }}>
             Liquidity
           </Typography>
-          <Tooltip title="Available funds not currently allocated to markets">
-            <IconButton size="small" sx={{ color: "#8b949e" }}>
-              <InfoIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
         </Box>
         <Typography
           variant="h4"
@@ -142,23 +137,18 @@ const VaultStats: React.FC<VaultStatsProps> = ({ vault }) => {
           <Typography variant="body2" sx={{ color: "#8b949e" }}>
             APY
           </Typography>
-          <Tooltip title="Annual Percentage Yield">
-            <IconButton size="small" sx={{ color: "#8b949e" }}>
-              <InfoIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
         </Box>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <Typography
             variant="h4"
             sx={{
               fontWeight: "bold",
-              color: vault.state.netApy > 0 ? "#4caf50" : "#f44336",
+              color: vault.state.avgNetApy > 0 ? "#4caf50" : "#f44336",
             }}
           >
-            {(vault.state.netApy * 100).toFixed(2)}%
+            {(vault.state.avgNetApy * 100).toFixed(2)}%
           </Typography>
-          {vault.state.netApy > 0 && (
+          {vault.state.avgNetApy > 0 && (
             <TrendingUpIcon sx={{ color: "#4caf50", fontSize: 20 }} />
           )}
         </Box>

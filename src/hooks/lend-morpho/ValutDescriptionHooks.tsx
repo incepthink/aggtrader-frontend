@@ -119,6 +119,7 @@ export interface VaultState {
   weeklyNetApy: number;
   monthlyApy: number;
   monthlyNetApy: number;
+  avgNetApy: number;
 
   // Governance
   owner: string;
@@ -141,6 +142,9 @@ export interface VaultDetail {
   metadata: VaultMetadata;
   allocators: Allocator[];
   state: VaultState;
+  liquidity: {
+    usd: number;
+  };
   warnings: Warning[];
 }
 
@@ -239,6 +243,7 @@ export const useVaultDetail = (
   const query = `
     query GetVaultDetails($address: String!, $chainId: Int!) {
       vaultByAddress(address: $address, chainId: $chainId) {
+      id
         address
         name
         symbol
@@ -277,6 +282,7 @@ export const useVaultDetail = (
           netApyWithoutRewards
           dailyApy
           dailyNetApy
+          avgNetApy
           weeklyApy
           weeklyNetApy
           monthlyApy
@@ -333,6 +339,9 @@ export const useVaultDetail = (
               }
             }
           }
+        }
+        liquidity {
+          usd
         }
         warnings {
           type

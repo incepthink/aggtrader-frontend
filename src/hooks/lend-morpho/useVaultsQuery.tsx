@@ -68,6 +68,7 @@ export interface VaultState {
   netApyWithoutRewards: number;
   dailyApy: number;
   dailyNetApy: number;
+  avgNetApy: number;
   weeklyApy: number;
   weeklyNetApy: number;
   monthlyApy: number;
@@ -181,6 +182,7 @@ export const useVaultsQuery = (
             timelock
             apy
             netApy
+            avgNetApy
             netApyWithoutRewards
             dailyApy
             dailyNetApy

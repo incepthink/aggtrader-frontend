@@ -27,6 +27,7 @@ export interface VaultState {
   dailyNetApy: number;
   weeklyApy: number;
   weeklyNetApy: number;
+  avgNetApy: number;
   monthlyApy: number;
   monthlyNetApy: number;
   owner: string;

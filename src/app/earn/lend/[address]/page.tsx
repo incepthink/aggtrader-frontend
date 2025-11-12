@@ -21,6 +21,7 @@ export default function VaultDetailPage({ params }: PageProps) {
   const { address } = resolvedParams;
 
   const { data: vault, isLoading, error, isError } = useVaultDetail(address);
+  console.log("MORPHOVAULT::", vault);
 
   if (isLoading) {
     return <LoadingSkeleton />;

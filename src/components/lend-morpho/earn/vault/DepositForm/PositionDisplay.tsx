@@ -74,7 +74,7 @@ export const PositionDisplay: React.FC<PositionDisplayProps> = ({
 
   return (
     <Box sx={{ mb: 3 }}>
-      <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
         <Typography
           variant="body1"
           sx={{ color: "white", fontWeight: "medium" }}

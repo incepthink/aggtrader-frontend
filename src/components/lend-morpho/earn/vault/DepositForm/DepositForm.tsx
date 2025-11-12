@@ -10,9 +10,10 @@ import {
   Button,
   CircularProgress,
 } from "@mui/material";
-import { useAccount } from "wagmi";
+import { useAccount, useBalance } from "wagmi";
+import { formatUnits, Address } from "viem";
 import { VaultDetail } from "./vault";
-import { useDepositBalance } from "@/hooks/lend-morpho/useDepositBalance";
+import { usePriceBackend } from "@/hooks/sushiswap/usePriceBackend";
 import { useMorphoDeposit } from "@/hooks/lend-morpho/useMorphoDeposit";
 import { useMorphoWithdraw } from "@/hooks/lend-morpho/useMorphoWithdraw";
 import {
@@ -42,13 +43,32 @@ export const DepositForm: React.FC<DepositFormProps> = ({
   const [walletError, setWalletError] = useState<string | null>(null);
   const { isConnected, address } = useAccount();
 
+  // Fetch token balance
+  const balanceQuery = useBalance({
+    address,
+    token: vault.asset.address as `0x${string}`,
+    query: { enabled: isConnected && !!address },
+  });
+
+  // Fetch token price
   const {
-    balance,
-    formattedBalance,
-    decimals, // ✅ Add decimals
-    isLoading: isLoadingBalance,
     tokenPrice,
-  } = useDepositBalance(vault.asset.address);
+    isLoading: isLoadingPrice,
+    error: priceError,
+  } = usePriceBackend(vault.asset.address as Address);
+
+  // Parse balance data
+  const balance = balanceQuery.data
+    ? parseFloat(
+        formatUnits(balanceQuery.data.value, balanceQuery.data.decimals)
+      )
+    : 0;
+
+  const decimals = balanceQuery.data?.decimals || 18;
+  const formattedBalance = balance.toFixed(5);
+  const isLoadingBalance = balanceQuery.isLoading;
+  const isLoadingBalances = balanceQuery.isLoading;
+  const isLoadingPrices = isLoadingPrice;
 
   const formatTokenAmount = (amount: number): string => {
     if (!amount || amount === 0) return "0.00";
@@ -159,7 +179,8 @@ export const DepositForm: React.FC<DepositFormProps> = ({
   );
 
   // Loading states (similar to BorrowForm)
-  const isLoadingData = isLoadingBalance || isLoadingPosition;
+  const isLoadingData =
+    isLoadingBalances || isLoadingPrices || isLoadingPosition;
 
   // ✅ Remove automatic checkAllowance - let it be checked only when needed
   // (BorrowForm doesn't have automatic allowance checking)
@@ -329,7 +350,7 @@ export const DepositForm: React.FC<DepositFormProps> = ({
     >
       <Paper
         sx={{
-          backgroundColor: "rgba(30, 41, 59, 0.4)",
+          backgroundColor: "transparent",
           borderRadius: 2,
           position: "sticky",
           top: 100,
@@ -337,7 +358,7 @@ export const DepositForm: React.FC<DepositFormProps> = ({
           width: "100%",
         }}
       >
-        <Box sx={{ p: 3 }}>
+        <Box sx={{ p: 2 }}>
           <DepositWithdrawHeader
             symbol={vault.asset.symbol}
             currentTab={activeTab}
@@ -485,7 +506,7 @@ export const DepositForm: React.FC<DepositFormProps> = ({
             )} // ✅ Better formatting
             currentPositionUsd={currentPositionUsd}
             projectedPositionUsd={projectedPositionUsd}
-            netApy={vault.state.netApy}
+            netApy={vault.state.avgNetApy}
             dailyApy={vault.state.dailyNetApy || vault.state.netApy}
             mode={activeTab}
             decimals={decimals} // ✅ Pass decimals to component
