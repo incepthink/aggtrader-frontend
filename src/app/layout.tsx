@@ -75,7 +75,7 @@ export default function RootLayout({
                   </div>
                   <Navbar />
                   <ConditionalMorphoNavbar />
-                  {/* <ConditionalSpotNavbar /> */}
+                  <ConditionalSpotNavbar />
                   {children}
                 </VaultProviders>
               </DerivedStateTwapProvider>
