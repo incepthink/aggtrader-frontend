@@ -89,15 +89,17 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
         sx={{
           display: "flex",
           justifyContent: "space-between",
-          alignItems: "center",
-          mb: 3,
+          alignItems: { xs: "flex-start", sm: "center" },
+          mb: { xs: 2, sm: 3 },
+          flexDirection: { xs: "column", sm: "row" },
+          gap: { xs: 2, sm: 0 },
         }}
       >
         <Box>
-          <Typography variant="body2" sx={{ color: "#8b949e", mb: 1 }}>
+          <Typography variant="body2" sx={{ color: "#8b949e", mb: 1, fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
             Total Deposits (USD)
           </Typography>
-          <Typography variant="h4" sx={{ fontWeight: "bold", color: "white" }}>
+          <Typography variant="h4" sx={{ fontWeight: "bold", color: "white", fontSize: { xs: "1.5rem", sm: "2rem", md: "2.125rem" } }}>
             ${formatNumber(currentValue)}
           </Typography>
         </Box>
@@ -111,13 +113,14 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
               sx={{
                 backgroundColor: "rgba(0, 245, 224, 0.1)",
                 color: "white",
+                fontSize: { xs: "0.8rem", sm: "0.875rem" },
                 "& .MuiOutlinedInput-notchedOutline": { border: "none" },
                 "& .MuiSvgIcon-root": { color: "#8b949e" },
               }}
             >
-              <MenuItem value="3 months">3 months</MenuItem>
-              <MenuItem value="6 months">6 months</MenuItem>
-              <MenuItem value="1 year">1 year</MenuItem>
+              <MenuItem value="3 months" sx={{ fontSize: { xs: "0.8rem", sm: "0.875rem" } }}>3 months</MenuItem>
+              <MenuItem value="6 months" sx={{ fontSize: { xs: "0.8rem", sm: "0.875rem" } }}>6 months</MenuItem>
+              <MenuItem value="1 year" sx={{ fontSize: { xs: "0.8rem", sm: "0.875rem" } }}>1 year</MenuItem>
             </Select>
           </FormControl>
         </Box>
@@ -126,11 +129,11 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
       {/* Chart */}
       <Paper
         sx={{
-          height: 400,
+          height: { xs: 300, sm: 350, md: 400 },
           backgroundColor: "#0f1419",
           borderRadius: 2,
-          p: 2,
-          mb: 3,
+          p: { xs: 1.5, sm: 2 },
+          mb: { xs: 2, sm: 3 },
         }}
       >
         {isHistoricalLoading ? (
@@ -157,15 +160,17 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
                 tickFormatter={formatDateForAxis}
                 axisLine={false}
                 tickLine={false}
-                tick={{ fill: "#8b949e", fontSize: 12 }}
+                tick={{ fill: "#8b949e", fontSize: 10 }}
                 interval="preserveStartEnd"
+                minTickGap={20}
               />
               <YAxis
                 domain={["dataMin - 1000000", "dataMax + 1000000"]}
                 tickFormatter={(value) => `${formatNumber(value)}`}
                 axisLine={false}
                 tickLine={false}
-                tick={{ fill: "#8b949e", fontSize: 12 }}
+                tick={{ fill: "#8b949e", fontSize: 10 }}
+                width={60}
               />
               <Tooltip
                 contentStyle={{
@@ -210,15 +215,15 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
       <Box
         sx={{
           display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-          gap: 2,
+          gridTemplateColumns: { xs: "repeat(2, 1fr)", sm: "repeat(auto-fit, minmax(200px, 1fr))" },
+          gap: { xs: 1.5, sm: 2 },
         }}
       >
-        <Paper sx={{ p: 2, backgroundColor: "rgba(0, 245, 224, 0.1)" }}>
-          <Typography variant="body2" sx={{ color: "#8b949e", mb: 1 }}>
+        <Paper sx={{ p: { xs: 1.5, sm: 2 }, backgroundColor: "rgba(0, 245, 224, 0.1)" }}>
+          <Typography variant="body2" sx={{ color: "#8b949e", mb: 1, fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
             Total Supply
           </Typography>
-          <Typography variant="h6" sx={{ color: "white" }}>
+          <Typography variant="h6" sx={{ color: "white", fontSize: { xs: "1rem", sm: "1.25rem" } }}>
             {formatNumber(
               parseFloat(vault.state.totalSupply) /
                 Math.pow(10, vault.asset.decimals)
@@ -226,29 +231,29 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
           </Typography>
         </Paper>
 
-        <Paper sx={{ p: 2, backgroundColor: "rgba(0, 245, 224, 0.1)" }}>
-          <Typography variant="body2" sx={{ color: "#8b949e", mb: 1 }}>
+        <Paper sx={{ p: { xs: 1.5, sm: 2 }, backgroundColor: "rgba(0, 245, 224, 0.1)" }}>
+          <Typography variant="body2" sx={{ color: "#8b949e", mb: 1, fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
             Share Price
           </Typography>
-          <Typography variant="h6" sx={{ color: "white" }}>
+          <Typography variant="h6" sx={{ color: "white", fontSize: { xs: "1rem", sm: "1.25rem" } }}>
             ${vault.state.sharePriceUsd.toFixed(4)}
           </Typography>
         </Paper>
 
-        <Paper sx={{ p: 2, backgroundColor: "rgba(0, 245, 224, 0.1)" }}>
-          <Typography variant="body2" sx={{ color: "#8b949e", mb: 1 }}>
+        <Paper sx={{ p: { xs: 1.5, sm: 2 }, backgroundColor: "rgba(0, 245, 224, 0.1)" }}>
+          <Typography variant="body2" sx={{ color: "#8b949e", mb: 1, fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
             Performance Fee
           </Typography>
-          <Typography variant="h6" sx={{ color: "white" }}>
+          <Typography variant="h6" sx={{ color: "white", fontSize: { xs: "1rem", sm: "1.25rem" } }}>
             {(vault.state.fee * 100).toFixed(2)}%
           </Typography>
         </Paper>
 
-        <Paper sx={{ p: 2, backgroundColor: "rgba(0, 245, 224, 0.1)" }}>
-          <Typography variant="body2" sx={{ color: "#8b949e", mb: 1 }}>
+        <Paper sx={{ p: { xs: 1.5, sm: 2 }, backgroundColor: "rgba(0, 245, 224, 0.1)" }}>
+          <Typography variant="body2" sx={{ color: "#8b949e", mb: 1, fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
             Markets
           </Typography>
-          <Typography variant="h6" sx={{ color: "white" }}>
+          <Typography variant="h6" sx={{ color: "white", fontSize: { xs: "1rem", sm: "1.25rem" } }}>
             {vault.state.allocation?.length || 0}
           </Typography>
         </Paper>

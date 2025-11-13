@@ -8,6 +8,7 @@ export interface Asset {
   address: string;
   symbol: string;
   decimals: number;
+  logoURI: string;
 }
 
 export interface MarketReward {
@@ -138,10 +139,12 @@ export const useMarketsQuery = (
           lltv
           loanAsset {
             symbol
+            logoURI
             priceUsd
           }
           collateralAsset {
             symbol
+            logoURI
           }
           state {
             borrowApy
@@ -152,6 +155,7 @@ export const useMarketsQuery = (
               supplyApr
               asset {
                 symbol
+                logoURI
               }
             }
           }

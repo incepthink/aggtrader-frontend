@@ -12,30 +12,15 @@ const VaultHeader: React.FC<VaultHeaderProps> = ({ vault }) => {
   return (
     <Box>
       {/* Vault Title and Asset */}
-      <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
-        <Typography variant="h3" sx={{ fontWeight: "bold", color: "white" }}>
+      <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 1, sm: 2 }, mb: 2, flexWrap: "wrap" }}>
+        <Typography variant="h3" sx={{ fontWeight: "bold", color: "white", fontSize: { xs: "1.5rem", sm: "2rem", md: "2.5rem" } }}>
           {vault.name}
         </Typography>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <Avatar
-            src={vault.metadata?.image}
-            sx={{
-              width: 32,
-              height: 32,
-              backgroundColor: "#4caf50",
-            }}
-          >
-            {vault.asset.symbol.charAt(0)}
-          </Avatar>
-          <Typography variant="h5" sx={{ color: "#8b949e" }}>
-            {vault.asset.symbol}
-          </Typography>
-        </Box>
       </Box>
 
       {/* Curator Info */}
       {vault.metadata?.curators && vault.metadata.curators.length > 0 && (
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 1, sm: 2 }, mb: 2, flexWrap: "wrap" }}>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <Chip
               icon={
@@ -52,23 +37,18 @@ const VaultHeader: React.FC<VaultHeaderProps> = ({ vault }) => {
                 backgroundColor: "#2d3748",
                 color: "white",
                 "& .MuiChip-icon": { marginLeft: "4px" },
+                fontSize: { xs: "0.7rem", sm: "0.75rem" },
               }}
             />
-            <Typography variant="body2" sx={{ color: "#8b949e" }}>
+            <Typography variant="body2" sx={{ color: "#8b949e", fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
               Steakhouse Financial
             </Typography>
           </Box>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <Avatar
-              sx={{
-                width: 20,
-                height: 20,
-                backgroundColor: "#4caf50",
-              }}
-            >
-              U
-            </Avatar>
-            <Typography variant="body2" sx={{ color: "#8b949e" }}>
+            <Box sx={{ width: 24, height: 24, borderRadius: "50%", overflow: "hidden" }}>
+              <img src={vault.asset.logoURI} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            </Box>
+            <Typography variant="body2" sx={{ color: "#8b949e", fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
               {vault.asset.symbol}
             </Typography>
           </Box>
@@ -83,6 +63,7 @@ const VaultHeader: React.FC<VaultHeaderProps> = ({ vault }) => {
             color: "#8b949e",
             lineHeight: 1.6,
             mb: 2,
+            fontSize: { xs: "0.8rem", sm: "0.875rem" },
           }}
         >
           {vault.metadata.description}
@@ -91,7 +72,7 @@ const VaultHeader: React.FC<VaultHeaderProps> = ({ vault }) => {
 
       {/* Warnings */}
       {vault.warnings && vault.warnings.length > 0 && (
-        <Box sx={{ display: "flex", gap: 1, mb: 2 }}>
+        <Box sx={{ display: "flex", gap: { xs: 0.5, sm: 1 }, mb: 2, flexWrap: "wrap" }}>
           {vault.warnings.map((warning, index) => (
             <Chip
               key={index}
@@ -101,6 +82,7 @@ const VaultHeader: React.FC<VaultHeaderProps> = ({ vault }) => {
                 backgroundColor:
                   warning.level === "RED" ? "#d32f2f" : "#ed6c02",
                 color: "white",
+                fontSize: { xs: "0.7rem", sm: "0.75rem" },
               }}
             />
           ))}

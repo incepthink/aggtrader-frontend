@@ -288,16 +288,16 @@ export function BorrowForm({
     <GlowBox
       sx={{
         height: "fit-content",
-        position: "sticky",
-        top: 100,
+        position: { xs: "relative", lg: "sticky" },
+        top: { xs: 0, lg: 100 },
       }}
     >
       <Paper
         sx={{
           backgroundColor: "transparent",
           borderRadius: 2,
-          position: "sticky",
-          top: 100,
+          position: { xs: "relative", lg: "sticky" },
+          top: { xs: 0, lg: 100 },
           alignSelf: "flex-start",
           width: "100%",
         }}

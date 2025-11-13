@@ -110,35 +110,14 @@ const MarketMobileCard: React.FC<MarketMobileCardProps> = ({
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           {/* Collateral Token */}
-          <Avatar
-            sx={{
-              width: 24,
-              height: 24,
-              fontSize: "12px",
-              fontWeight: 600,
-              backgroundColor: getTokenColor(
-                market.collateralAsset?.symbol || ""
-              ),
-            }}
-          >
-            {(market.collateralAsset?.symbol || "")
-              .substring(0, 2)
-              .toUpperCase()}
-          </Avatar>
+          <div className="w-5 h-5 rounded-full overflow-hidden">
+            <img src={market.collateralAsset?.logoURI} alt="" />
+          </div>
 
           {/* Loan Token */}
-          <Avatar
-            sx={{
-              width: 24,
-              height: 24,
-              fontSize: "12px",
-              fontWeight: 600,
-              backgroundColor: getTokenColor(market.loanAsset?.symbol || ""),
-              ml: -0.5, // Slight overlap like in the image
-            }}
-          >
-            {(market.loanAsset?.symbol || "").substring(0, 2).toUpperCase()}
-          </Avatar>
+          <div className="w-5 h-5 rounded-full overflow-hidden">
+            <img src={market.loanAsset?.logoURI} alt="" />
+          </div>
 
           {/* Token Pair Text */}
           <Typography

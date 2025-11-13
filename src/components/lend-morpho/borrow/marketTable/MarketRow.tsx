@@ -98,17 +98,9 @@ const MarketRow: React.FC<MarketRowProps> = ({
 }) => {
   const TokenInfo = ({ asset }: { asset: any }) => (
     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-      <Avatar
-        sx={{
-          width: 24,
-          height: 24,
-          fontSize: "12px",
-          fontWeight: 600,
-          backgroundColor: getTokenColor(asset?.symbol || ""),
-        }}
-      >
-        {(asset?.symbol || "").substring(0, 2).toUpperCase()}
-      </Avatar>
+      <div className="w-6 h-6 rounded-full overflow-hidden">
+        <img src={asset.logoURI} alt="" />
+      </div>
       <Typography
         sx={{
           color: "#FFFFFF",

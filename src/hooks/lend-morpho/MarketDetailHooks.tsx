@@ -11,6 +11,7 @@ export interface MarketAsset {
   decimals: number;
   address: string;
   priceUsd?: number;
+  logoURI: string;
 }
 
 export interface MarketOracle {
@@ -31,6 +32,7 @@ export interface Asset {
   address: string;
   symbol: string;
   decimals: number;
+  logoURI: string;
 }
 
 export interface MarketReward {
@@ -100,6 +102,7 @@ const GET_MARKET_QUERY = `
         name
         decimals
         priceUsd
+        logoURI
       }
       collateralAsset {
         address
@@ -107,6 +110,7 @@ const GET_MARKET_QUERY = `
         name
         decimals
         priceUsd
+        logoURI
       }
       oracle {
         address
@@ -131,6 +135,8 @@ const GET_MARKET_QUERY = `
               supplyApr
               asset {
                 symbol
+        logoURI
+
               }
             }
       }

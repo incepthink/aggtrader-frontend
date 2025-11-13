@@ -119,8 +119,8 @@ function FilterBox({
         sx={{
           display: "flex",
           alignItems: "center",
-          gap: 2,
-          p: 1.5,
+          gap: { xs: 1, sm: 2 },
+          p: { xs: 1, sm: 1.5 },
           backgroundColor: "rgba(0, 0, 0, 0.3)",
           borderRadius: 1,
           border: "1px solid rgba(255, 255, 255, 0.2)",
@@ -134,9 +134,9 @@ function FilterBox({
       >
         <Typography
           sx={{
-            fontSize: "0.875rem",
+            fontSize: { xs: "0.75rem", sm: "0.875rem" },
             color: "rgba(255, 255, 255, 0.7)",
-            minWidth: "60px",
+            minWidth: { xs: "50px", sm: "60px" },
           }}
         >
           {label}
@@ -149,7 +149,7 @@ function FilterBox({
         <KeyboardArrowDownIcon
           sx={{
             color: "rgba(255, 255, 255, 0.5)",
-            fontSize: "1.25rem",
+            fontSize: { xs: "1rem", sm: "1.25rem" },
             transform: open ? "rotate(180deg)" : "rotate(0deg)",
             transition: "transform 0.2s",
           }}

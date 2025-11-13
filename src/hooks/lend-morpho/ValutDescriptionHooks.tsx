@@ -10,6 +10,7 @@ export interface Asset {
   address: string;
   symbol: string;
   name: string;
+  logoURI: string;
   decimals: number;
 }
 
@@ -250,6 +251,7 @@ export const useVaultDetail = (
           address
           symbol
           decimals
+          logoURI
           yield {
             apr
           }

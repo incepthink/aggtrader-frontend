@@ -6,6 +6,9 @@ import type { TYDaemonVault } from "@/lib/yearnfi/lib/utils/schemas/yDaemonVault
 import { formatAmount } from "@/lib/yearnfi/lib/utils";
 import Link from "next/link";
 import { CustomAPYDisplay } from "./CustomAPYDisplay";
+import { useWeb3 } from "@/lib/yearnfi/lib/contexts/useWeb3";
+import { useWallet } from "@/lib/yearnfi/lib/contexts/useWallet";
+import { useYearn } from "@/lib/yearnfi/lib/contexts/useYearn";
 
 export type VaultYieldEntry = {
   "Extrinsic Yield"?: string;
@@ -82,8 +85,38 @@ export function VaultsV3ListRow({
   isHoldings = false,
 }: VaultsV3ListRowProps) {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+
+  // Fetch user wallet and balance data
+  const { isActive } = useWeb3();
+  const { getBalance, isLoading } = useWallet();
+  const { getPrice } = useYearn();
+
+  // Calculate user holdings
+  const balance = getBalance({
+    address: currentVault.address,
+    chainID: currentVault.chainID,
+  });
+
+  const price = getPrice({
+    address: currentVault.address as any,
+    chainID: currentVault.chainID,
+  });
+
+  const userBalanceUSD = balance.normalized * price.normalized;
+
+  // Auto-derive hasHoldings from actual balance
+  const hasHoldings = userBalanceUSD > 0;
+
+  // Format display value
+  const displayValue = !isActive
+    ? "$0.00"
+    : isLoading
+      ? "..."
+      : `$${formatAmount(userBalanceUSD, 2, 2)}`;
+
   let requiresCustomAPY = false;
+  const logoUrl = `https://assets.smold.app/api/token/${currentVault.chainID}/${currentVault.token.address}/logo-128.png`;
 
   if (vaultYieldData[currentVault.address] !== undefined) {
     requiresCustomAPY = true;
@@ -99,11 +132,11 @@ export function VaultsV3ListRow({
         <Box
           sx={{
             p: 2,
-            backgroundColor: isHoldings
+            backgroundColor: hasHoldings
               ? "rgba(0, 245, 224, 0.05)"
               : "rgba(0, 0, 0, 0.2)",
             borderRadius: 1,
-            border: isHoldings
+            border: hasHoldings
               ? "1px solid rgba(0, 245, 224, 0.2)"
               : "1px solid transparent",
             mb: 2,
@@ -114,20 +147,27 @@ export function VaultsV3ListRow({
             },
           }}
         >
-          <Typography
-            sx={{ fontSize: "1rem", fontWeight: 600, color: "white", mb: 0.5 }}
-          >
-            {currentVault.name}
-          </Typography>
-          <Typography
-            sx={{
-              fontSize: "0.75rem",
-              color: "rgba(255, 255, 255, 0.5)",
-              mb: 2,
-            }}
-          >
-            {currentVault.symbol}
-          </Typography>
+          <div className="flex gap-4 items-center mb-4">
+            <div className="w-6 h-6 rounded-full overflow-hidden">
+              <img
+                src={logoUrl}
+                className="w-full h-full object-cover"
+                alt=""
+              />
+            </div>
+            <div>
+              <Typography
+                sx={{ fontSize: "1rem", fontWeight: 600, color: "white" }}
+              >
+                {currentVault.name}
+              </Typography>
+              <Typography
+                sx={{ fontSize: "0.75rem", color: "rgba(255, 255, 255, 0.5)" }}
+              >
+                {currentVault.symbol}
+              </Typography>
+            </div>
+          </div>
 
           <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}>
             <Box>
@@ -172,10 +212,10 @@ export function VaultsV3ListRow({
                   mb: 0.5,
                 }}
               >
-                AVAILABLE
+                HOLDINGS
               </Typography>
               <Typography sx={{ fontSize: "0.875rem", color: "white" }}>
-                ${formatAmount(currentVault.tvl?.tvl || 0, 0, 0)}
+                {displayValue}
               </Typography>
             </Box>
 
@@ -215,11 +255,11 @@ export function VaultsV3ListRow({
           },
           gap: 2,
           p: 2,
-          backgroundColor: isHoldings
+          backgroundColor: hasHoldings
             ? "rgba(0, 245, 224, 0.05)"
             : "rgba(0, 0, 0, 0.2)",
           borderRadius: 1,
-          border: isHoldings
+          border: hasHoldings
             ? "1px solid rgba(0, 245, 224, 0.2)"
             : "1px solid transparent",
           transition: "all 0.2s",
@@ -235,16 +275,27 @@ export function VaultsV3ListRow({
           className="col-span-4"
           sx={{ display: "flex", flexDirection: "column" }}
         >
-          <Typography
-            sx={{ fontSize: "0.875rem", fontWeight: 600, color: "white" }}
-          >
-            {currentVault.name}
-          </Typography>
-          <Typography
-            sx={{ fontSize: "0.75rem", color: "rgba(255, 255, 255, 0.5)" }}
-          >
-            {currentVault.symbol}
-          </Typography>
+          <div className="flex gap-4 items-center">
+            <div className="w-6 h-6 rounded-full overflow-hidden">
+              <img
+                src={logoUrl}
+                className="w-full h-full object-cover"
+                alt=""
+              />
+            </div>
+            <div>
+              <Typography
+                sx={{ fontSize: "0.875rem", fontWeight: 600, color: "white" }}
+              >
+                {currentVault.name}
+              </Typography>
+              <Typography
+                sx={{ fontSize: "0.75rem", color: "rgba(255, 255, 255, 0.5)" }}
+              >
+                {currentVault.symbol}
+              </Typography>
+            </div>
+          </div>
         </Box>
 
         {/* Est. APY */}
@@ -259,7 +310,7 @@ export function VaultsV3ListRow({
           ) : (
             <Typography sx={{ fontSize: "0.875rem", color: "white" }}>
               {currentVault.apr?.netAPR
-                ? `$${(currentVault.apr?.netAPR * 100).toFixed(2)}%`
+                ? `${(currentVault.apr?.netAPR * 100).toFixed(2)}%`
                 : "-"}
             </Typography>
           )}
@@ -288,14 +339,14 @@ export function VaultsV3ListRow({
         </Box>
 
         {/* Available */}
-        <Box
+        {/* <Box
           className="col-span-2"
           sx={{ display: "flex", alignItems: "center" }}
         >
           <Typography sx={{ fontSize: "0.875rem", color: "white" }}>
             ${formatAmount(currentVault.tvl?.tvl || 0, 0, 0)}
           </Typography>
-        </Box>
+        </Box> */}
 
         {/* Holdings */}
         <Box
@@ -303,7 +354,7 @@ export function VaultsV3ListRow({
           sx={{ display: "flex", alignItems: "center" }}
         >
           <Typography sx={{ fontSize: "0.875rem", color: "white" }}>
-            $0.00
+            {displayValue}
           </Typography>
         </Box>
 

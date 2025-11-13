@@ -153,14 +153,14 @@ const PositionTab: React.FC<PositionTabProps> = ({ market }) => {
           sx={{
             display: "grid",
             gridTemplateColumns: { xs: "1fr", md: "repeat(2, 1fr)" },
-            gap: 3,
-            mt: 3,
+            gap: { xs: 2, sm: 3 },
+            mt: { xs: 2, sm: 3 },
           }}
         >
           {/* Collateral Token Info */}
           <Box
             sx={{
-              p: 3,
+              p: { xs: 2, sm: 3 },
               backgroundColor: "rgba(0, 245, 224, 0.1)",
               borderRadius: 2,
               border: "1px solid rgba(75, 85, 99, 0.3)",
@@ -199,7 +199,7 @@ const PositionTab: React.FC<PositionTabProps> = ({ market }) => {
           {/* Loan Token Info */}
           <Box
             sx={{
-              p: 3,
+              p: { xs: 2, sm: 3 },
               backgroundColor: "rgba(0, 245, 224, 0.1)",
               borderRadius: 2,
               border: "1px solid rgba(75, 85, 99, 0.3)",
@@ -285,10 +285,10 @@ const PositionTab: React.FC<PositionTabProps> = ({ market }) => {
   return (
     <Box>
       {/* Position Overview */}
-      <Box sx={{ mb: 4 }}>
+      <Box sx={{ mb: { xs: 3, sm: 4 } }}>
         <Typography
           variant="h5"
-          sx={{ color: "white", mb: 3, fontWeight: "600" }}
+          sx={{ color: "white", mb: { xs: 2, sm: 3 }, fontWeight: "600", fontSize: { xs: "1.25rem", sm: "1.5rem" } }}
         >
           Your Position
         </Typography>
@@ -344,14 +344,14 @@ const PositionTab: React.FC<PositionTabProps> = ({ market }) => {
         sx={{
           display: "grid",
           gridTemplateColumns: { xs: "1fr", md: "repeat(2, 1fr)" },
-          gap: 3,
-          mb: 4,
+          gap: { xs: 2, sm: 3 },
+          mb: { xs: 3, sm: 4 },
         }}
       >
         {/* Collateral Position */}
         <Box
           sx={{
-            p: 3,
+            p: { xs: 2, sm: 3 },
             backgroundColor: "rgba(0, 245, 224, 0.1)",
             borderRadius: 2,
             border: "1px solid rgba(75, 85, 99, 0.3)",
@@ -385,11 +385,11 @@ const PositionTab: React.FC<PositionTabProps> = ({ market }) => {
           <Box sx={{ space: 2 }}>
             <Typography
               variant="h4"
-              sx={{ color: "white", fontWeight: "700", mb: 1 }}
+              sx={{ color: "white", fontWeight: "700", mb: 1, fontSize: { xs: "1.5rem", sm: "2rem", md: "2.125rem" } }}
             >
               {formatNumber(collateralAmount)}
             </Typography>
-            <Typography variant="body1" sx={{ color: "#9ca3af" }}>
+            <Typography variant="body1" sx={{ color: "#9ca3af", fontSize: { xs: "0.875rem", sm: "1rem" } }}>
               {formatCurrency(collateralUsd)}
             </Typography>
           </Box>
@@ -398,7 +398,7 @@ const PositionTab: React.FC<PositionTabProps> = ({ market }) => {
         {/* Loan Position */}
         <Box
           sx={{
-            p: 3,
+            p: { xs: 2, sm: 3 },
             backgroundColor: "rgba(0, 245, 224, 0.1)",
             borderRadius: 2,
             border: "1px solid rgba(75, 85, 99, 0.3)",
@@ -432,11 +432,11 @@ const PositionTab: React.FC<PositionTabProps> = ({ market }) => {
           <Box sx={{ space: 2 }}>
             <Typography
               variant="h4"
-              sx={{ color: "white", fontWeight: "700", mb: 1 }}
+              sx={{ color: "white", fontWeight: "700", mb: 1, fontSize: { xs: "1.5rem", sm: "2rem", md: "2.125rem" } }}
             >
               {formatNumber(borrowAmount)}
             </Typography>
-            <Typography variant="body1" sx={{ color: "#9ca3af" }}>
+            <Typography variant="body1" sx={{ color: "#9ca3af", fontSize: { xs: "0.875rem", sm: "1rem" } }}>
               {formatCurrency(borrowUsd)}
             </Typography>
           </Box>
@@ -448,20 +448,20 @@ const PositionTab: React.FC<PositionTabProps> = ({ market }) => {
         sx={{
           display: "grid",
           gridTemplateColumns: { xs: "1fr", sm: "repeat(3, 1fr)" },
-          gap: 3,
-          mb: 4,
+          gap: { xs: 2, sm: 3 },
+          mb: { xs: 3, sm: 4 },
         }}
       >
         {/* Current LTV */}
         <Box
           sx={{
-            p: 3,
+            p: { xs: 2, sm: 3 },
             backgroundColor: "rgba(0, 245, 224, 0.1)",
             borderRadius: 2,
             textAlign: "center",
           }}
         >
-          <Typography variant="body2" sx={{ color: "#9ca3af", mb: 1 }}>
+          <Typography variant="body2" sx={{ color: "#9ca3af", mb: 1, fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
             Current LTV
           </Typography>
           <Typography
@@ -469,6 +469,7 @@ const PositionTab: React.FC<PositionTabProps> = ({ market }) => {
             sx={{
               color: isDangerous ? "#f87171" : isAtRisk ? "#ffb74d" : "#81c784",
               fontWeight: "600",
+              fontSize: { xs: "1.25rem", sm: "1.5rem" },
             }}
           >
             {formatPercentage(currentLtv)}
@@ -478,16 +479,16 @@ const PositionTab: React.FC<PositionTabProps> = ({ market }) => {
         {/* Liquidation LTV */}
         <Box
           sx={{
-            p: 3,
+            p: { xs: 2, sm: 3 },
             backgroundColor: "rgba(0, 245, 224, 0.1)",
             borderRadius: 2,
             textAlign: "center",
           }}
         >
-          <Typography variant="body2" sx={{ color: "#9ca3af", mb: 1 }}>
+          <Typography variant="body2" sx={{ color: "#9ca3af", mb: 1, fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
             Liquidation LTV
           </Typography>
-          <Typography variant="h5" sx={{ color: "white", fontWeight: "600" }}>
+          <Typography variant="h5" sx={{ color: "white", fontWeight: "600", fontSize: { xs: "1.25rem", sm: "1.5rem" } }}>
             {formatPercentage(liquidationLtv)}
           </Typography>
         </Box>
@@ -495,13 +496,13 @@ const PositionTab: React.FC<PositionTabProps> = ({ market }) => {
         {/* Health Factor */}
         <Box
           sx={{
-            p: 3,
+            p: { xs: 2, sm: 3 },
             backgroundColor: "rgba(0, 245, 224, 0.1)",
             borderRadius: 2,
             textAlign: "center",
           }}
         >
-          <Typography variant="body2" sx={{ color: "#9ca3af", mb: 1 }}>
+          <Typography variant="body2" sx={{ color: "#9ca3af", mb: 1, fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
             Health Factor
           </Typography>
           <Typography
@@ -509,6 +510,7 @@ const PositionTab: React.FC<PositionTabProps> = ({ market }) => {
             sx={{
               color: isDangerous ? "#f87171" : isAtRisk ? "#ffb74d" : "#81c784",
               fontWeight: "600",
+              fontSize: { xs: "1.25rem", sm: "1.5rem" },
             }}
           >
             {healthFactor > 0 ? healthFactor.toFixed(2) : "∞"}

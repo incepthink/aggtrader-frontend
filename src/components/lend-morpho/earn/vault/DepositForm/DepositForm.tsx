@@ -343,17 +343,17 @@ export const DepositForm: React.FC<DepositFormProps> = ({
     <GlowBox
       sx={{
         height: "fit-content",
-        position: "sticky",
-        top: 100,
-        maxHeight: "calc(100vh - 120px)",
+        position: { xs: "relative", lg: "sticky" },
+        top: { xs: 0, lg: 100 },
+        maxHeight: { xs: "none", lg: "calc(100vh - 120px)" },
       }}
     >
       <Paper
         sx={{
           backgroundColor: "transparent",
           borderRadius: 2,
-          position: "sticky",
-          top: 100,
+          position: { xs: "relative", lg: "sticky" },
+          top: { xs: 0, lg: 100 },
           alignSelf: "flex-start",
           width: "100%",
         }}

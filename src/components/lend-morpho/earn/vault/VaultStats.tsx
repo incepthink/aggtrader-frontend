@@ -74,29 +74,29 @@ const VaultStats: React.FC<VaultStatsProps> = ({ vault }) => {
           sm: "repeat(2, 1fr)",
           md: "repeat(3, 1fr)",
         },
-        gap: 3,
+        gap: { xs: 1.5, sm: 2, md: 3 },
       }}
     >
       {/* Total Deposits */}
       <Paper
         sx={{
-          p: 3,
+          p: { xs: 2, sm: 3 },
           backgroundColor: "rgba(0, 245, 224, 0.1)",
           borderRadius: 2,
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-          <Typography variant="body2" sx={{ color: "#8b949e" }}>
+          <Typography variant="body2" sx={{ color: "#8b949e", fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
             Total Deposits
           </Typography>
         </Box>
         <Typography
           variant="h4"
-          sx={{ fontWeight: "bold", color: "white", mb: 1 }}
+          sx={{ fontWeight: "bold", color: "white", mb: 1, fontSize: { xs: "1.5rem", sm: "2rem", md: "2.125rem" } }}
         >
           ${formatNumber(totalDepositsUsd)}
         </Typography>
-        <Typography variant="body2" sx={{ color: "#8b949e" }}>
+        <Typography variant="body2" sx={{ color: "#8b949e", fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
           {formatNumber(totalAssetsInToken)} {vault.asset.symbol}
         </Typography>
       </Paper>
@@ -104,23 +104,23 @@ const VaultStats: React.FC<VaultStatsProps> = ({ vault }) => {
       {/* Liquidity */}
       <Paper
         sx={{
-          p: 3,
+          p: { xs: 2, sm: 3 },
           backgroundColor: "rgba(0, 245, 224, 0.1)",
           borderRadius: 2,
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-          <Typography variant="body2" sx={{ color: "#8b949e" }}>
+          <Typography variant="body2" sx={{ color: "#8b949e", fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
             Liquidity
           </Typography>
         </Box>
         <Typography
           variant="h4"
-          sx={{ fontWeight: "bold", color: "white", mb: 1 }}
+          sx={{ fontWeight: "bold", color: "white", mb: 1, fontSize: { xs: "1.5rem", sm: "2rem", md: "2.125rem" } }}
         >
           ${formatNumber(liquidityUsd)}
         </Typography>
-        <Typography variant="body2" sx={{ color: "#8b949e" }}>
+        <Typography variant="body2" sx={{ color: "#8b949e", fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
           {formatNumber(liquidityInToken)} {vault.asset.symbol}
         </Typography>
       </Paper>
@@ -128,13 +128,13 @@ const VaultStats: React.FC<VaultStatsProps> = ({ vault }) => {
       {/* APY */}
       <Paper
         sx={{
-          p: 3,
+          p: { xs: 2, sm: 3 },
           backgroundColor: "rgba(0, 245, 224, 0.1)",
           borderRadius: 2,
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-          <Typography variant="body2" sx={{ color: "#8b949e" }}>
+          <Typography variant="body2" sx={{ color: "#8b949e", fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
             APY
           </Typography>
         </Box>
@@ -144,16 +144,17 @@ const VaultStats: React.FC<VaultStatsProps> = ({ vault }) => {
             sx={{
               fontWeight: "bold",
               color: vault.state.avgNetApy > 0 ? "#4caf50" : "#f44336",
+              fontSize: { xs: "1.5rem", sm: "2rem", md: "2.125rem" },
             }}
           >
             {(vault.state.avgNetApy * 100).toFixed(2)}%
           </Typography>
           {vault.state.avgNetApy > 0 && (
-            <TrendingUpIcon sx={{ color: "#4caf50", fontSize: 20 }} />
+            <TrendingUpIcon sx={{ color: "#4caf50", fontSize: { xs: 18, sm: 20 } }} />
           )}
         </Box>
         {vault.asset.yield?.apr && (
-          <Typography variant="body2" sx={{ color: "#8b949e" }}>
+          <Typography variant="body2" sx={{ color: "#8b949e", fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
             Base: {(vault.asset.yield.apr * 100).toFixed(2)}%
           </Typography>
         )}

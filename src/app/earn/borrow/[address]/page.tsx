@@ -35,11 +35,20 @@ export default function MarketDetailPage({ params }: PageProps) {
   }
 
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
+    <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 3, md: 4 }, px: { xs: 2, sm: 3 } }}>
+      {/* Mobile-only: Show in order Header -> Stats -> Form -> Tabs */}
+      <Box sx={{ display: { xs: "flex", lg: "none" }, flexDirection: "column", gap: { xs: 2, sm: 3 } }}>
+        <MarketHeader market={market} />
+        <MarketStats market={market} />
+        <BorrowForm market={market} />
+        <MarketTabs market={market} />
+      </Box>
+
+      {/* Desktop: Original 2-column layout */}
       <Box
         sx={{
-          display: "grid",
-          gridTemplateColumns: { xs: "1fr", lg: "2fr 1fr" },
+          display: { xs: "none", lg: "grid" },
+          gridTemplateColumns: "2fr 1fr",
           gap: 4,
         }}
       >

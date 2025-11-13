@@ -36,7 +36,7 @@ export const TokenRowDesktop: React.FC<TokenRowDesktopProps> = ({
   referralData,
 }) => {
   const [shareModalOpen, setShareModalOpen] = useState(false);
-  const tokenLogo = getTokenLogo(token.symbol, token.chain_id);
+  // const tokenLogo = getTokenLogo(token.symbol, token.chain_id);
   const tokenKey = `${token.chain_id}-${token.contract_address}`;
 
   const updatedToken = {
@@ -51,9 +51,9 @@ export const TokenRowDesktop: React.FC<TokenRowDesktopProps> = ({
       <tr className="border-b border-teal-900/20 hover:bg-teal-900/10 transition-colors">
         <td className="px-4 py-4 text-sm text-gray-200 text-left">
           <div className="flex items-center gap-2">
-            {tokenLogo ? (
+            {token.logoUrl ? (
               <img
-                src={tokenLogo}
+                src={token.logoUrl}
                 alt={token.symbol}
                 className="w-6 h-6 rounded-full"
                 onError={(e) => {
@@ -66,7 +66,7 @@ export const TokenRowDesktop: React.FC<TokenRowDesktopProps> = ({
             ) : null}
             <div
               className="w-6 h-6 rounded-full bg-gradient-to-r from-gray-600 to-gray-800 flex items-center justify-center"
-              style={{ display: tokenLogo ? "none" : "flex" }}
+              style={{ display: token.logoUrl ? "none" : "flex" }}
             >
               <span className="text-xs font-bold text-white">
                 {token.symbol.charAt(0)}

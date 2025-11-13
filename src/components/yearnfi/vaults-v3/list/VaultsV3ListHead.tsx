@@ -63,10 +63,8 @@ export function VaultsV3ListHead({
   return (
     <Box
       sx={{
-        display: "grid",
+        display: { xs: "none", md: "grid" },
         gridTemplateColumns: {
-          xs: "1fr",
-          sm: "repeat(12, 1fr)",
           md: "repeat(16, 1fr)",
         },
         gap: 2,

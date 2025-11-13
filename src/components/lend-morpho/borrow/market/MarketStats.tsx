@@ -100,34 +100,34 @@ export default function MarketStats({ market }: MarketStatsProps) {
           sm: "repeat(2, 1fr)",
           md: "repeat(4, 1fr)",
         },
-        gap: 3,
+        gap: { xs: 1.5, sm: 2, md: 3 },
       }}
     >
       {/* Total Market Size */}
       <Paper
         sx={{
-          p: 3,
+          p: { xs: 2, sm: 3 },
           backgroundColor: "rgba(0, 245, 224, 0.1)",
           borderRadius: 2,
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-          <Typography variant="body2" sx={{ color: "#8b949e" }}>
+          <Typography variant="body2" sx={{ color: "#8b949e", fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
             Total Market Size
           </Typography>
           <Tooltip title="Total value of assets supplied to this market">
-            <IconButton size="small" sx={{ color: "#8b949e" }}>
+            <IconButton size="small" sx={{ color: "#8b949e", p: { xs: 0.25, sm: 0.5 } }}>
               <InfoOutlined fontSize="small" />
             </IconButton>
           </Tooltip>
         </Box>
         <Typography
           variant="h4"
-          sx={{ fontWeight: "bold", color: "white", mb: 1 }}
+          sx={{ fontWeight: "bold", color: "white", mb: 1, fontSize: { xs: "1.5rem", sm: "2rem", md: "2.125rem" } }}
         >
           {formatCurrency(supplyAssetsUsd)}
         </Typography>
-        <Typography variant="body2" sx={{ color: "#8b949e" }}>
+        <Typography variant="body2" sx={{ color: "#8b949e", fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
           {formatNumber(supplyAssets)} {market?.loanAsset?.symbol || ""}
         </Typography>
       </Paper>
@@ -135,28 +135,28 @@ export default function MarketStats({ market }: MarketStatsProps) {
       {/* Total Liquidity */}
       <Paper
         sx={{
-          p: 3,
+          p: { xs: 2, sm: 3 },
           backgroundColor: "rgba(0, 245, 224, 0.1)",
           borderRadius: 2,
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-          <Typography variant="body2" sx={{ color: "#8b949e" }}>
+          <Typography variant="body2" sx={{ color: "#8b949e", fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
             Total Liquidity
           </Typography>
           <Tooltip title="Available assets for borrowing">
-            <IconButton size="small" sx={{ color: "#8b949e" }}>
+            <IconButton size="small" sx={{ color: "#8b949e", p: { xs: 0.25, sm: 0.5 } }}>
               <InfoOutlined fontSize="small" />
             </IconButton>
           </Tooltip>
         </Box>
         <Typography
           variant="h4"
-          sx={{ fontWeight: "bold", color: "white", mb: 1 }}
+          sx={{ fontWeight: "bold", color: "white", mb: 1, fontSize: { xs: "1.5rem", sm: "2rem", md: "2.125rem" } }}
         >
           {formatCurrency(liquidityAssetsUsd)}
         </Typography>
-        <Typography variant="body2" sx={{ color: "#8b949e" }}>
+        <Typography variant="body2" sx={{ color: "#8b949e", fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
           {formatNumber(liquidityAssets)} {market?.loanAsset?.symbol || ""}
         </Typography>
       </Paper>
@@ -164,22 +164,22 @@ export default function MarketStats({ market }: MarketStatsProps) {
       {/* Borrow Rate */}
       <Paper
         sx={{
-          p: 3,
+          p: { xs: 2, sm: 3 },
           backgroundColor: "rgba(0, 245, 224, 0.1)",
           borderRadius: 2,
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-          <Typography variant="body2" sx={{ color: "#8b949e" }}>
+          <Typography variant="body2" sx={{ color: "#8b949e", fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
             Borrow Rate
           </Typography>
           <Tooltip title="Current annual borrowing rate">
-            <IconButton size="small" sx={{ color: "#8b949e" }}>
+            <IconButton size="small" sx={{ color: "#8b949e", p: { xs: 0.25, sm: 0.5 } }}>
               <InfoOutlined fontSize="small" />
             </IconButton>
           </Tooltip>
         </Box>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
           <BorrowRateSummary
             nativeApr={market.state?.borrowApy || 0}
             rewards={market.state?.rewards}
@@ -191,22 +191,22 @@ export default function MarketStats({ market }: MarketStatsProps) {
       {/* LLTV */}
       <Paper
         sx={{
-          p: 3,
+          p: { xs: 2, sm: 3 },
           backgroundColor: "rgba(0, 245, 224, 0.1)",
           borderRadius: 2,
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-          <Typography variant="body2" sx={{ color: "#8b949e" }}>
+          <Typography variant="body2" sx={{ color: "#8b949e", fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
             Liq. Loan-To-Value (LLTV)
           </Typography>
           <Tooltip title="Maximum loan-to-value ratio before liquidation">
-            <IconButton size="small" sx={{ color: "#8b949e" }}>
+            <IconButton size="small" sx={{ color: "#8b949e", p: { xs: 0.25, sm: 0.5 } }}>
               <InfoOutlined fontSize="small" />
             </IconButton>
           </Tooltip>
         </Box>
-        <Typography variant="h4" sx={{ fontWeight: "bold", color: "white" }}>
+        <Typography variant="h4" sx={{ fontWeight: "bold", color: "white", fontSize: { xs: "1.5rem", sm: "2rem", md: "2.125rem" } }}>
           {formatLLTV()}
         </Typography>
       </Paper>
@@ -214,28 +214,28 @@ export default function MarketStats({ market }: MarketStatsProps) {
       {/* Total Borrow */}
       <Paper
         sx={{
-          p: 3,
+          p: { xs: 2, sm: 3 },
           backgroundColor: "rgba(0, 245, 224, 0.1)",
           borderRadius: 2,
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-          <Typography variant="body2" sx={{ color: "#8b949e" }}>
+          <Typography variant="body2" sx={{ color: "#8b949e", fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
             Total Borrow (USD)
           </Typography>
           <Tooltip title="Total value of borrowed assets">
-            <IconButton size="small" sx={{ color: "#8b949e" }}>
+            <IconButton size="small" sx={{ color: "#8b949e", p: { xs: 0.25, sm: 0.5 } }}>
               <InfoOutlined fontSize="small" />
             </IconButton>
           </Tooltip>
         </Box>
         <Typography
           variant="h4"
-          sx={{ fontWeight: "bold", color: "white", mb: 1 }}
+          sx={{ fontWeight: "bold", color: "white", mb: 1, fontSize: { xs: "1.5rem", sm: "2rem", md: "2.125rem" } }}
         >
           {formatCurrency(borrowAssetsUsd)}
         </Typography>
-        <Typography variant="body2" sx={{ color: "#8b949e" }}>
+        <Typography variant="body2" sx={{ color: "#8b949e", fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
           {formatNumber(borrowAssets)} {market?.loanAsset?.symbol || ""}
         </Typography>
       </Paper>
@@ -243,24 +243,24 @@ export default function MarketStats({ market }: MarketStatsProps) {
       {/* Utilization */}
       <Paper
         sx={{
-          p: 3,
+          p: { xs: 2, sm: 3 },
           backgroundColor: "rgba(0, 245, 224, 0.1)",
           borderRadius: 2,
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-          <Typography variant="body2" sx={{ color: "#8b949e" }}>
+          <Typography variant="body2" sx={{ color: "#8b949e", fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
             Utilization
           </Typography>
           <Tooltip title="Percentage of supplied assets currently borrowed">
-            <IconButton size="small" sx={{ color: "#8b949e" }}>
+            <IconButton size="small" sx={{ color: "#8b949e", p: { xs: 0.25, sm: 0.5 } }}>
               <InfoOutlined fontSize="small" />
             </IconButton>
           </Tooltip>
         </Box>
         <Typography
           variant="h4"
-          sx={{ fontWeight: "bold", color: "white", mb: 2 }}
+          sx={{ fontWeight: "bold", color: "white", mb: 2, fontSize: { xs: "1.5rem", sm: "2rem", md: "2.125rem" } }}
         >
           {formatPercentage(utilization)}
         </Typography>
@@ -295,17 +295,17 @@ export default function MarketStats({ market }: MarketStatsProps) {
       {/* Supply APY (Additional metric) */}
       <Paper
         sx={{
-          p: 3,
+          p: { xs: 2, sm: 3 },
           backgroundColor: "rgba(0, 245, 224, 0.1)",
           borderRadius: 2,
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-          <Typography variant="body2" sx={{ color: "#8b949e" }}>
+          <Typography variant="body2" sx={{ color: "#8b949e", fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
             Supply APY
           </Typography>
           <Tooltip title="Annual percentage yield for suppliers">
-            <IconButton size="small" sx={{ color: "#8b949e" }}>
+            <IconButton size="small" sx={{ color: "#8b949e", p: { xs: 0.25, sm: 0.5 } }}>
               <InfoOutlined fontSize="small" />
             </IconButton>
           </Tooltip>
@@ -316,12 +316,13 @@ export default function MarketStats({ market }: MarketStatsProps) {
             sx={{
               fontWeight: "bold",
               color: "#4caf50",
+              fontSize: { xs: "1.5rem", sm: "2rem", md: "2.125rem" },
             }}
           >
             {formatPercentage(supplyApy)}
           </Typography>
           {supplyApy > 0 && (
-            <TrendingUp sx={{ color: "#4caf50", fontSize: 20 }} />
+            <TrendingUp sx={{ color: "#4caf50", fontSize: { xs: 18, sm: 20 } }} />
           )}
         </Box>
       </Paper>

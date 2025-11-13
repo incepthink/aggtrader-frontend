@@ -1,7 +1,7 @@
 // components/spot/tokenBalance/ShareTokenModal.tsx
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -52,10 +52,36 @@ export const ShareTokenModal: React.FC<ShareTokenModalProps> = ({
     `Trade $${token.symbol} seamlessly on @katana at @agg_trade using my referral code https://aggtrade.xyz/join/${referralData?.referralCode}`
   );
   const [copied, setCopied] = useState(false);
+  const [logoDataUrl, setLogoDataUrl] = useState<string>("");
   const canvasRef = useRef<HTMLDivElement>(null);
 
   const isProfitable = pnl >= 0;
-  const tokenLogo = getTokenLogo(token.symbol, token.chain_id);
+  const tokenLogo = token.logoUrl;
+
+  // Convert image to base64 to fix Chromium CORS caching issue
+  useEffect(() => {
+    if (!open || !tokenLogo) return;
+
+    const convertImageToDataUrl = async () => {
+      try {
+        const response = await fetch(tokenLogo);
+        const blob = await response.blob();
+        const reader = new FileReader();
+
+        reader.onloadend = () => {
+          setLogoDataUrl(reader.result as string);
+        };
+
+        reader.readAsDataURL(blob);
+      } catch (error) {
+        console.error("Failed to convert image to data URL:", error);
+        // Fallback to original URL if conversion fails
+        setLogoDataUrl(tokenLogo);
+      }
+    };
+
+    convertImageToDataUrl();
+  }, [open, tokenLogo]);
 
   const handleCopyLink = () => {
     // TODO: Add your referral link generation logic here
@@ -75,9 +101,10 @@ export const ShareTokenModal: React.FC<ShareTokenModalProps> = ({
       const canvas = await html2canvas(canvasRef.current, {
         backgroundColor: "#0a0f1e",
         scale: 2,
-        useCORS: false,
-        allowTaint: false,
+        useCORS: true,
+        allowTaint: true,
         logging: true,
+        imageTimeout: 0,
       });
 
       // Try data URL method first
@@ -167,7 +194,7 @@ export const ShareTokenModal: React.FC<ShareTokenModalProps> = ({
                 }}
               >
                 {/* Concentric circles background */}
-                <div className="absolute inset-0 flex items-center justify-center">
+                <div className="absolute inset-0 flex items-center justify-center z-0">
                   <svg className="absolute w-full h-full" viewBox="0 0 400 400">
                     {[...Array(20)].map((_, i) => (
                       <circle
@@ -184,32 +211,22 @@ export const ShareTokenModal: React.FC<ShareTokenModalProps> = ({
 
                   {/* Central token logo */}
                   <div
-                    className="absolute w-32 h-32 rounded-full flex items-center justify-center"
+                    className="absolute w-32 h-32 rounded-full flex items-center justify-center z-5"
                     style={{
                       background:
                         "linear-gradient(to bottom right, rgba(6, 182, 212, 0.2), rgba(59, 130, 246, 0.2))",
                       border: "2px solid rgba(6, 182, 212, 0.3)",
                     }}
                   >
-                    {tokenLogo ? (
+                    {logoDataUrl ? (
                       <img
-                        src={tokenLogo}
+                        src={logoDataUrl}
                         alt={token.symbol}
                         className="w-20 h-20 rounded-full"
-                        crossOrigin="anonymous"
                       />
                     ) : (
-                      <div
-                        className="w-20 h-20 rounded-full flex items-center justify-center"
-                        style={{
-                          background:
-                            "linear-gradient(to right, #4b5563, #1f2937)",
-                        }}
-                      >
-                        <span
-                          className="text-4xl font-bold"
-                          style={{ color: "#ffffff" }}
-                        >
+                      <div className="w-20 h-20 rounded-full bg-cyan-500/20 flex items-center justify-center">
+                        <span className="text-2xl font-bold text-cyan-300">
                           {token.symbol.charAt(0)}
                         </span>
                       </div>

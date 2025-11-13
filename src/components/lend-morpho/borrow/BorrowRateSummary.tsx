@@ -7,6 +7,7 @@ interface Rewards {
   supplyApr: number;
   asset: {
     symbol: string;
+    logoURI: string;
   };
 }
 
@@ -82,19 +83,9 @@ export const BorrowRateSummary = ({
               className="flex items-center justify-between gap-8"
             >
               <div className="flex gap-2 items-center">
-                <Avatar
-                  sx={{
-                    width: 24,
-                    height: 24,
-                    fontSize: "8x",
-                    fontWeight: 600,
-                    backgroundColor: getTokenColor(i.asset.symbol || ""),
-                  }}
-                >
-                  <p className="text-xs">
-                    {(i.asset.symbol || "").substring(0, 2).toUpperCase()}
-                  </p>
-                </Avatar>
+                <div className="w-5 h-5 rounded-full overflow-hidden">
+                  <img src={i.asset.logoURI} alt="" />
+                </div>
                 <p className="text-sm">{i.asset.symbol}</p>
               </div>
               <p className="text-xs">

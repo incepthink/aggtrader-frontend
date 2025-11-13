@@ -133,12 +133,16 @@ export default function MarketTabs({ market }: MarketTabsProps) {
           <Tabs
             value={value}
             onChange={handleChange}
+            variant="scrollable"
+            scrollButtons="auto"
             sx={{
               "& .MuiTab-root": {
                 color: "#8b949e",
                 textTransform: "none",
-                fontSize: "16px",
+                fontSize: { xs: "14px", sm: "16px" },
                 fontWeight: 500,
+                minWidth: { xs: "auto", sm: 120 },
+                px: { xs: 2, sm: 3 },
               },
               "& .Mui-selected": {
                 color: "white",
@@ -156,7 +160,7 @@ export default function MarketTabs({ market }: MarketTabsProps) {
         </Box>
 
         {/* Tab Content */}
-        <Box sx={{ p: 3 }}>
+        <Box sx={{ p: { xs: 2, sm: 3 } }}>
           {/* Your Position Tab */}
           <TabPanel value={value} index={0}>
             <PositionTab market={market} />
@@ -586,7 +590,7 @@ export default function MarketTabs({ market }: MarketTabsProps) {
             <Typography
               variant="h6"
               gutterBottom
-              sx={{ color: "white", mb: 3, fontWeight: "600" }}
+              sx={{ color: "white", mb: 3, fontWeight: "600", fontSize: { xs: "1.125rem", sm: "1.25rem" } }}
             >
               Recent Activity
             </Typography>
@@ -595,9 +599,14 @@ export default function MarketTabs({ market }: MarketTabsProps) {
               sx={{
                 mt: 2,
                 backgroundColor: "transparent",
+                overflowX: "auto",
                 "& .MuiTableCell-root": {
                   borderColor: "rgba(75, 85, 99, 0.3)",
                   color: "white",
+                  fontSize: { xs: "0.75rem", sm: "0.875rem" },
+                  px: { xs: 1, sm: 2 },
+                  py: { xs: 1.5, sm: 2 },
+                  whiteSpace: { xs: "nowrap", md: "normal" },
                 },
                 "& .MuiTableHead-root .MuiTableCell-root": {
                   backgroundColor: "rgba(0, 245, 224, 0.1)",
@@ -606,7 +615,7 @@ export default function MarketTabs({ market }: MarketTabsProps) {
                 },
               }}
             >
-              <Table>
+              <Table sx={{ minWidth: { xs: 600, md: "auto" } }}>
                 <TableHead>
                   <TableRow>
                     <TableCell>Type</TableCell>
@@ -651,6 +660,7 @@ export default function MarketTabs({ market }: MarketTabsProps) {
                                 ? "rgba(76, 175, 80, 0.3)"
                                 : "rgba(255, 152, 0, 0.3)"
                             }`,
+                            fontSize: { xs: "0.7rem", sm: "0.75rem" },
                           }}
                         />
                       </TableCell>

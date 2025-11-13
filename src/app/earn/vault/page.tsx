@@ -145,30 +145,24 @@ export default function VaultPage() {
               {
                 label: "Vault",
                 value: "name",
-                sortable: true,
+                sortable: false,
                 className: "col-span-4",
               },
               {
                 label: "Est. APY",
                 value: "estAPY",
-                sortable: true,
+                sortable: false,
                 className: "col-span-2",
               },
               {
                 label: "Hist. APY",
                 value: "APY",
-                sortable: true,
+                sortable: false,
                 className: "col-span-2",
               },
               {
                 label: "Risk Level",
                 value: "score",
-                sortable: false,
-                className: "col-span-2",
-              },
-              {
-                label: "Available",
-                value: "available",
                 sortable: false,
                 className: "col-span-2",
               },

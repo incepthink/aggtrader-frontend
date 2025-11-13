@@ -75,7 +75,9 @@ export default function MarketHeader({ market }: MarketHeaderProps) {
 
   // Safe access to market properties with fallbacks
   const collateralSymbol = market?.collateralAsset?.symbol || "Unknown";
+  const collateralLogo = market?.collateralAsset?.logoURI;
   const loanSymbol = market?.loanAsset?.symbol || "Unknown";
+  const loanLogo = market?.loanAsset?.logoURI;
   const collateralName = market?.collateralAsset?.name || collateralSymbol;
   const loanName = market?.loanAsset?.name || loanSymbol;
   const isWhitelisted = Boolean(market?.whitelisted);
@@ -87,73 +89,55 @@ export default function MarketHeader({ market }: MarketHeaderProps) {
   return (
     <Box>
       {/* Market Title and Assets */}
-      <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+      <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 1, sm: 2 }, mb: 2, flexWrap: "wrap" }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 0.5, sm: 1 } }}>
           {/* Collateral Asset Avatar */}
-          <Avatar
-            sx={{
-              width: 28,
-              height: 28,
-              backgroundColor: getTokenColor(collateralSymbol),
-              fontSize: "10px",
-              fontWeight: "600",
-            }}
-          >
-            {collateralSymbol.substring(0, 2).toUpperCase()}
-          </Avatar>
-          <Typography variant="h3" sx={{ color: "white" }}>
+          <Box sx={{ width: { xs: 32, sm: 40 }, height: { xs: 32, sm: 40 }, borderRadius: "50%", overflow: "hidden" }}>
+            <img src={collateralLogo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          </Box>
+          <Typography variant="h5" sx={{ color: "white", fontSize: { xs: "1.25rem", sm: "1.5rem", md: "2rem" } }}>
             {collateralSymbol}
           </Typography>
-          <Typography variant="h3" sx={{ color: "white", mx: 1 }}>
+          <Typography variant="h5" sx={{ color: "white", mx: { xs: 0.5, sm: 1 }, fontSize: { xs: "1.25rem", sm: "1.5rem", md: "2rem" } }}>
             /
           </Typography>
           {/* Loan Asset Avatar */}
-          <Avatar
-            sx={{
-              width: 28,
-              height: 28,
-              backgroundColor: getTokenColor(loanSymbol),
-              fontSize: "10px",
-              fontWeight: "600",
-            }}
-          >
-            {loanSymbol.substring(0, 2).toUpperCase()}
-          </Avatar>
-          <Typography variant="h3" sx={{ color: "white" }}>
+          <Box sx={{ width: { xs: 32, sm: 40 }, height: { xs: 32, sm: 40 }, borderRadius: "50%", overflow: "hidden" }}>
+            <img src={loanLogo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          </Box>
+          <Typography variant="h5" sx={{ color: "white", fontSize: { xs: "1.25rem", sm: "1.5rem", md: "2rem" } }}>
             {loanSymbol}
           </Typography>
         </Box>
       </Box>
 
       {/* Market Info Row */}
-      <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
+      <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 1, sm: 2 }, mb: 2, flexWrap: "wrap" }}>
         {/* LLTV Badge */}
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <Chip
-            label={`LLTV: ${formatLLTV()}`}
-            size="small"
-            sx={{
-              backgroundColor: "#2d3748",
-              color: "white",
-              fontWeight: "500",
-            }}
-          />
-        </Box>
+        <Chip
+          label={`LLTV: ${formatLLTV()}`}
+          size="small"
+          sx={{
+            backgroundColor: "#2d3748",
+            color: "white",
+            fontWeight: "500",
+            fontSize: { xs: "0.7rem", sm: "0.75rem" },
+          }}
+        />
 
         {/* Whitelisted Badge */}
         {isWhitelisted && (
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <Chip
-              label="Whitelisted"
-              size="small"
-              sx={{
-                backgroundColor: "rgba(46, 125, 50, 0.1)",
-                color: "#4caf50",
-                fontWeight: "500",
-                border: "1px solid rgba(76, 175, 80, 0.3)",
-              }}
-            />
-          </Box>
+          <Chip
+            label="Whitelisted"
+            size="small"
+            sx={{
+              backgroundColor: "rgba(46, 125, 50, 0.1)",
+              color: "#4caf50",
+              fontWeight: "500",
+              border: "1px solid rgba(76, 175, 80, 0.3)",
+              fontSize: { xs: "0.7rem", sm: "0.75rem" },
+            }}
+          />
         )}
 
         <Tooltip title="View on Etherscan">
@@ -163,6 +147,7 @@ export default function MarketHeader({ market }: MarketHeaderProps) {
             sx={{
               color: "#8b949e",
               "&:hover": { color: "white" },
+              p: { xs: 0.5, sm: 1 },
             }}
           >
             <OpenInNew fontSize="small" />
@@ -191,30 +176,22 @@ export default function MarketHeader({ market }: MarketHeaderProps) {
       </Box>
 
       {/* Asset Details Row */}
-      <Box sx={{ display: "flex", alignItems: "center", gap: 4, mb: 2 }}>
+      <Box sx={{ display: "flex", flexDirection: { xs: "column", sm: "row" }, alignItems: { xs: "flex-start", sm: "center" }, gap: { xs: 2, sm: 4 }, mb: 2 }}>
         {/* Collateral Asset Details */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <Avatar
-            sx={{
-              width: 20,
-              height: 20,
-              backgroundColor: getTokenColor(collateralSymbol),
-              fontSize: "10px",
-              fontWeight: "600",
-            }}
-          >
-            {collateralSymbol.charAt(0)}
-          </Avatar>
+          <Box sx={{ width: 20, height: 20, borderRadius: "50%", overflow: "hidden", flexShrink: 0 }}>
+            <img src={collateralLogo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          </Box>
           <Box>
             <Typography
               variant="body2"
-              sx={{ color: "#8b949e", fontSize: "0.75rem" }}
+              sx={{ color: "#8b949e", fontSize: { xs: "0.7rem", sm: "0.75rem" } }}
             >
               Collateral Token
             </Typography>
             <Typography
               variant="body2"
-              sx={{ color: "white", fontWeight: "500" }}
+              sx={{ color: "white", fontWeight: "500", fontSize: { xs: "0.875rem", sm: "0.875rem" } }}
             >
               {collateralName}
             </Typography>
@@ -223,27 +200,19 @@ export default function MarketHeader({ market }: MarketHeaderProps) {
 
         {/* Loan Asset Details */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <Avatar
-            sx={{
-              width: 20,
-              height: 20,
-              backgroundColor: getTokenColor(loanSymbol),
-              fontSize: "10px",
-              fontWeight: "600",
-            }}
-          >
-            {loanSymbol.charAt(0)}
-          </Avatar>
+          <Box sx={{ width: 20, height: 20, borderRadius: "50%", overflow: "hidden", flexShrink: 0 }}>
+            <img src={loanLogo} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          </Box>
           <Box>
             <Typography
               variant="body2"
-              sx={{ color: "#8b949e", fontSize: "0.75rem" }}
+              sx={{ color: "#8b949e", fontSize: { xs: "0.7rem", sm: "0.75rem" } }}
             >
               Loan Token
             </Typography>
             <Typography
               variant="body2"
-              sx={{ color: "white", fontWeight: "500" }}
+              sx={{ color: "white", fontWeight: "500", fontSize: { xs: "0.875rem", sm: "0.875rem" } }}
             >
               {loanName}
             </Typography>
@@ -251,7 +220,7 @@ export default function MarketHeader({ market }: MarketHeaderProps) {
         </Box>
 
         {/* Oracle Info */}
-        {oracleType && oracleType !== "Unknown" && (
+        {/* {oracleType && oracleType !== "Unknown" && (
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <Avatar
               sx={{
@@ -279,12 +248,12 @@ export default function MarketHeader({ market }: MarketHeaderProps) {
               </Typography>
             </Box>
           </Box>
-        )}
+        )} */}
       </Box>
 
       {/* Warnings */}
       {warnings.length > 0 && (
-        <Box sx={{ display: "flex", gap: 1, mb: 2 }}>
+        <Box sx={{ display: "flex", gap: { xs: 0.5, sm: 1 }, mb: 2, flexWrap: "wrap" }}>
           {warnings.map((warning, index) => (
             <Chip
               key={index}
@@ -296,7 +265,7 @@ export default function MarketHeader({ market }: MarketHeaderProps) {
                 backgroundColor:
                   warning.level === "RED" ? "#d32f2f" : "#ed6c02",
                 color: "white",
-                fontSize: "0.75rem",
+                fontSize: { xs: "0.7rem", sm: "0.75rem" },
                 fontWeight: "500",
               }}
             />
@@ -311,6 +280,7 @@ export default function MarketHeader({ market }: MarketHeaderProps) {
           color: "#8b949e",
           lineHeight: 1.6,
           mb: 2,
+          fontSize: { xs: "0.8rem", sm: "0.875rem" },
         }}
       >
         This market allows you to use {collateralSymbol} as collateral to borrow{" "}
