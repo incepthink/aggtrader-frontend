@@ -13,7 +13,6 @@ const navItems = [
     label: "SPOT",
   },
   { href: ["/earn/lend", "/earn/borrow", "/earn/vault"], label: "EARN" },
-  { href: ["/referral"], label: "REFERRAL" },
   { href: ["/profile"], label: "ACCOUNT" },
   {
     href: [
@@ -21,6 +20,7 @@ const navItems = [
     ],
     label: "BRIDGE",
   },
+  { href: ["/referral"], label: "REFERRAL" },
 ];
 
 interface GradientConnectButtonProps {

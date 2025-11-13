@@ -23,12 +23,12 @@ const Heading = ({ data, referralCode, tradersReffered }: headingProps) => {
       <div className="flex flex-wrap items-center gap-2 md:gap-4">
         <EnterCode data={data} referralCode={referralCode} />
         <ViewCode code={data.referralCode} />
-        <button
+        {/* <button
           disabled
           className="text-primary disabled:opacity-50 disabled:cursor-not-allowed border-primary border-2 px-3 md:px-4 py-2 md:py-2.5 cursor-pointer bg-primary/10 transition-all active:bg-primary/20 rounded-lg text-xs md:text-sm whitespace-nowrap"
         >
           Claim Rewards
-        </button>
+        </button> */}
       </div>
     </div>
   );
