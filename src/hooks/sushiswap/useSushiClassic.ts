@@ -56,10 +56,10 @@ interface UseSushiClassicCallbacks {
 
 export const useSushiClassic = (callbacks?: UseSushiClassicCallbacks) => {
   const { address, isConnected } = useAccount();
-  const publicClient = usePublicClient();
   const chainId = useSpotStore((s) => s.chainId);
+  const publicClient = usePublicClient({ chainId });
   const queryClient = useQueryClient(); // NEW
-  const hasNotified = useRef(false); 
+  const hasNotified = useRef(false);
 
   const [quote, setQuote] = useState<QuoteData | null>(null);
   const [isLoadingQuote, setIsLoadingQuote] = useState(false);
@@ -78,7 +78,10 @@ export const useSushiClassic = (callbacks?: UseSushiClassicCallbacks) => {
     isLoading: isConfirming,
     isSuccess: isDone,
     error: confirmError,
-  } = useWaitForTransactionReceipt({ hash: txHash });
+  } = useWaitForTransactionReceipt({
+    hash: txHash,
+    chainId
+  });
 
   console.log("TRX DATA:", receiptData);
 

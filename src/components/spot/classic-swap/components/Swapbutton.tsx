@@ -63,6 +63,7 @@ export const SwapButton = memo(
 
     return (
       <div
+        id="main-action-btn"
         className={`swapButton ${isButtonDisabled ? "disabled" : ""}`}
         onClick={isButtonDisabled ? undefined : handleClick}
         style={{

@@ -102,9 +102,10 @@ const { chainId, isChainMismatch, isWalletConnected } = useChain()
 WagmiWalletProvider (Wagmi config + RainbowKit)
   └→ MuiThemeProvider
     └→ ChainProvider (Katana only)
-      └→ DerivedStateTwapProvider (Limit orders)
-        └→ VaultProviders (Yearn)
-          └→ App components
+      └→ AttestationWrapper (Wallet signature tracking)
+        └→ DerivedStateTwapProvider (Limit orders)
+          └→ VaultProviders (Yearn)
+            └→ App components
 ```
 
 **Viem ↔ Ethers Bridge** (src/utils/wagmi.ts):
@@ -125,6 +126,36 @@ const { data: hash } = useWaitForTransactionReceipt()
 
 // 4. Invalidate queries to refresh UI
 queryClient.invalidateQueries({ queryKey: ['balance'] })
+```
+
+### User Tracking & Analytics
+
+**Wallet Attestation System** (src/hooks/useWalletAttestation.ts):
+- Automatically prompts connected wallets to sign attestation message
+- Runs once per wallet per session via `AttestationWrapper` in layout.tsx
+- Stores signatures in backend for TVL attribution tracking
+- Flow: Check backend → prompt signature if missing → store result
+- Non-blocking - app continues if user dismisses signature prompt
+
+**Analytics Stack**:
+- **Google Analytics (GA4)** - Traffic and conversion tracking (gaId: G-RGY5G35G2R)
+- **Microsoft Clarity** - Session recordings and heatmaps
+- **Backend transaction logging** - Pre-transaction intent logging for attribution
+- **Signature-based cohort tracking** - Proves TVL attribution to AggTrade
+
+**Backend API Pattern**:
+- Base URL: `BACKEND_URL` from `src/utils/constants.ts`
+- Current: `https://api.aggtrade.xyz`
+- Used for: referrals, user data, signature storage, transaction logging
+- Example hooks: `useUserReferralData()` in `src/hooks/useUserReferralData.ts`
+
+**Attribution Flow**:
+```typescript
+// 1. User connects wallet → AttestationWrapper prompts signature
+// 2. Signature stored: POST /user/signature { wallet, signature, message, timestamp }
+// 3. Before transaction → log intent to backend
+// 4. Transaction executes → on-chain
+// 5. Dune dashboard correlates: signed wallets → on-chain TVL
 ```
 
 ### Component Organization

@@ -121,16 +121,18 @@ export const TokenSelectionModal: FC = () => {
   }, [activeTab, priorityTokens, allTokens]);
 
   // Filter tokens based on search query
+  // When searching, search across ALL tokens regardless of tab
   const filteredTokens = useMemo(() => {
     if (!searchQuery.trim()) return tokensToShow;
 
     const query = searchQuery.toLowerCase();
-    return tokensToShow.filter(
+    // Search across all tokens when user is searching
+    return allTokens.filter(
       (token) =>
         token.symbol?.toLowerCase().includes(query) ||
         token.name?.toLowerCase().includes(query)
     );
-  }, [tokensToShow, searchQuery]);
+  }, [tokensToShow, searchQuery, allTokens]);
 
   // Get currently selected token based on modal position
   const currentlySelectedToken = useMemo(() => {
@@ -253,6 +255,7 @@ export const TokenSelectionModal: FC = () => {
         <Box sx={{ p: 3, display: "flex", flexDirection: "column", gap: 3 }}>
           {/* Search Input */}
           <TextField
+            id="token-search-input"
             fullWidth
             placeholder="Search by name or symbol"
             value={searchQuery}
@@ -331,9 +334,14 @@ export const TokenSelectionModal: FC = () => {
             >
               <Tab
                 value="popular"
+                id="popular-tokens-tab"
                 label={`Popular (${priorityTokens.length})`}
               />
-              <Tab value="all" label={`All Tokens (${allTokens.length})`} />
+              <Tab
+                value="all"
+                id="all-tokens-tab"
+                label={`All Tokens (${allTokens.length})`}
+              />
             </Tabs>
           </Box>
 
@@ -404,7 +412,7 @@ export const TokenSelectionModal: FC = () => {
                     sx={{ color: "rgba(255, 255, 255, 0.7)" }}
                   >
                     {searchQuery
-                      ? `${filteredTokens.length} tokens found`
+                      ? `${filteredTokens.length} tokens found from all tokens`
                       : `${filteredTokens.length} ${activeTab} tokens`}
                   </Typography>
                 </Box>
@@ -431,6 +439,7 @@ export const TokenSelectionModal: FC = () => {
                       >
                         <ListItemButton
                           onClick={() => handleSelect(token)}
+                          id={`token-item-${token.symbol}`}
                           sx={{
                             py: 1.5,
                             px: 2,

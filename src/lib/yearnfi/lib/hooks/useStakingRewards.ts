@@ -24,7 +24,10 @@ export function useStakingRewards({
   vault,
   userAddress,
 }: UseStakingRewardsParams): UseStakingRewardsReturn {
-  const { data: blockNumber } = useBlockNumber({ watch: true });
+  const { data: blockNumber } = useBlockNumber({
+    chainId: vault.chainID || 747474, // Fallback to Katana
+    watch: true
+  });
   const [rewardTokenData, setRewardTokenData] = useState({
     symbol: "",
     decimals: 18,

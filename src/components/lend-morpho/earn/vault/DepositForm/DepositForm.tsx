@@ -22,7 +22,7 @@ import {
 } from "@/hooks/lend-morpho/useUserVaultPosition";
 import { calculateProjectedEarnings } from "./formatters";
 import { DepositWithdrawHeader } from "./DepositWithdrawHeader";
-import { AmountInput } from "./AmountInput";
+import { AmountInput, InputMode } from "./AmountInput";
 import { PositionDisplay } from "./PositionDisplay";
 import { ProjectedEarnings } from "./ProjectedEarnings";
 import { ActionButton } from "./ActionButton";
@@ -41,12 +41,17 @@ export const DepositForm: React.FC<DepositFormProps> = ({
   const [amount, setAmount] = useState("");
   const [activeTab, setActiveTab] = useState<"deposit" | "withdraw">("deposit");
   const [walletError, setWalletError] = useState<string | null>(null);
+  const [inputMode, setInputMode] = useState<InputMode>("token");
   const { isConnected, address } = useAccount();
 
   // Fetch token balance
+  // For native ETH (wETH vault), check native balance instead of wETH balance
+  const isNativeETH = vault.asset.address.toLowerCase() === "0xee7d8bcfb72bc1880d0cf19822eb0a2e6577ab62".toLowerCase();
+
   const balanceQuery = useBalance({
     address,
-    token: vault.asset.address as `0x${string}`,
+    // Omit token parameter for native ETH to get ETH balance
+    ...(isNativeETH ? {} : { token: vault.asset.address as `0x${string}` }),
     query: { enabled: isConnected && !!address },
   });
 
@@ -136,8 +141,28 @@ export const DepositForm: React.FC<DepositFormProps> = ({
     userPosition // Can be undefined, hook handles it
   );
 
-  const depositAmount = parseFloat(amount) || 0;
-  const depositAmountUsd = depositAmount * (tokenPrice || 0);
+  // Convert amount based on input mode
+  const getTokenAmount = () => {
+    const numValue = parseFloat(amount) || 0;
+    if (inputMode === "usd") {
+      // When in USD mode, convert to token amount
+      return tokenPrice && tokenPrice > 0 ? numValue / tokenPrice : 0;
+    }
+    return numValue;
+  };
+
+  const getUsdAmount = () => {
+    const numValue = parseFloat(amount) || 0;
+    if (inputMode === "usd") {
+      // Already in USD
+      return numValue;
+    }
+    // Convert token to USD
+    return numValue * (tokenPrice ?? 0);
+  };
+
+  const depositAmount = getTokenAmount();
+  const depositAmountUsd = getUsdAmount();
 
   // Position data - handle when no position exists with safe fallbacks
   const currentPositionTokens = userPosition
@@ -208,6 +233,11 @@ export const DepositForm: React.FC<DepositFormProps> = ({
     setActiveTab(tab);
   };
 
+  // Toggle between token and USD input mode
+  const handleToggleMode = () => {
+    setInputMode((prev) => (prev === "token" ? "usd" : "token"));
+  };
+
   // ✅ Simple handlers without pre-emptive wallet checks (like BorrowForm)
   const handleAmountChange = (value: string) => {
     setAmount(value);
@@ -230,7 +260,8 @@ export const DepositForm: React.FC<DepositFormProps> = ({
     if (depositError) {
       resetDeposit();
     }
-    await approve(amount);
+    // Always pass token amount to approve
+    await approve(depositAmount.toString());
   };
 
   const handleDeposit = async () => {
@@ -239,7 +270,8 @@ export const DepositForm: React.FC<DepositFormProps> = ({
     if (depositError) {
       resetDeposit();
     }
-    const success = await deposit(amount);
+    // Always pass token amount to deposit
+    const success = await deposit(depositAmount.toString());
     if (success) {
       setAmount("");
     }
@@ -248,7 +280,8 @@ export const DepositForm: React.FC<DepositFormProps> = ({
   const handleWithdraw = async () => {
     if (!amount) return;
 
-    const success = await withdraw(amount);
+    // Always pass token amount to withdraw
+    const success = await withdraw(depositAmount.toString());
     if (success) {
       setAmount("");
     }
@@ -286,7 +319,8 @@ export const DepositForm: React.FC<DepositFormProps> = ({
     }
 
     const maxWithdrawableTokens = parseFloat(getMaxWithdrawableTokens() || "0");
-    const withdrawAmount = parseFloat(amount) || 0;
+    // Use depositAmount (token amount) for comparison, not raw amount
+    const withdrawAmount = depositAmount;
 
     const isDisabled =
       !amount ||
@@ -302,7 +336,7 @@ export const DepositForm: React.FC<DepositFormProps> = ({
       if (!hasWithdrawablePosition()) return "No position to withdraw";
       if (!amount || withdrawAmount === 0) return "Enter an amount";
       if (withdrawAmount > maxWithdrawableTokens) return "Insufficient balance";
-      return `Withdraw ${amount} ${vault.asset.symbol}`;
+      return `Withdraw ${depositAmount.toFixed(6)} ${vault.asset.symbol}`;
     };
 
     return (
@@ -494,6 +528,9 @@ export const DepositForm: React.FC<DepositFormProps> = ({
             userPosition={currentPositionTokens}
             userPositionUsd={currentPositionUsd}
             walletError={null} // ✅ Don't pass wallet errors to AmountInput
+            inputMode={inputMode}
+            onToggleMode={handleToggleMode}
+            isLoadingPrice={isLoadingPrice}
           />
 
           <Divider sx={{ borderColor: "#2d3748", mb: 3 }} />

@@ -61,7 +61,15 @@ interface ChainProviderProps {
 export const ChainProvider: React.FC<ChainProviderProps> = ({ children }) => {
   // Wagmi hooks
   const { isConnected } = useAccount();
-  const walletChainId = useChainId();
+
+  // Use useChainId with explicit config fallback to prevent ChainNotConfiguredError
+  let walletChainId: number | undefined;
+  try {
+    walletChainId = useChainId();
+  } catch (error) {
+    // If chain detection fails (injected provider not ready), assume Katana
+    walletChainId = 747474;
+  }
 
   // Always use Katana - no chain switching needed
   const chainId: ChainId = 747474;

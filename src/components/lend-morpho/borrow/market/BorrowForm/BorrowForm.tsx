@@ -34,6 +34,8 @@ export function BorrowForm({
   const [borrowAmount, setBorrowAmount] = useState("");
   const [repayAmount, setRepayAmount] = useState("");
   const [withdrawAmount, setWithdrawAmount] = useState("");
+  const [borrowInputMode, setBorrowInputMode] = useState<"token" | "usd">("token");
+  const [repayInputMode, setRepayInputMode] = useState<"token" | "usd">("token");
 
   const { isConnected, address } = useAccount();
 
@@ -72,15 +74,21 @@ export function BorrowForm({
   );
 
   // Get wallet balances
+  // For native ETH (wETH collateral), check native balance instead of wETH balance
+  const isCollateralNativeETH = market.collateralAsset.address.toLowerCase() === "0xee7d8bcfb72bc1880d0cf19822eb0a2e6577ab62".toLowerCase();
+  const isLoanNativeETH = market.loanAsset.address.toLowerCase() === "0xee7d8bcfb72bc1880d0cf19822eb0a2e6577ab62".toLowerCase();
+
   const collateralBalanceQuery = useBalance({
     address,
-    token: market.collateralAsset.address as `0x${string}`,
+    // Omit token parameter for native ETH to get ETH balance
+    ...(isCollateralNativeETH ? {} : { token: market.collateralAsset.address as `0x${string}` }),
     query: { enabled: isConnected && !!address },
   });
 
   const loanBalanceQuery = useBalance({
     address,
-    token: market.loanAsset.address as `0x${string}`,
+    // Omit token parameter for native ETH to get ETH balance
+    ...(isLoanNativeETH ? {} : { token: market.loanAsset.address as `0x${string}` }),
     query: { enabled: isConnected && !!address },
   });
 
@@ -188,6 +196,33 @@ export function BorrowForm({
     }
   }, [morphoBorrow.txHash, morphoRepay.txHash, refetchPosition]);
 
+  // Convert borrow amount based on input mode
+  const getBorrowTokenAmount = () => {
+    const numValue = parseFloat(borrowAmount) || 0;
+    if (borrowInputMode === "usd") {
+      return loanTokenPrice && loanTokenPrice > 0 ? numValue / loanTokenPrice : 0;
+    }
+    return numValue;
+  };
+
+  // Convert repay amount based on input mode
+  const getRepayTokenAmount = () => {
+    const numValue = parseFloat(repayAmount) || 0;
+    if (repayInputMode === "usd") {
+      return loanTokenPrice && loanTokenPrice > 0 ? numValue / loanTokenPrice : 0;
+    }
+    return numValue;
+  };
+
+  // Toggle handlers
+  const handleToggleBorrowMode = () => {
+    setBorrowInputMode((prev) => (prev === "token" ? "usd" : "token"));
+  };
+
+  const handleToggleRepayMode = () => {
+    setRepayInputMode((prev) => (prev === "token" ? "usd" : "token"));
+  };
+
   const handleTabChange = (tab: "borrow" | "repay") => {
     setActiveTab(tab);
   };
@@ -229,10 +264,13 @@ export function BorrowForm({
   const handleBorrow = async () => {
     if (!collateralAmount || !borrowAmount) return;
 
+    // Always pass token amounts to borrow
+    const tokenBorrowAmount = getBorrowTokenAmount();
+
     await morphoBorrow.borrow({
       market,
       collateralAmount,
-      borrowAmount,
+      borrowAmount: tokenBorrowAmount.toString(),
     });
 
     // Reset form on success
@@ -247,9 +285,12 @@ export function BorrowForm({
       return;
     }
 
+    // Always pass token amount to repay
+    const tokenRepayAmount = getRepayTokenAmount();
+
     await morphoRepay.repay({
       market,
-      repayAmount: repayAmount || "0",
+      repayAmount: tokenRepayAmount > 0 ? tokenRepayAmount.toString() : "0",
       withdrawAmount: withdrawAmount || "0",
     });
 
@@ -437,6 +478,9 @@ export function BorrowForm({
                 !tokenApproval.isApproved && parseFloat(collateralAmount) > 0
               }
               userPosition={userPosition || null}
+              borrowInputMode={borrowInputMode}
+              onToggleBorrowMode={handleToggleBorrowMode}
+              isLoadingLoanPrice={isLoadingLoanPrice}
             />
           ) : (
             <RepayTabContent
@@ -462,6 +506,9 @@ export function BorrowForm({
               needsApproval={
                 !repayTokenApproval.isApproved && parseFloat(repayAmount) > 0
               }
+              repayInputMode={repayInputMode}
+              onToggleRepayMode={handleToggleRepayMode}
+              isLoadingLoanPrice={isLoadingLoanPrice}
             />
           )}
         </Box>

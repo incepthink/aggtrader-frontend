@@ -85,8 +85,8 @@ export const useMorphoBorrow = () => {
     allowance: BigInt(0),
   });
 
-  const { address, isConnected } = useAccount();
-  const publicClient = usePublicClient();
+  const { address, isConnected, chainId } = useAccount();
+  const publicClient = usePublicClient({ chainId });
   const { data: walletClient } = useWalletClient();
 
   const updateState = (updates: Partial<BorrowState>) => {

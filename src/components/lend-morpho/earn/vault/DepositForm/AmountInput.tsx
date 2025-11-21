@@ -7,7 +7,11 @@ import {
   TextField,
   Button,
   InputAdornment,
+  IconButton,
 } from "@mui/material";
+import SwapHorizIcon from "@mui/icons-material/SwapHoriz";
+
+export type InputMode = "token" | "usd";
 
 interface AmountInputProps {
   amount: string;
@@ -22,6 +26,9 @@ interface AmountInputProps {
   userPosition?: number; // Token amount for validation
   userPositionUsd?: number; // USD amount for display
   walletError?: string | null; // Add wallet error prop
+  inputMode?: InputMode;
+  onToggleMode?: () => void;
+  isLoadingPrice?: boolean;
 }
 
 export const AmountInput: React.FC<AmountInputProps> = ({
@@ -37,13 +44,34 @@ export const AmountInput: React.FC<AmountInputProps> = ({
   userPosition = 0,
   userPositionUsd = 0,
   walletError = null,
+  inputMode = "token",
+  onToggleMode,
+  isLoadingPrice = false,
 }) => {
   const [isHydrated, setIsHydrated] = useState(false);
+  const inputRef = React.useRef<HTMLInputElement>(null);
 
   // ✅ Hydration-safe flag
   useEffect(() => {
     setIsHydrated(true);
   }, []);
+
+  // Focus handler
+  const handleFocusInput = () => {
+    inputRef.current?.focus();
+  };
+
+  // Expose onChange handler for Puppeteer automation
+  useEffect(() => {
+    if (inputRef.current && typeof window !== "undefined") {
+      // Store the handler on the input element itself for Puppeteer access
+      (inputRef.current as any).__reactOnChange = (value: string) => {
+        if (value === "" || /^\d*\.?\d*$/.test(value)) {
+          onAmountChange(value);
+        }
+      };
+    }
+  }, [onAmountChange]);
 
   // ✅ Enhanced wallet ready check
   const isWalletReady = Boolean(
@@ -100,6 +128,22 @@ export const AmountInput: React.FC<AmountInputProps> = ({
 
   const depositAmount = parseFloat(amount) || 0;
   const usdValue = depositAmount * tokenPrice;
+
+  // Get display value for secondary amount (similar to SwapInput)
+  const getDisplayValue = () => {
+    if (!amount || !tokenPrice) return null;
+    const numValue = parseFloat(amount);
+    if (isNaN(numValue)) return null;
+
+    if (inputMode === "usd") {
+      // When in USD mode, show token amount as secondary
+      const tokenAmount = numValue / tokenPrice;
+      return `≈ ${tokenAmount.toFixed(6)} ${symbol}`;
+    } else {
+      // When in token mode, show USD amount as secondary
+      return `≈ $${usdValue.toFixed(2)}`;
+    }
+  };
 
   // Get the appropriate balance to display
   const displayBalance = isLoadingBalance
@@ -198,79 +242,222 @@ export const AmountInput: React.FC<AmountInputProps> = ({
         </Box>
       )}
 
-      <TextField
-        fullWidth
-        placeholder="0.00"
-        value={amount}
-        onChange={handleChange}
-        disabled={walletError !== null || !isWalletReady} // ✅ Disable when wallet not ready
-        InputProps={{
-          sx: {
+      <Box sx={{ position: "relative" }}>
+        {/* $ sign prefix when in USD mode - exactly like SwapInput */}
+        {inputMode === "usd" && (
+          <Typography
+            data-testid="usd-prefix-symbol"
+            sx={{
+              position: "absolute",
+              left: "12px",
+              top: "50%",
+              transform: "translateY(-50%)",
+              color: "white",
+              fontSize: "28px",
+              fontWeight: "bold",
+              pointerEvents: "none",
+              zIndex: 1,
+            }}
+          >
+            $
+          </Typography>
+        )}
+
+        <Box
+          sx={{
+            position: "relative",
+            width: "100%",
+            display: "flex",
+            alignItems: "center",
             backgroundColor:
               walletError || !isWalletReady ? "#1a1a1a" : "#0f1419",
-            color: walletError || !isWalletReady ? "#8b949e" : "white",
-            fontSize: "28px",
-            fontWeight: "bold",
-            "& .MuiOutlinedInput-notchedOutline": {
-              border: `1px solid ${getInputBorderColor()}`,
+            border: `1px solid ${getInputBorderColor()}`,
+            borderRadius: "4px",
+            padding: "16.5px 14px",
+            paddingLeft: inputMode === "usd" ? "35px" : "14px",
+            paddingRight: "14px",
+            transition: "border-color 0.3s",
+            "&:hover": {
+              borderColor: getInputHoverColor(),
             },
-            "&:hover .MuiOutlinedInput-notchedOutline": {
-              border: `1px solid ${getInputHoverColor()}`,
+            "&:focus-within": {
+              borderColor: getInputFocusColor(),
             },
-            "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-              border: `1px solid ${getInputFocusColor()}`,
-            },
-            "&.Mui-disabled": {
-              opacity: 0.6,
-            },
-          },
-          endAdornment: (
-            <InputAdornment position="end">
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <Typography sx={{ color: "#8b949e", fontSize: "16px" }}>
-                  {symbol}
-                </Typography>
-                <Button
-                  size="small"
-                  onClick={handleMaxClick}
-                  disabled={isMaxButtonDisabled}
-                  sx={{
-                    color:
-                      walletError || !isWalletReady
-                        ? "#6b7280"
-                        : mode === "withdraw"
-                        ? "#3b82f6"
-                        : "#3b82f6",
-                    textTransform: "none",
-                    fontSize: "12px",
-                    fontWeight: "bold",
-                    minWidth: "auto",
-                    p: 0.5,
-                    "&:hover": {
-                      backgroundColor:
-                        walletError || !isWalletReady
-                          ? "transparent"
-                          : mode === "withdraw"
-                          ? "rgba(239, 68, 68, 0.1)"
-                          : "rgba(59, 130, 246, 0.1)",
-                    },
-                    "&:disabled": {
-                      color: "#6b7280",
-                    },
-                  }}
-                >
-                  MAX
-                </Button>
-              </Box>
-            </InputAdornment>
-          ),
-        }}
-      />
+            opacity: walletError || !isWalletReady ? 0.6 : 1,
+          }}
+        >
+          <input
+            ref={inputRef}
+            id="lend-input"
+            data-testid="lend-deposit-input"
+            data-input-mode={inputMode}
+            aria-label={`${
+              mode === "deposit" ? "Deposit" : "Withdraw"
+            } amount in ${symbol}`}
+            type="text"
+            placeholder="0.00"
+            value={amount}
+            onChange={handleChange}
+            // disabled={walletError !== null || !isWalletReady}
+            style={{
+              flex: 1,
+              background: "transparent",
+              border: "none",
+              outline: "none",
+              color: walletError || !isWalletReady ? "#8b949e" : "white",
+              fontSize: "28px",
+              fontWeight: "bold",
+              fontFamily: "inherit",
+              padding: 0,
+              width: "100%",
+            }}
+          />
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1, ml: 1 }}>
+            <Typography sx={{ color: "#8b949e", fontSize: "16px" }}>
+              {symbol}
+            </Typography>
+            <Button
+              size="small"
+              onClick={handleMaxClick}
+              disabled={isMaxButtonDisabled}
+              sx={{
+                color:
+                  walletError || !isWalletReady
+                    ? "#6b7280"
+                    : mode === "withdraw"
+                    ? "#3b82f6"
+                    : "#3b82f6",
+                textTransform: "none",
+                fontSize: "12px",
+                fontWeight: "bold",
+                minWidth: "auto",
+                p: 0.5,
+                "&:hover": {
+                  backgroundColor:
+                    walletError || !isWalletReady
+                      ? "transparent"
+                      : mode === "withdraw"
+                      ? "rgba(239, 68, 68, 0.1)"
+                      : "rgba(59, 130, 246, 0.1)",
+                },
+                "&:disabled": {
+                  color: "#6b7280",
+                },
+              }}
+            >
+              MAX
+            </Button>
+          </Box>
+        </Box>
+      </Box>
 
       <Box sx={{ display: "flex", justifyContent: "space-between", mt: 1 }}>
-        <Typography variant="caption" sx={{ color: "#8b949e" }}>
-          ${usdValue.toFixed(2)}
-        </Typography>
+        {/* Price display with toggle button - exactly like SwapInput */}
+        <Box
+          id="deposit-amount-switch-container"
+          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+        >
+          {isLoadingPrice ? (
+            <>
+              <Box
+                sx={{
+                  height: "16px",
+                  width: "64px",
+                  backgroundColor: "#4b5563",
+                  borderRadius: "4px",
+                  animation: "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+                  "@keyframes pulse": {
+                    "0%, 100%": { opacity: 1 },
+                    "50%": { opacity: 0.5 },
+                  },
+                }}
+              />
+              {onToggleMode && (
+                <IconButton
+                  onClick={onToggleMode}
+                  disabled={walletError !== null || !isWalletReady}
+                  size="small"
+                  sx={{
+                    padding: "2px",
+                    color: "rgba(255, 255, 255, 0.7)",
+                    "&:hover": {
+                      color: "#00F5E0",
+                      backgroundColor: "rgba(0, 245, 224, 0.1)",
+                    },
+                    "&:disabled": {
+                      color: "rgba(255, 255, 255, 0.3)",
+                    },
+                  }}
+                  title={`Switch to ${
+                    inputMode === "token" ? "USD" : "token"
+                  } input`}
+                >
+                  <SwapHorizIcon sx={{ fontSize: 18 }} />
+                </IconButton>
+              )}
+            </>
+          ) : tokenPrice !== null && tokenPrice > 0 ? (
+            <>
+              {amount && (
+                <Typography variant="caption" sx={{ color: "#8b949e" }}>
+                  {getDisplayValue()}
+                </Typography>
+              )}
+              {onToggleMode && (
+                <IconButton
+                  onClick={onToggleMode}
+                  disabled={walletError !== null || !isWalletReady}
+                  size="small"
+                  sx={{
+                    padding: "2px",
+                    color: "rgba(255, 255, 255, 0.7)",
+                    "&:hover": {
+                      color: "#00F5E0",
+                      backgroundColor: "rgba(0, 245, 224, 0.1)",
+                    },
+                    "&:disabled": {
+                      color: "rgba(255, 255, 255, 0.3)",
+                    },
+                  }}
+                  title={`Switch to ${
+                    inputMode === "token" ? "USD" : "token"
+                  } input`}
+                >
+                  <SwapHorizIcon sx={{ fontSize: 18 }} />
+                </IconButton>
+              )}
+            </>
+          ) : (
+            <>
+              <Typography variant="caption" sx={{ color: "#6b7280" }}>
+                Price unavailable
+              </Typography>
+              {onToggleMode && (
+                <IconButton
+                  onClick={onToggleMode}
+                  disabled={walletError !== null || !isWalletReady}
+                  size="small"
+                  sx={{
+                    padding: "2px",
+                    color: "rgba(255, 255, 255, 0.7)",
+                    "&:hover": {
+                      color: "#00F5E0",
+                      backgroundColor: "rgba(0, 245, 224, 0.1)",
+                    },
+                    "&:disabled": {
+                      color: "rgba(255, 255, 255, 0.3)",
+                    },
+                  }}
+                  title={`Switch to ${
+                    inputMode === "token" ? "USD" : "token"
+                  } input`}
+                >
+                  <SwapHorizIcon sx={{ fontSize: 18 }} />
+                </IconButton>
+              )}
+            </>
+          )}
+        </Box>
         <Typography variant="caption" sx={{ color: "#8b949e" }}>
           {getPositionDisplay()}
         </Typography>
@@ -287,6 +474,28 @@ export const AmountInput: React.FC<AmountInputProps> = ({
           )}
         </Box>
       )}
+
+      {/* Focus Input Button */}
+      <Box sx={{ mt: 2 }}>
+        <Button
+          variant="outlined"
+          size="small"
+          onClick={handleFocusInput}
+          data-testid="focus-input-button"
+          sx={{
+            color: "#00F5E0",
+            borderColor: "#00F5E0",
+            textTransform: "none",
+            fontSize: "12px",
+            "&:hover": {
+              borderColor: "#00F5E0",
+              backgroundColor: "rgba(0, 245, 224, 0.1)",
+            },
+          }}
+        >
+          Focus Input (For Testing)
+        </Button>
+      </Box>
     </Box>
   );
 };

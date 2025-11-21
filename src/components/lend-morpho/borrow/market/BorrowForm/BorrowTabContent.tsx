@@ -42,6 +42,9 @@ interface BorrowTabContentProps {
     formatPercentage: (value: number) => string;
     formatNumber: (value: number) => string;
   };
+  borrowInputMode?: "token" | "usd";
+  onToggleBorrowMode?: () => void;
+  isLoadingLoanPrice?: boolean;
 }
 
 export const BorrowTabContent: React.FC<BorrowTabContentProps> = ({
@@ -63,6 +66,9 @@ export const BorrowTabContent: React.FC<BorrowTabContentProps> = ({
   needsApproval = false,
   userPosition,
   calculations,
+  borrowInputMode = "token",
+  onToggleBorrowMode,
+  isLoadingLoanPrice = false,
 }) => {
   const lltv = parseFloat(market.lltv) / 1e18;
 
@@ -184,6 +190,9 @@ export const BorrowTabContent: React.FC<BorrowTabContentProps> = ({
         mode="borrow"
         suggestedAmount={calculations.maxBorrowableAmount}
         collateralAmount={collateralAmount}
+        inputMode={borrowInputMode}
+        onToggleMode={onToggleBorrowMode}
+        isLoadingPrice={isLoadingLoanPrice}
       />
 
       {/* ✅ Updated PositionSummary with arrow data */}

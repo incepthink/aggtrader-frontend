@@ -13,6 +13,7 @@ import { DerivedStateTwapProvider } from "@/store/limit-order/derivedstate-twap-
 import { VaultProviders } from "@/lib/yearnfi/lib/contexts/Providers";
 import Script from "next/script";
 import { ConditionalSpotNavbar } from "@/components/common/navbar/ConditionalSpotNavbar";
+import { AttestationWrapper } from "@/components/providers/AttestationWrapper";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -64,6 +65,7 @@ export default function RootLayout({
         <WagmiWalletProvider>
           <MuiThemeProvider>
             <ChainProvider>
+              <AttestationWrapper />
               <DerivedStateTwapProvider isLimitOrder={true}>
                 <VaultProviders>
                   <div className="fixed inset-0 -z-10 overflow-hidden">

@@ -280,6 +280,7 @@ function SushiClassicSwap() {
             value={tokenOneAmount}
             onChange={changeSellAmount}
             disabled={isLoadingPrices}
+            token={tokenOne}
             label="Sell"
             showPrice={true}
             price={tokenOnePrice}
@@ -301,6 +302,7 @@ function SushiClassicSwap() {
             onChange={changeBuyAmount}
             disabled={isLoadingPrices || isLoadingQuote}
             label="Buy"
+            token={tokenTwo}
             showPrice={true}
             price={tokenTwoPrice}
             isLoadingPrice={isLoadingPrices || isLoadingQuote}

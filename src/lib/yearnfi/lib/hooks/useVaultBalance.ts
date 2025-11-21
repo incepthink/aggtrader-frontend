@@ -20,7 +20,10 @@ export function useVaultBalance({
   vault,
   userAddress,
 }: UseVaultBalanceParams): UseVaultBalanceReturn {
-  const { data: blockNumber } = useBlockNumber({ watch: true });
+  const { data: blockNumber } = useBlockNumber({
+    chainId: vault.chainID || 747474, // Fallback to Katana
+    watch: true
+  });
 
   const {
     data,

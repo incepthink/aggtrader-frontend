@@ -54,15 +54,16 @@ export function useTokenApproval({
   });
 
   // Check current allowance
-  const { 
-    data: allowance, 
+  const {
+    data: allowance,
     refetch: refetchAllowance,
-    isLoading: isLoadingAllowance 
+    isLoading: isLoadingAllowance
   } = useReadContract({
     address: token.address as Address,
     abi: erc20Abi,
     functionName: "allowance",
     args: address && spender ? [address, spender] : undefined,
+    chainId,
     query: {
       enabled: enabled && !!address && !!spender && !!token.address && !isNativeETH,
     },
@@ -101,6 +102,7 @@ export function useTokenApproval({
     isSuccess: isApprovalConfirmed,
   } = useWaitForTransactionReceipt({
     hash: approvalHash,
+    chainId,
   });
 
   // Refetch allowance after successful approval

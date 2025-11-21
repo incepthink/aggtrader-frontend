@@ -270,8 +270,12 @@ export function Filters({
       <Box
         sx={{
           display: "grid",
-          gridTemplateColumns: { xs: "1fr", md: "2fr 1fr 1fr 1fr" },
-          gap: 2,
+          gridTemplateColumns: {
+            xs: "1fr",
+            sm: "repeat(2, 1fr)",
+            md: "2fr 1fr 1fr 1fr"
+          },
+          gap: { xs: 1.5, sm: 2 },
         }}
       >
         {/* Search */}
@@ -283,12 +287,13 @@ export function Filters({
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
-                <SearchIcon sx={{ color: "rgba(255, 255, 255, 0.5)" }} />
+                <SearchIcon sx={{ color: "rgba(255, 255, 255, 0.5)", fontSize: { xs: "1.25rem", sm: "1.5rem" } }} />
               </InputAdornment>
             ),
             sx: {
               color: "white",
               backgroundColor: "rgba(0, 0, 0, 0.3)",
+              fontSize: { xs: "0.875rem", sm: "1rem" },
               "& .MuiOutlinedInput-notchedOutline": {
                 borderColor: "rgba(255, 255, 255, 0.2)",
               },
@@ -299,6 +304,9 @@ export function Filters({
                 borderColor: "#00F5E0",
               },
             },
+          }}
+          sx={{
+            gridColumn: { xs: "1", sm: "1 / -1", md: "auto" },
           }}
         />
 

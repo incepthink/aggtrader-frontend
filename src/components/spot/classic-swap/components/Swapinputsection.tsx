@@ -1,6 +1,6 @@
-import React, { memo } from "react";
+import React, { memo, useState, useCallback } from "react";
 import SwapVertIcon from "@mui/icons-material/SwapVert";
-import { SwapInput } from "./SwapInput";
+import { SwapInput, type InputMode } from "./SwapInput";
 import { TokenSelector } from "./TokenSelector";
 import type { Token } from "../types";
 
@@ -19,6 +19,10 @@ interface SwapInputSectionProps {
   onSwitchTokens: () => void;
   onOpenTokenOneModal: () => void;
   onOpenTokenTwoModal: () => void;
+  sellInputMode?: InputMode;
+  buyInputMode?: InputMode;
+  onToggleSellMode?: () => void;
+  onToggleBuyMode?: () => void;
 }
 
 export const SwapInputSection = memo(
@@ -37,6 +41,10 @@ export const SwapInputSection = memo(
     onSwitchTokens,
     onOpenTokenOneModal,
     onOpenTokenTwoModal,
+    sellInputMode = "token",
+    buyInputMode = "token",
+    onToggleSellMode,
+    onToggleBuyMode,
   }: SwapInputSectionProps) => {
     return (
       <div className="inputs">
@@ -44,11 +52,14 @@ export const SwapInputSection = memo(
         <SwapInput
           value={tokenOneAmount}
           onChange={onSellAmountChange}
-          disabled={isLoadingPrices}
+          disabled={false}
           label="Sell"
+          token={tokenOne}
           showPrice={true}
           price={tokenOnePrice}
           isLoadingPrice={isLoadingPrices}
+          inputMode={sellInputMode}
+          onToggleMode={onToggleSellMode}
         />
 
         {/* Switch Button */}
@@ -64,11 +75,14 @@ export const SwapInputSection = memo(
         <SwapInput
           value={isLoadingQuote ? "" : tokenTwoAmount}
           onChange={onBuyAmountChange}
-          disabled={isLoadingPrices || isLoadingQuote}
+          token={tokenTwo}
+          disabled={isLoadingQuote}
           label="Buy"
           showPrice={true}
           price={tokenTwoPrice}
           isLoadingPrice={isLoadingPrices || isLoadingQuote}
+          inputMode={buyInputMode}
+          onToggleMode={onToggleBuyMode}
         />
 
         {/* Token Selectors */}

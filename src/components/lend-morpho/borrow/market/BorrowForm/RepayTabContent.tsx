@@ -37,6 +37,9 @@ interface RepayTabContentProps {
   };
   collateralTokenPrice?: number;
   needsApproval?: boolean;
+  repayInputMode?: "token" | "usd";
+  onToggleRepayMode?: () => void;
+  isLoadingLoanPrice?: boolean;
 }
 
 export const RepayTabContent: React.FC<RepayTabContentProps> = ({
@@ -58,6 +61,9 @@ export const RepayTabContent: React.FC<RepayTabContentProps> = ({
   calculations,
   collateralTokenPrice = 0,
   needsApproval = false,
+  repayInputMode = "token",
+  onToggleRepayMode,
+  isLoadingLoanPrice = false,
 }) => {
   const lltv = parseFloat(market.lltv) / 1e18;
 
@@ -197,6 +203,9 @@ export const RepayTabContent: React.FC<RepayTabContentProps> = ({
         mode="repay"
         onMaxClick={handleMaxRepay}
         maxBorrowable={currentDebt.toString()}
+        inputMode={repayInputMode}
+        onToggleMode={onToggleRepayMode}
+        isLoadingPrice={isLoadingLoanPrice}
       />
 
       {/* Withdraw Collateral Input - Using CollateralInput but styled for withdrawal */}

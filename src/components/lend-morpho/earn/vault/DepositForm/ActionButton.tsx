@@ -240,6 +240,7 @@ export const ActionButton: React.FC<ActionButtonProps> = ({
 
   return (
     <Button
+      id="deposit-action-btn"
       fullWidth
       variant="contained"
       onClick={onDeposit}

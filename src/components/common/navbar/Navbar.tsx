@@ -64,6 +64,7 @@ export function GradientConnectButton({
           <button
             onClick={connected ? openAccountModal : openConnectModal}
             className={finalStyles}
+            id="connect-btn-nav"
           >
             {connected ? (
               <>
@@ -75,6 +76,7 @@ export function GradientConnectButton({
                   />
                 </div>
                 <span
+                  id="address-text"
                   className={variant === "form" ? "block" : "hidden sm:inline"}
                 >
                   {account.displayName}
@@ -83,6 +85,7 @@ export function GradientConnectButton({
             ) : (
               <>
                 <span
+                  id="no-address-text"
                   className={variant === "form" ? "block" : "hidden sm:inline"}
                 >
                   Connect Wallet

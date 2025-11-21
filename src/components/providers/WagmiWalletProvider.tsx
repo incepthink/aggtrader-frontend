@@ -86,7 +86,7 @@ export const config = createConfig({
   transports: {
     [katana.id]: http(),
   },
-  ssr: true,
+  ssr: false, // Disabled for injected provider compatibility
 });
 
 const queryClient = new QueryClient();

@@ -74,7 +74,11 @@ export const TokenSelector: React.FC<TokenSelectorProps> = ({
 
   return (
     <div className={containerClass}>
-      <div className={assetClass} onClick={onClick}>
+      <div
+        id={assetClass === "assetOne" ? "token-one-select" : "token-two-select"}
+        className={assetClass}
+        onClick={onClick}
+      >
         <img src={token.img} alt={``} className="assetLogo" />
         <p className="text-white">{token.ticker}</p>
         <DownOutlined />

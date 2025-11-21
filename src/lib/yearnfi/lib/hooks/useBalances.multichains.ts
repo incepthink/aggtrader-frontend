@@ -100,9 +100,10 @@ export async function getBalances(
   }
 
   try {
+    // Always use Katana chainId (747474) as it's the only configured chain
     const results = await multicall(retrieveConfig(), {
       contracts: calls as any,
-      chainId: chainID as any
+      chainId: 747474
     });
 
     const _data: TDict<TToken> = {};

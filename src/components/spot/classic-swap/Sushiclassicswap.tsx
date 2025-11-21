@@ -1,7 +1,7 @@
 "use client";
 
 import SwapVertIcon from "@mui/icons-material/SwapVert";
-import React, { useState, useCallback, memo } from "react";
+import React, { useState, useCallback, memo, useMemo } from "react";
 import { useAccount } from "wagmi";
 
 import { useSpotStore } from "@/store/spotStore";
@@ -13,6 +13,7 @@ import { SwapDetails } from "./components/SwapDetails";
 import { TokenSelectionModal } from "./components/TokenSelectionModal";
 import { SwapButton } from "./components/Swapbutton";
 import { NotificationSnackbar } from "./components/Notificationsnackbar";
+import type { InputMode } from "./components/SwapInput";
 
 import { useSwapState } from "./hooks/useswapstate";
 import { useSwapHandlers } from "./hooks/useswaphandlers";
@@ -29,6 +30,10 @@ const SushiClassicSwap = memo(() => {
   const setTokenTwo = useSpotStore((s) => s.setTokenTwo);
   const openModal = useSpotStore((s) => s.openModal);
 
+  // Input mode state (token amount or USD value)
+  const [sellInputMode, setSellInputMode] = useState<InputMode>("token");
+  const [buyInputMode, setBuyInputMode] = useState<InputMode>("token");
+
   const {
     tokenOneAmount,
     tokenTwoAmount,
@@ -44,8 +49,8 @@ const SushiClassicSwap = memo(() => {
   } = useSwapState();
 
   const {
-    handleSellAmountChange,
-    handleBuyAmountChange,
+    handleSellAmountChange: originalHandleSellAmountChange,
+    handleBuyAmountChange: originalHandleBuyAmountChange,
     handleMaxBalance,
     handleSwitchTokens,
     handleSwap,
@@ -78,6 +83,106 @@ const SushiClassicSwap = memo(() => {
     showSnackbar,
   });
 
+  // Wrapped handlers that handle USD input mode
+  const handleSellAmountChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      let value = e.target.value;
+
+      // Allow complete clearing - empty string is valid
+      if (!value || value === "" || value === ".") {
+        originalHandleSellAmountChange(e);
+        return;
+      }
+
+      if (sellInputMode === "usd" && tokenOnePrice) {
+        // Convert USD to token amount for internal state
+        const usdValue = parseFloat(value);
+        if (!isNaN(usdValue) && usdValue >= 0) {
+          const tokenValue = usdValue / tokenOnePrice;
+          // Ensure we handle very small and very large numbers
+          if (isFinite(tokenValue)) {
+            // Create synthetic event with token amount
+            const syntheticEvent = {
+              ...e,
+              target: { ...e.target, value: tokenValue.toString() },
+            } as React.ChangeEvent<HTMLInputElement>;
+            originalHandleSellAmountChange(syntheticEvent);
+            return;
+          }
+        }
+        // If parsing fails, clear the input
+        originalHandleSellAmountChange(e);
+        return;
+      }
+
+      originalHandleSellAmountChange(e);
+    },
+    [sellInputMode, tokenOnePrice, originalHandleSellAmountChange]
+  );
+
+  const handleBuyAmountChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      let value = e.target.value;
+
+      // Allow complete clearing - empty string is valid
+      if (!value || value === "" || value === ".") {
+        originalHandleBuyAmountChange(e);
+        return;
+      }
+
+      if (buyInputMode === "usd" && tokenTwoPrice) {
+        // Convert USD to token amount for internal state
+        const usdValue = parseFloat(value);
+        if (!isNaN(usdValue) && usdValue >= 0) {
+          const tokenValue = usdValue / tokenTwoPrice;
+          // Ensure we handle very small and very large numbers
+          if (isFinite(tokenValue)) {
+            // Create synthetic event with token amount
+            const syntheticEvent = {
+              ...e,
+              target: { ...e.target, value: tokenValue.toString() },
+            } as React.ChangeEvent<HTMLInputElement>;
+            originalHandleBuyAmountChange(syntheticEvent);
+            return;
+          }
+        }
+        // If parsing fails, clear the input
+        originalHandleBuyAmountChange(e);
+        return;
+      }
+
+      originalHandleBuyAmountChange(e);
+    },
+    [buyInputMode, tokenTwoPrice, originalHandleBuyAmountChange]
+  );
+
+  // Get display values based on input mode
+  const displayTokenOneAmount = useMemo(() => {
+    if (!tokenOneAmount) return "";
+    if (sellInputMode === "usd" && tokenOnePrice) {
+      const tokenValue = parseFloat(tokenOneAmount);
+      if (!isNaN(tokenValue) && tokenValue > 0) {
+        const usdValue = tokenValue * tokenOnePrice;
+        // Limit to reasonable precision for USD (max 6 decimals)
+        return parseFloat(usdValue.toFixed(6)).toString();
+      }
+    }
+    return tokenOneAmount;
+  }, [tokenOneAmount, sellInputMode, tokenOnePrice]);
+
+  const displayTokenTwoAmount = useMemo(() => {
+    if (!tokenTwoAmount) return "";
+    if (buyInputMode === "usd" && tokenTwoPrice) {
+      const tokenValue = parseFloat(tokenTwoAmount);
+      if (!isNaN(tokenValue) && tokenValue > 0) {
+        const usdValue = tokenValue * tokenTwoPrice;
+        // Limit to reasonable precision for USD (max 6 decimals)
+        return parseFloat(usdValue.toFixed(6)).toString();
+      }
+    }
+    return tokenTwoAmount;
+  }, [tokenTwoAmount, buyInputMode, tokenTwoPrice]);
+
   useSwapEffects({
     tokenOne,
     tokenTwo,
@@ -106,9 +211,57 @@ const SushiClassicSwap = memo(() => {
     openModal("tokenTwo");
   }, [openModal]);
 
+  // Toggle input mode handlers - toggle mode and format the displayed value
+  const handleToggleSellMode = useCallback(() => {
+    if (!tokenOneAmount || !tokenOnePrice) {
+      setSellInputMode((prev) => (prev === "token" ? "usd" : "token"));
+      return;
+    }
+
+    const tokenValue = parseFloat(tokenOneAmount);
+    if (isNaN(tokenValue)) {
+      setSellInputMode((prev) => (prev === "token" ? "usd" : "token"));
+      return;
+    }
+
+    if (sellInputMode === "token") {
+      // Switching to USD mode - format as clean USD value
+      const usdValue = tokenValue * tokenOnePrice;
+      setTokenOneAmount((usdValue / tokenOnePrice).toString());
+      setSellInputMode("usd");
+    } else {
+      // Switching to token mode - keep current token value as is
+      setSellInputMode("token");
+    }
+  }, [sellInputMode, tokenOneAmount, tokenOnePrice, setTokenOneAmount]);
+
+  const handleToggleBuyMode = useCallback(() => {
+    if (!tokenTwoAmount || !tokenTwoPrice) {
+      setBuyInputMode((prev) => (prev === "token" ? "usd" : "token"));
+      return;
+    }
+
+    const tokenValue = parseFloat(tokenTwoAmount);
+    if (isNaN(tokenValue)) {
+      setBuyInputMode((prev) => (prev === "token" ? "usd" : "token"));
+      return;
+    }
+
+    if (buyInputMode === "token") {
+      // Switching to USD mode - format as clean USD value
+      const usdValue = tokenValue * tokenTwoPrice;
+      setTokenTwoAmount((usdValue / tokenTwoPrice).toString());
+      setBuyInputMode("usd");
+    } else {
+      // Switching to token mode - keep current token value as is
+      setBuyInputMode("token");
+    }
+  }, [buyInputMode, tokenTwoAmount, tokenTwoPrice, setTokenTwoAmount]);
+
   // UPDATED: Don't disable if needsApproval (user needs to click to approve)
   const isSwapDisabled =
     !tokenOneAmount ||
+    parseFloat(tokenOneAmount) <= 0 ||
     !isConnected ||
     isLoadingPrices ||
     isSending ||
@@ -131,8 +284,8 @@ const SushiClassicSwap = memo(() => {
         <SwapInputSection
           tokenOne={tokenOne}
           tokenTwo={tokenTwo}
-          tokenOneAmount={tokenOneAmount}
-          tokenTwoAmount={tokenTwoAmount}
+          tokenOneAmount={displayTokenOneAmount}
+          tokenTwoAmount={displayTokenTwoAmount}
           tokenOnePrice={tokenOnePrice}
           tokenTwoPrice={tokenTwoPrice}
           isLoadingPrices={isLoadingPrices}
@@ -143,6 +296,10 @@ const SushiClassicSwap = memo(() => {
           onSwitchTokens={handleSwitchTokens}
           onOpenTokenOneModal={handleOpenTokenOneModal}
           onOpenTokenTwoModal={handleOpenTokenTwoModal}
+          sellInputMode={sellInputMode}
+          buyInputMode={buyInputMode}
+          onToggleSellMode={handleToggleSellMode}
+          onToggleBuyMode={handleToggleBuyMode}
         />
 
         {quote && tokenOneAmount && (
