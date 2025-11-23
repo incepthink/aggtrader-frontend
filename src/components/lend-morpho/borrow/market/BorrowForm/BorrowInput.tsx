@@ -1,7 +1,7 @@
 // /components/lend-morpho/borrow/market/BorrowForm/BorrowInput.tsx
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Box, Typography, TextField, InputAdornment, IconButton } from "@mui/material";
 import { AccountBalanceWallet } from "@mui/icons-material";
 import SwapHorizIcon from "@mui/icons-material/SwapHoriz";
@@ -47,8 +47,18 @@ export const BorrowInput: React.FC<BorrowInputProps> = ({
   onToggleMode,
   isLoadingPrice = false,
 }) => {
+  // Debug logging for amount changes
+  useEffect(() => {
+    console.log(`=== BorrowInput [${mode}] Amount Changed ===`);
+    console.log("amount:", amount);
+    console.log("inputMode:", inputMode);
+    console.log("tokenPrice:", tokenPrice);
+    console.log("symbol:", symbol);
+  }, [amount, inputMode, mode, tokenPrice, symbol]);
+
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
+    console.log(`=== BorrowInput [${mode}] handleChange ===`, value);
     if (value === "" || /^\d*\.?\d*$/.test(value)) {
       onAmountChange(value);
     }
@@ -323,6 +333,7 @@ export const BorrowInput: React.FC<BorrowInputProps> = ({
           {/* Suggested amount display */}
           {getSuggestedAmountDisplay() && (
             <Typography
+              data-testid="max-borrowable-button"
               variant="caption"
               sx={{
                 color: "#3b82f6",

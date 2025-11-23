@@ -123,142 +123,191 @@ export const useMorphoBorrow = () => {
 
   // Check current allowance for collateral
   const checkAllowance = React.useCallback(
-    async (
-      collateralAddress: string,
-      amount: string,
-      decimals: number
-    ): Promise<boolean> => {
-      console.log("Checking allowance for borrow:", {
-        address,
-        isConnected,
-        publicClient: !!publicClient,
-      });
-
-      const validation = validateClients();
-      if (!validation.valid) {
-        console.log("Validation failed:", validation.error);
-        updateState({ error: validation.error });
-        return false;
-      }
-
-      // Skip approval for ETH
-      if (collateralAddress === "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee") {
-        return true;
-      }
-
-      try {
-        const amountToSupply = parseUnits(amount, decimals);
-
-        console.log("Checking collateral allowance:", {
-          collateralAddress,
-          morphoAddress: MORPHO_BLUE_ADDRESS,
-          userAddress: address,
-          amount: amountToSupply.toString(),
+      async (
+        collateralAddress: string,
+        amount: string,
+        decimals: number
+      ): Promise<boolean> => {
+        console.log("=== CHECKING ALLOWANCE ===");
+        console.log("Checking allowance for borrow:", {
+          address,
+          isConnected,
+          publicClient: !!publicClient,
         });
 
-        const allowance = await publicClient!.readContract({
-          address: collateralAddress as Address,
-          abi: erc20Abi,
-          functionName: "allowance",
-          args: [address!, MORPHO_BLUE_ADDRESS as Address],
-        });
+        // Only validate what we need for READ operation
+        // Note: walletClient is NOT needed for checking allowance (read-only)
+        if (!address || !isConnected) {
+          console.log("❌ Wallet not connected");
+          return false;
+        }
 
-        console.log("Current allowance:", allowance.toString());
+        if (!publicClient) {
+          console.log("❌ Public client not available");
+          return false;
+        }
 
-        updateState({
-          allowance,
-          needsApproval: allowance < amountToSupply,
-        });
+        // Skip approval for ETH
+        if (collateralAddress === "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee") {
+          console.log("✓ Native ETH - no approval needed");
+          return true;
+        }
 
-        return allowance >= amountToSupply;
-      } catch (error) {
-        console.error("Error checking allowance:", error);
-        updateState({ error: "Failed to check token allowance" });
-        return false;
-      }
-    },
-    [address, isConnected, publicClient]
-  );
+        try {
+          const amountToSupply = parseUnits(amount, decimals);
+
+          console.log("Reading allowance from contract:", {
+            collateralAddress,
+            morphoAddress: MORPHO_BLUE_ADDRESS,
+            userAddress: address,
+            amountNeeded: amountToSupply.toString(),
+          });
+
+          const allowance = await publicClient!.readContract({
+            address: collateralAddress as Address,
+            abi: erc20Abi,
+            functionName: "allowance",
+            args: [address!, MORPHO_BLUE_ADDRESS as Address],
+          });
+
+          console.log("Current allowance:", allowance.toString());
+          console.log("Required amount:", amountToSupply.toString());
+
+          const hasEnoughAllowance = allowance >= amountToSupply;
+          console.log("Has enough allowance:", hasEnoughAllowance);
+
+          // ✅ CRITICAL: Update state regardless of result
+          updateState({
+            allowance,
+            needsApproval: !hasEnoughAllowance,
+          });
+
+          if (!hasEnoughAllowance) {
+            console.log("⚠️ APPROVAL NEEDED - Current allowance insufficient");
+          } else {
+            console.log("✓ Allowance sufficient - no approval needed");
+          }
+
+          return hasEnoughAllowance;
+        } catch (error) {
+          console.error("❌ Error checking allowance:", error);
+          updateState({
+            error: "Failed to check token allowance",
+            needsApproval: true // Assume approval needed on error
+          });
+          return false;
+        }
+      },
+      [address, isConnected, publicClient]
+    );
 
   // Approve Morpho for collateral
-  const approve = React.useCallback(
-    async (
-      collateralAddress: string,
-      amount: string,
-      decimals: number
-    ): Promise<boolean> => {
-      console.log("Starting approval for borrow:", {
-        address,
-        isConnected,
-        walletClient: !!walletClient,
-      });
-
-      const validation = validateClients();
-      if (!validation.valid) {
-        updateState({ error: validation.error });
-        return false;
-      }
-
-      // Skip approval for ETH
-      if (collateralAddress === "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee") {
-        return true;
-      }
-
-      updateState({ isApproving: true, error: null });
-
-      try {
-        const amountToSupply = parseUnits(amount, decimals);
-
-        console.log("Approving collateral token:", {
+ const approve = React.useCallback(
+      async (
+        collateralAddress: string,
+        amount: string,
+        decimals: number
+      ): Promise<boolean> => {
+        console.log("=== STARTING APPROVAL ===");
+        console.log("Approval params:", {
+          address,
+          isConnected,
+          walletClient: !!walletClient,
           collateralAddress,
-          morphoAddress: MORPHO_BLUE_ADDRESS,
-          userAddress: address,
-          amount: amountToSupply.toString(),
+          amount,
         });
 
-        const hash = await walletClient!.writeContract({
-          address: collateralAddress as Address,
-          abi: erc20Abi,
-          functionName: "approve",
-          args: [MORPHO_BLUE_ADDRESS as Address, amountToSupply],
-        });
+        // NOW we need walletClient for WRITE operation
+        if (!address || !isConnected) {
+          const error = "Wallet not connected";
+          console.log("❌", error);
+          updateState({ error });
+          return false;
+        }
 
-        console.log("Approval transaction sent:", hash);
+        if (!publicClient) {
+          const error = "Public client not available";
+          console.log("❌", error);
+          updateState({ error });
+          return false;
+        }
 
-        // Wait for approval transaction
-        const receipt = await publicClient!.waitForTransactionReceipt({ hash });
+        if (!walletClient) {
+          const error = "Wallet client not available - please wait and try again";
+          console.log("❌", error);
+          updateState({ error });
+          return false;
+        }
 
-        if (receipt.status === "success") {
-          console.log("Approval successful:", hash);
-          updateState({ isApproving: false, needsApproval: false });
+        // Skip approval for ETH
+        if (collateralAddress === "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee") {
+          console.log("✓ Native ETH - no approval needed");
           return true;
-        } else {
-          throw new Error("Approval transaction failed");
         }
-      } catch (error) {
-        console.error("Approval error:", error);
-        let errorMessage = "Approval failed";
 
-        if (error instanceof Error) {
-          if (error.message.includes("User rejected")) {
-            errorMessage = "Transaction rejected by user";
-          } else if (error.message.includes("zero address")) {
-            errorMessage =
-              "Wallet not properly connected - please disconnect and reconnect";
+        updateState({ isApproving: true, error: null });
+
+        try {
+          const amountToSupply = parseUnits(amount, decimals);
+
+          console.log("Calling approve on ERC20:", {
+            collateralAddress,
+            spender: MORPHO_BLUE_ADDRESS,
+            amount: amountToSupply.toString(),
+          });
+
+          // THIS SHOULD TRIGGER METAMASK POPUP
+          const hash = await walletClient!.writeContract({
+            address: collateralAddress as Address,
+            abi: erc20Abi,
+            functionName: "approve",
+            args: [MORPHO_BLUE_ADDRESS as Address, amountToSupply],
+          });
+
+          console.log("✓ Approval transaction sent:", hash);
+          console.log("⏳ Waiting for approval confirmation...");
+
+          // Wait for approval transaction
+          const receipt = await publicClient!.waitForTransactionReceipt({ hash });
+
+          console.log("Approval receipt:", receipt);
+
+          if (receipt.status === "success") {
+            console.log("✅ APPROVAL SUCCESSFUL:", hash);
+            updateState({
+              isApproving: false,
+              needsApproval: false,
+              allowance: amountToSupply // Update allowance to approved amount
+            });
+            return true;
           } else {
-            errorMessage = error.message;
+            throw new Error("Approval transaction failed");
           }
-        }
+        } catch (error) {
+          console.error("❌ Approval error:", error);
+          let errorMessage = "Approval failed";
 
-        updateState({
-          isApproving: false,
-          error: errorMessage,
-        });
-        return false;
-      }
-    },
-    [address, isConnected, walletClient, publicClient]
-  );
+          if (error instanceof Error) {
+            if (error.message.includes("User rejected")) {
+              errorMessage = "Transaction rejected by user";
+            } else if (error.message.includes("zero address")) {
+              errorMessage = "Wallet not properly connected - please disconnect and reconnect";
+            } else {
+              errorMessage = error.message;
+            }
+          }
+
+          console.log("Error message:", errorMessage);
+
+          updateState({
+            isApproving: false,
+            error: errorMessage,
+          });
+          return false;
+        }
+      },
+      [address, isConnected, walletClient, publicClient]
+    );
 
   // Execute borrow with collateral supply
   const borrow = React.useCallback(
@@ -275,11 +324,15 @@ export const useMorphoBorrow = () => {
       });
 
       const validation = validateClients();
-      if (!validation.valid) {
-        console.log("Validation failed:", validation.error);
-        updateState({ error: validation.error });
-        return false;
-      }
+      if (!address || !isConnected) {
+          console.log("Wallet not connected");
+          return false;
+        }
+
+        if (!publicClient) {
+          console.log("Public client not available");
+          return false;
+        }
 
       if (!collateralAmount || !borrowAmount) {
         console.log("Invalid amounts:", { collateralAmount, borrowAmount });
@@ -331,8 +384,6 @@ export const useMorphoBorrow = () => {
             state.needsApproval
           );
 
-          if (!hasAllowance && state.needsApproval) {
-            console.log("=== APPROVING TOKEN ===");
             const approved = await approve(
               market.collateralAsset.address,
               collateralAmount,
@@ -342,7 +393,7 @@ export const useMorphoBorrow = () => {
               console.log("Approval failed");
               updateState({ isLoading: false });
               return false;
-            }
+            
           }
         }
 

@@ -17,6 +17,7 @@ import { BorrowRepayHeader } from "./BorrowRepayHeader";
 import { BorrowTabContent } from "./BorrowTabContent";
 import { RepayTabContent } from "./RepayTabContent";
 import GlowBox from "@/components/common/ui/GlowBox";
+import { useMorphoBorrowNew } from "@/hooks/lend-morpho/useMorphoBorrowNew";
 
 interface BorrowFormProps {
   market: MarketData;
@@ -34,8 +35,12 @@ export function BorrowForm({
   const [borrowAmount, setBorrowAmount] = useState("");
   const [repayAmount, setRepayAmount] = useState("");
   const [withdrawAmount, setWithdrawAmount] = useState("");
-  const [borrowInputMode, setBorrowInputMode] = useState<"token" | "usd">("token");
-  const [repayInputMode, setRepayInputMode] = useState<"token" | "usd">("token");
+  const [borrowInputMode, setBorrowInputMode] = useState<"token" | "usd">(
+    "token"
+  );
+  const [repayInputMode, setRepayInputMode] = useState<"token" | "usd">(
+    "token"
+  );
 
   const { isConnected, address } = useAccount();
 
@@ -53,7 +58,7 @@ export function BorrowForm({
   } = usePriceBackend(market.loanAsset.address as Address);
 
   // Morpho hooks
-  const morphoBorrow = useMorphoBorrow();
+  const morphoBorrow = useMorphoBorrowNew();
   const morphoRepay = useMorphoRepay();
 
   // Token approval hooks
@@ -74,21 +79,31 @@ export function BorrowForm({
   );
 
   // Get wallet balances
-  // For native ETH (wETH collateral), check native balance instead of wETH balance
-  const isCollateralNativeETH = market.collateralAsset.address.toLowerCase() === "0xee7d8bcfb72bc1880d0cf19822eb0a2e6577ab62".toLowerCase();
-  const isLoanNativeETH = market.loanAsset.address.toLowerCase() === "0xee7d8bcfb72bc1880d0cf19822eb0a2e6577ab62".toLowerCase();
+  // Note: vbETH (0xee7d8bcfb72bc1880d0cf19822eb0a2e6577ab62) is an ERC20 token (Vault Bridge ETH)
+  // It is NOT native ETH, so we should always fetch it as a token balance
+  // Only check for actual native ETH address (0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee)
+  const isCollateralNativeETH =
+    market.collateralAsset.address.toLowerCase() ===
+    "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
+  const isLoanNativeETH =
+    market.loanAsset.address.toLowerCase() ===
+    "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
 
   const collateralBalanceQuery = useBalance({
     address,
-    // Omit token parameter for native ETH to get ETH balance
-    ...(isCollateralNativeETH ? {} : { token: market.collateralAsset.address as `0x${string}` }),
+    // Only omit token parameter for actual native ETH (0xeeee...eeee)
+    ...(isCollateralNativeETH
+      ? {}
+      : { token: market.collateralAsset.address as `0x${string}` }),
     query: { enabled: isConnected && !!address },
   });
 
   const loanBalanceQuery = useBalance({
     address,
-    // Omit token parameter for native ETH to get ETH balance
-    ...(isLoanNativeETH ? {} : { token: market.loanAsset.address as `0x${string}` }),
+    // Only omit token parameter for actual native ETH (0xeeee...eeee)
+    ...(isLoanNativeETH
+      ? {}
+      : { token: market.loanAsset.address as `0x${string}` }),
     query: { enabled: isConnected && !!address },
   });
 
@@ -199,18 +214,38 @@ export function BorrowForm({
   // Convert borrow amount based on input mode
   const getBorrowTokenAmount = () => {
     const numValue = parseFloat(borrowAmount) || 0;
+    console.log("=== getBorrowTokenAmount DEBUG ===");
+    console.log("borrowAmount (raw input):", borrowAmount);
+    console.log("numValue (parsed float):", numValue);
+    console.log("borrowInputMode:", borrowInputMode);
+    console.log("loanTokenPrice:", loanTokenPrice);
+
     if (borrowInputMode === "usd") {
-      return loanTokenPrice && loanTokenPrice > 0 ? numValue / loanTokenPrice : 0;
+      const tokenAmount =
+        loanTokenPrice && loanTokenPrice > 0 ? numValue / loanTokenPrice : 0;
+      console.log("USD mode - converting to tokens:", tokenAmount);
+      return tokenAmount;
     }
+    console.log("Token mode - returning numValue:", numValue);
     return numValue;
   };
 
   // Convert repay amount based on input mode
   const getRepayTokenAmount = () => {
     const numValue = parseFloat(repayAmount) || 0;
+    console.log("=== getRepayTokenAmount DEBUG ===");
+    console.log("repayAmount (raw input):", repayAmount);
+    console.log("numValue (parsed float):", numValue);
+    console.log("repayInputMode:", repayInputMode);
+    console.log("loanTokenPrice:", loanTokenPrice);
+
     if (repayInputMode === "usd") {
-      return loanTokenPrice && loanTokenPrice > 0 ? numValue / loanTokenPrice : 0;
+      const tokenAmount =
+        loanTokenPrice && loanTokenPrice > 0 ? numValue / loanTokenPrice : 0;
+      console.log("USD mode - converting to tokens:", tokenAmount);
+      return tokenAmount;
     }
+    console.log("Token mode - returning numValue:", numValue);
     return numValue;
   };
 
@@ -240,7 +275,23 @@ export function BorrowForm({
   };
 
   const handleApprove = async () => {
-    if (!collateralAmount) return;
+    console.log("=== handleApprove CALLED ===");
+    console.log("collateralAmount:", collateralAmount);
+    console.log("borrowAmount:", borrowAmount);
+    console.log("tokenApproval.isApproved:", tokenApproval.isApproved);
+    console.log("⚠️ BOT USERS: This is APPROVAL only, not borrowing yet!");
+
+    if (!collateralAmount) {
+      console.log("No collateralAmount, returning early");
+      return;
+    }
+
+    console.log("Approving token:", {
+      tokenAddress: market.collateralAsset.address,
+      spenderAddress: MORPHO_BLUE_ADDRESS,
+      amount: collateralAmount,
+      decimals: market.collateralAsset.decimals,
+    });
 
     await tokenApproval.approve({
       tokenAddress: market.collateralAsset.address as Address,
@@ -248,6 +299,14 @@ export function BorrowForm({
       amount: collateralAmount,
       decimals: market.collateralAsset.decimals,
     });
+
+    console.log(
+      "Approval complete. tokenApproval.isApproved:",
+      tokenApproval.isApproved
+    );
+    console.log(
+      "⚠️ BOT USERS: After approval, you need to click the button AGAIN to borrow!"
+    );
   };
 
   const handleRepayApprove = async () => {
@@ -262,10 +321,55 @@ export function BorrowForm({
   };
 
   const handleBorrow = async () => {
-    if (!collateralAmount || !borrowAmount) return;
+    console.log("=== handleBorrow CALLED ===");
+    console.log("React State - collateralAmount:", collateralAmount);
+    console.log("React State - borrowAmount:", borrowAmount);
+    console.log("React State - borrowInputMode:", borrowInputMode);
+
+    // DEBUG: Check what the DOM inputs actually have
+    const collateralInput = document.querySelector(
+      '[data-testid="collateral-input"]'
+    ) as HTMLInputElement;
+    const borrowInput = document.querySelector(
+      '[data-testid="borrow-input"]'
+    ) as HTMLInputElement;
+    console.log("DOM collateralInput.value:", collateralInput?.value);
+    console.log("DOM borrowInput.value:", borrowInput?.value);
+    console.log(
+      "DOM borrowInput.dataset.inputMode:",
+      borrowInput?.dataset?.inputMode
+    );
+
+    // ⚠️ BOT WARNING: If React state doesn't match DOM values, state hasn't updated yet!
+    if (collateralInput?.value !== collateralAmount) {
+      console.warn(
+        "⚠️ STATE MISMATCH! DOM collateral:",
+        collateralInput?.value,
+        "vs State:",
+        collateralAmount
+      );
+    }
+    if (borrowInput?.value !== borrowAmount) {
+      console.warn(
+        "⚠️ STATE MISMATCH! DOM borrow:",
+        borrowInput?.value,
+        "vs State:",
+        borrowAmount
+      );
+    }
+
+    if (!collateralAmount || !borrowAmount) {
+      console.log("Missing amounts in React state, returning early");
+      return;
+    }
 
     // Always pass token amounts to borrow
     const tokenBorrowAmount = getBorrowTokenAmount();
+    console.log("=== Calling morphoBorrow.borrow ===");
+    console.log("market:", market.uniqueKey);
+    console.log("collateralAmount:", collateralAmount);
+    console.log("tokenBorrowAmount (converted):", tokenBorrowAmount);
+    console.log("tokenBorrowAmount.toString():", tokenBorrowAmount.toString());
 
     await morphoBorrow.borrow({
       market,
@@ -275,6 +379,7 @@ export function BorrowForm({
 
     // Reset form on success
     if (morphoBorrow.txHash) {
+      console.log("Borrow successful, resetting form");
       setCollateralAmount("");
       setBorrowAmount("");
     }

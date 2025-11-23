@@ -6,7 +6,13 @@
       "Bash(tree:*)",
       "Bash(npm run build:*)",
       "WebFetch(domain:docs.morpho.org)",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(curl:*)",
+      "Bash(npm run dev:*)",
+      "Bash(node -e:*)",
+      "Bash(git restore:*)",
+      "Bash(cat:*)",
+      "WebSearch"
     ],
     "deny": [],
     "ask": []

@@ -73,11 +73,16 @@ export const CollateralInput: React.FC<CollateralInputProps> = ({
         onChange={handleChange}
         placeholder="0.00"
         disabled={!isConnected}
+        inputProps={{
+          "data-testid": "collateral-input",
+          "aria-label": `Supply collateral amount in ${symbol}`,
+        }}
         InputProps={{
           endAdornment: (
             <InputAdornment position="end">
               <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                 <Typography
+                  data-testid="collateral-max-button"
                   variant="body2"
                   sx={{
                     cursor:

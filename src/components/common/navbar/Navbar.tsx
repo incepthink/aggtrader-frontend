@@ -1,7 +1,7 @@
 "use client";
 
 // src/components/Navbar.tsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import NavLink from "./Navlink";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { Menu, Close } from "@mui/icons-material";
@@ -34,6 +34,35 @@ export function GradientConnectButton({
   fullWidth = false,
   variant = "default",
 }: GradientConnectButtonProps) {
+  // Client-side mounting guard to prevent SSR hydration mismatch
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  // Don't render until client-side to prevent hydration issues in production
+  if (!isClient) {
+    // Return placeholder with same styling to prevent layout shift
+    const defaultStyles = `bg-gradient-to-r from-[#00F5E0] to-[#00FAFF] text-black font-semibold p-2 px-3 rounded-sm flex gap-3 items-center text-sm justify-center whitespace-nowrap`;
+    const formStyles = `bg-gradient-to-r from-[#00F5E0] to-[#00FAFF] text-black font-bold py-3 px-4 rounded-lg flex gap-2 items-center justify-center text-base ${
+      fullWidth ? "w-full" : ""
+    }`;
+    const buttonStyles = variant === "form" ? formStyles : defaultStyles;
+    const finalStyles = customStyles || buttonStyles;
+
+    return (
+      <div className={finalStyles} style={{ opacity: 0.6 }}>
+        <span className={variant === "form" ? "block" : "hidden sm:inline"}>
+          Connect Wallet
+        </span>
+        <span className={variant === "form" ? "hidden" : "sm:hidden"}>
+          Connect
+        </span>
+      </div>
+    );
+  }
+
   return (
     <ConnectButton.Custom>
       {({

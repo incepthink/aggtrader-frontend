@@ -2,7 +2,6 @@
 "use client";
 
 import React from "react";
-import { Button, CircularProgress } from "@mui/material";
 
 interface BorrowActionButtonProps {
   isConnected: boolean;
@@ -14,7 +13,7 @@ interface BorrowActionButtonProps {
   onBorrow: () => void;
   onConnect: () => void;
   mode: "borrow" | "repay";
-  buttonText?: string; // Add this line
+  buttonText?: string;
   // Repay mode specific props
   repayAmount?: string;
   onRepay?: () => void;
@@ -38,9 +37,11 @@ export const BorrowActionButton: React.FC<BorrowActionButtonProps> = ({
   maxBorrowable = "0",
   hasDebt = false,
 }) => {
+  const [isHovered, setIsHovered] = React.useState(false);
+
   const getButtonText = () => {
     if (buttonText) {
-      return buttonText; // Use custom button text if provided
+      return buttonText;
     }
 
     if (!isConnected) {
@@ -68,7 +69,7 @@ export const BorrowActionButton: React.FC<BorrowActionButtonProps> = ({
 
   const isDisabled = () => {
     if (!isConnected || isLoading) {
-      return false; // These states have their own handlers
+      return false;
     }
 
     if (isExceedingLimit) {
@@ -79,7 +80,6 @@ export const BorrowActionButton: React.FC<BorrowActionButtonProps> = ({
       return !canBorrow;
     }
 
-    // Repay mode validation
     if (!repayAmount || !hasDebt) {
       return true;
     }
@@ -89,46 +89,97 @@ export const BorrowActionButton: React.FC<BorrowActionButtonProps> = ({
 
   const getButtonColor = () => {
     if (isExceedingLimit) {
-      return "#dc2626"; // Red for exceeded limit
+      return "#dc2626";
     }
 
     if (!isConnected) {
-      return "#3b82f6"; // Blue for connect
+      return "#3b82f6";
     }
 
-    return "#16a34a"; // Green for normal action
+    return "#16a34a";
+  };
+
+  const buttonStyle: React.CSSProperties = {
+    width: "100%",
+    padding: "12px 24px",
+    backgroundColor: isDisabled() ? "#374151" : getButtonColor(),
+    color: isDisabled() ? "#9ca3af" : "white",
+    fontSize: "1rem",
+    fontWeight: 600,
+    border: "none",
+    borderRadius: "4px",
+    cursor: isDisabled() ? "not-allowed" : "pointer",
+    opacity: isHovered && !isDisabled() ? 0.9 : 1,
+    transition: "opacity 0.2s ease-in-out",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "8px",
+    fontFamily: "inherit",
   };
 
   return (
-    <Button
-      fullWidth
-      variant="contained"
-      size="large"
-      onClick={
-        !isConnected ? onConnect : mode === "borrow" ? onBorrow : onRepay
-      }
-      disabled={isDisabled()}
-      sx={{
-        py: 1.5,
-        backgroundColor: getButtonColor(),
-        "&:hover": {
-          backgroundColor: getButtonColor(),
-          opacity: 0.9,
-        },
-        "&:disabled": {
-          backgroundColor: "#374151",
-          color: "#9ca3af",
-        },
-        fontSize: "1rem",
-        fontWeight: 600,
-      }}
-      startIcon={
-        isLoading ? (
-          <CircularProgress size={20} sx={{ color: "white" }} />
-        ) : null
-      }
-    >
-      {getButtonText()}
-    </Button>
+    <>
+      <button
+        data-testid={mode === "borrow" ? "borrow-action-button" : "repay-action-button"}
+        data-collateral-amount={collateralAmount}
+        data-borrow-amount={borrowAmount}
+        data-repay-amount={repayAmount}
+        data-button-text={getButtonText()}
+        onClick={
+          !isConnected ? onConnect : mode === "borrow" ? onBorrow : onRepay
+        }
+        disabled={isDisabled()}
+        style={buttonStyle}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        {isLoading && (
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 20 20"
+            fill="none"
+            className="spinner"
+          >
+            <circle
+              cx="10"
+              cy="10"
+              r="8"
+              stroke="currentColor"
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeDasharray="40"
+              strokeDashoffset="10"
+              opacity="0.25"
+            />
+            <circle
+              cx="10"
+              cy="10"
+              r="8"
+              stroke="currentColor"
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeDasharray="40"
+              strokeDashoffset="30"
+            />
+          </svg>
+        )}
+        {getButtonText()}
+      </button>
+      <style jsx>{`
+        .spinner {
+          animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
+          }
+        }
+      `}</style>
+    </>
   );
 };
