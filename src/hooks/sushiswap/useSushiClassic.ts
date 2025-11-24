@@ -12,6 +12,7 @@ import { useQueryClient } from "@tanstack/react-query"; // NEW
 import { useSpotStore } from "@/store/spotStore";
 import { saveTradeMarker } from "@/utils/localStorage/tradeMarkers";
 import { usePriceBackend } from "./usePriceBackend";
+import { trackClassicSwap } from "@/utils/tracking/classicSwapTracking";
 
 interface Token {
   address: Address;
@@ -100,15 +101,23 @@ export const useSushiClassic = (callbacks?: UseSushiClassicCallbacks) => {
     }
   );
 
-  // UPDATED: Combined effect for trade marker + notifications + balance refresh
+  // UPDATED: Combined effect for trade marker + notifications + balance refresh + backend tracking
   useEffect(() => {
     if (isDone && receiptData && quote && !hasNotified.current) {
       hasNotified.current = true; // Set flag immediately
-      
+
+      // Check if transaction was reverted (status === 0 means failed)
+      if (receiptData.status === 'reverted') {
+        console.error('Transaction was reverted');
+        callbacks?.showSnackbar?.("Transaction failed and was reverted", "error");
+        callbacks?.onSuccess?.(); // Reset state
+        return;
+      }
+
       const saveTradeData = async () => {
         try {
-          if (!publicClient) return;
-          
+          if (!publicClient || !address) return;
+
           const block = await publicClient.getBlock({
             blockNumber: receiptData.blockNumber,
           });
@@ -121,7 +130,7 @@ export const useSushiClassic = (callbacks?: UseSushiClassicCallbacks) => {
 
           const needsInversion = chartToken.address.toLowerCase() !== quote.tokenFrom.address.toLowerCase();
           const finalPrice = needsInversion ? (1 / quote.swapPrice) : quote.swapPrice;
-          
+
           const tradeMarker = {
             id: receiptData.transactionHash,
             timestamp: Number(block.timestamp) * 1000,
@@ -136,11 +145,37 @@ export const useSushiClassic = (callbacks?: UseSushiClassicCallbacks) => {
           console.log('Saving trade marker:', tradeMarker);
           saveTradeMarker(tradeMarker);
 
+          // Backend tracking for classic swap
+          const amountInFormatted = parseFloat(quote.amountIn) / (10 ** quote.tokenFrom.decimals);
+          const amountOutFormatted = parseFloat(quote.amountOut) / (10 ** quote.tokenTo.decimals);
+
+          // Calculate USD volume using current price or swap price
+          const usdVolume = currentPriceForMarker
+            ? amountInFormatted * currentPriceForMarker
+            : amountInFormatted * (quote.tokenFrom.symbol === chartToken.ticker ? finalPrice : 1/finalPrice);
+
+          await trackClassicSwap({
+            walletAddress: address,
+            txHash: receiptData.transactionHash,
+            tokenFrom: {
+              address: quote.tokenFrom.address,
+              symbol: quote.tokenFrom.symbol,
+              amount: amountInFormatted.toString(),
+            },
+            tokenTo: {
+              address: quote.tokenTo.address,
+              symbol: quote.tokenTo.symbol,
+              amount: amountOutFormatted.toString(),
+            },
+            usdVolume,
+            executionPrice: finalPrice,
+          });
+
           callbacks?.showSnackbar?.("Transaction successful!", "success");
           console.log("Invalidating balance queries...");
           queryClient.invalidateQueries({ queryKey: ['balance'] });
           callbacks?.onSuccess?.();
-          
+
         } catch (error) {
           console.error('Error saving trade marker:', error);
         }
@@ -148,7 +183,7 @@ export const useSushiClassic = (callbacks?: UseSushiClassicCallbacks) => {
 
       saveTradeData();
     }
-  }, [isDone, receiptData, quote, chartToken, publicClient, queryClient, callbacks]);
+  }, [isDone, receiptData, quote, chartToken, publicClient, queryClient, callbacks, address, currentPriceForMarker]);
 
   // NEW: Reset flag when starting new transaction
   useEffect(() => {
@@ -156,6 +191,29 @@ export const useSushiClassic = (callbacks?: UseSushiClassicCallbacks) => {
       hasNotified.current = false;
     }
   }, [isSending]);
+
+  // Handle transaction errors - reset state and show error notification
+  useEffect(() => {
+    if (sendError && !isSending) {
+      console.error("Transaction send error:", sendError);
+      callbacks?.showSnackbar?.(
+        sendError.message || "Transaction failed to send",
+        "error"
+      );
+      callbacks?.onSuccess?.(); // Reset state even on error
+    }
+  }, [sendError, isSending, callbacks]);
+
+  useEffect(() => {
+    if (confirmError && !isConfirming) {
+      console.error("Transaction confirmation error:", confirmError);
+      callbacks?.showSnackbar?.(
+        "Transaction failed during confirmation",
+        "error"
+      );
+      callbacks?.onSuccess?.(); // Reset state even on error
+    }
+  }, [confirmError, isConfirming, callbacks]);
 
   const getSushiChainId = useCallback(() => {
     return ChainId.KATANA; // Katana is the only supported chain
