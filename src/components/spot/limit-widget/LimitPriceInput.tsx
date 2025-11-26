@@ -33,6 +33,36 @@ export const LimitPriceInput = () => {
     0
   );
 
+  // Calculate percentage difference from market price
+  const percentageDiff = useMemo(() => {
+    if (!marketPrice || !limitPriceString || priceOptionIndex !== undefined) {
+      return null;
+    }
+
+    const userPrice = parseFloat(limitPriceString);
+    if (isNaN(userPrice) || userPrice === 0) return null;
+
+    const marketPriceStr = marketPrice.toSignificant(18);
+    const marketPriceNum = parseFloat(marketPriceStr);
+
+    if (isNaN(marketPriceNum) || marketPriceNum === 0) return null;
+
+    // Calculate the effective user price (accounting for inversion)
+    let effectiveUserPrice = userPrice;
+    let effectiveMarketPrice = marketPriceNum;
+
+    if (isLimitPriceInverted) {
+      // When inverted, we need to compare in the same direction
+      effectiveUserPrice = 1 / userPrice;
+      effectiveMarketPrice = 1 / marketPriceNum;
+    }
+
+    // Calculate percentage difference
+    const diff = ((effectiveUserPrice - effectiveMarketPrice) / effectiveMarketPrice) * 100;
+
+    return diff;
+  }, [marketPrice, limitPriceString, priceOptionIndex, isLimitPriceInverted]);
+
   // Format price properly without scientific notation
   const formatPrice = (price: number): string => {
     if (!price || isNaN(price) || price === 0) return "0";
@@ -174,6 +204,10 @@ export const LimitPriceInput = () => {
     setPriceOptionIndex(index);
   };
 
+  const handleResetToMarket = () => {
+    setPriceOptionIndex(0);
+  };
+
   // Display tokens based on inversion state
   const displayTokens = isLimitPriceInverted
     ? [token1, token0]
@@ -251,6 +285,7 @@ export const LimitPriceInput = () => {
         <div className="flex items-center gap-4">
           <div className="flex-1">
             <input
+              data-testid="limit-price-input"
               type="text"
               value={limitPriceString || ""}
               onChange={(e) => handleInputChange(e.target.value)}
@@ -289,12 +324,52 @@ export const LimitPriceInput = () => {
 
         {/* Price Options */}
         <div className="flex gap-2 mt-2">
-          {PRICE_OPTIONS.map((option, index) => (
+          {percentageDiff !== null ? (
+            // Show custom percentage chip when user has entered a custom price
+            <button
+              onClick={handleResetToMarket}
+              className="flex items-center gap-2 px-3 py-1 text-sm font-medium rounded-full bg-[#00FFE9] text-black transition-colors hover:bg-[#00d4c4]"
+              type="button"
+            >
+              <span>
+                {percentageDiff >= 0 ? '+' : ''}{percentageDiff.toFixed(2)}%
+              </span>
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          ) : (
+            // Show Market button when no custom price
+            <button
+              onClick={() => handlePriceOptionClick(0)}
+              className={`px-3 py-1 text-sm font-medium rounded-full transition-colors ${
+                priceOptionIndex === 0
+                  ? "bg-[#00FFE9] text-black"
+                  : "bg-gray-800 text-gray-300 hover:bg-gray-700"
+              }`}
+              type="button"
+            >
+              Market
+            </button>
+          )}
+
+          {/* Always show +1%, +5%, +10% buttons */}
+          {PRICE_OPTIONS.slice(1).map((option, index) => (
             <button
               key={option.label}
-              onClick={() => handlePriceOptionClick(index)}
+              onClick={() => handlePriceOptionClick(index + 1)}
               className={`px-3 py-1 text-sm font-medium rounded-full transition-colors ${
-                priceOptionIndex === index
+                priceOptionIndex === index + 1
                   ? "bg-[#00FFE9] text-black"
                   : "bg-gray-800 text-gray-300 hover:bg-gray-700"
               }`}

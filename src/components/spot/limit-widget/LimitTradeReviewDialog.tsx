@@ -21,6 +21,7 @@ import {
 } from "@/hooks/sushiswap/useTokenApproval";
 import { isNativeToken } from "@/store/limit-order/utils/token.types";
 import type { Address } from "viem";
+import { syncLimitOrders } from "@/utils/tracking/limitOrderTracking";
 
 interface LimitTradeReviewDialogProps {
   isOpen: boolean;
@@ -51,6 +52,7 @@ export const LimitTradeReviewDialog: React.FC<LimitTradeReviewDialogProps> = ({
   const { address } = useAccount();
   const [acceptDisclaimer, setAcceptDisclaimer] = useState(true);
   const [isConfirming, setIsConfirming] = useState(false);
+  const [isTrackingOrder, setIsTrackingOrder] = useState(false);
 
   const {
     sendTransactionAsync,
@@ -123,6 +125,53 @@ export const LimitTradeReviewDialog: React.FC<LimitTradeReviewDialogProps> = ({
     // You might want to add a success toast here
   }, [setSwapAmount, onClose]);
 
+  const trackNewlyCreatedOrder = useCallback(async () => {
+    if (!address || !txHash) return;
+
+    setIsTrackingOrder(true);
+
+    try {
+      console.log("🔄 Fetching newly created order from blockchain...");
+
+      // Fetch all orders from blockchain
+      const allOrders = await TwapSDK.onNetwork(chainId).getOrders(address);
+
+      // Find the order that was just created by matching transaction hash
+      const newOrder = allOrders.find((order) => order.txHash === txHash);
+
+      if (newOrder) {
+        console.log("📦 Found new order:", newOrder.id);
+
+        // Send only this order to backend (AWAIT completion)
+        await syncLimitOrders({
+          walletAddress: address,
+          chainId,
+          orders: [newOrder], // Single-item array
+        });
+
+        console.log(
+          "✅ Order placed on-chain AND stored in backend:",
+          newOrder.id
+        );
+
+        // Backend storage successful, now clear form and close dialog
+        onSuccess();
+      } else {
+        console.warn(
+          "⚠️ Could not find newly created order in blockchain data"
+        );
+        // Still call onSuccess even if backend fails (order is on-chain)
+        onSuccess();
+      }
+    } catch (error) {
+      console.error("❌ Failed to track order creation:", error);
+      // Still call onSuccess even if backend fails (order is on-chain)
+      onSuccess();
+    } finally {
+      setIsTrackingOrder(false);
+    }
+  }, [address, txHash, chainId, onSuccess]);
+
   const handleApprovalSuccess = useCallback(() => {
     // Approval completed, user can now place the order
     console.log("Approval successful");
@@ -130,12 +179,14 @@ export const LimitTradeReviewDialog: React.FC<LimitTradeReviewDialogProps> = ({
 
   // Handle transaction status
   React.useEffect(() => {
-    if (status === "success") {
-      onSuccess();
+    if (status === "success" && !isTrackingOrder) {
+      // Track order in backend first, THEN call onSuccess
+      trackNewlyCreatedOrder();
     } else if (status === "error") {
       setIsConfirming(false);
+      setIsTrackingOrder(false);
     }
-  }, [status, onSuccess]);
+  }, [status, isTrackingOrder, trackNewlyCreatedOrder]);
 
   if (!isOpen) return null;
 
@@ -185,8 +236,8 @@ export const LimitTradeReviewDialog: React.FC<LimitTradeReviewDialogProps> = ({
   };
 
   const getTransactionStatus = () => {
-    if (isConfirming || isWritePending) return "Confirming...";
-    if (status === "pending") return "Place Limit Order";
+    if (isWritePending || isConfirming) return "Confirming on-chain...";
+    if (isTrackingOrder) return "Saving to backend...";
     return "Place Limit Order";
   };
 
@@ -205,6 +256,7 @@ export const LimitTradeReviewDialog: React.FC<LimitTradeReviewDialogProps> = ({
     !acceptDisclaimer ||
     isConfirming ||
     isWritePending ||
+    isTrackingOrder ||
     needsApproval;
 
   return (
@@ -343,6 +395,7 @@ export const LimitTradeReviewDialog: React.FC<LimitTradeReviewDialogProps> = ({
             />
           ) : (
             <button
+              data-testid="confirm-limit-order-button"
               onClick={handleConfirm}
               disabled={isTransactionDisabled}
               className={`w-full py-3 rounded-lg font-medium transition-colors ${

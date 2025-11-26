@@ -154,6 +154,7 @@ export const LimitToken1Input = () => {
 
           {/* Token Selector */}
           <button
+            data-testid="limit-token1-select-button"
             onClick={() => setIsTokenSelectorOpen(true)}
             disabled={isLoading}
             className="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors disabled:opacity-50"

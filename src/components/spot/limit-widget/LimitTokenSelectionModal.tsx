@@ -109,6 +109,8 @@ const TokenItemWithBalance: FC<{
   return (
     <ListItemButton
       onClick={onClick}
+      id={`limit-token-item-${tokenData.symbol}`}
+      data-testid={`limit-token-item-${tokenData.symbol}`}
       sx={{
         py: 1.5,
         px: 2,
@@ -377,6 +379,7 @@ export const LimitTokenSelectionModal: FC<LimitTokenSelectionModalProps> = ({
           minHeight: "600px",
           maxHeight: "80vh",
         },
+        "data-testid": "limit-token-selection-modal",
       }}
     >
       <DialogTitle
@@ -409,6 +412,8 @@ export const LimitTokenSelectionModal: FC<LimitTokenSelectionModalProps> = ({
         <Box sx={{ p: 3, display: "flex", flexDirection: "column", gap: 3 }}>
           {/* Search Input */}
           <TextField
+            id="limit-token-search-input"
+            data-testid="limit-token-search-input"
             fullWidth
             placeholder="Search by name or symbol"
             value={searchQuery}
@@ -487,9 +492,14 @@ export const LimitTokenSelectionModal: FC<LimitTokenSelectionModalProps> = ({
             >
               <Tab
                 value="popular"
+                id="limit-popular-tokens-tab"
                 label={`Popular (${priorityTokens.length})`}
               />
-              <Tab value="all" label={`All Tokens (${allTokens.length})`} />
+              <Tab
+                value="all"
+                id="limit-all-tokens-tab"
+                label={`All Tokens (${allTokens.length})`}
+              />
             </Tabs>
           </Box>
         </Box>

@@ -4,7 +4,6 @@
 
 import React, { useState, useCallback } from "react";
 import {
-  Button,
   Menu,
   MenuItem,
   ListItemIcon,
@@ -117,78 +116,57 @@ export const ApprovalButton: React.FC<ApprovalButtonProps> = ({
   // Loading state
   if (approvalState === ApprovalState.LOADING) {
     return (
-      <Button
-        fullWidth
-        size="large"
+      <button
         disabled
-        className={className}
-        sx={{
-          py: 1.5,
+        className={`w-full py-3 px-4 text-base font-semibold rounded-lg cursor-not-allowed flex items-center justify-center gap-2 ${className}`}
+        style={{
           backgroundColor: "#1E293B",
           color: "#94A3B8",
-          "&:disabled": {
-            backgroundColor: "#1E293B",
-            color: "#94A3B8",
-          },
+          border: "none",
         }}
       >
-        <CircularProgress size={20} sx={{ mr: 1, color: "#00F5E0" }} />
+        <CircularProgress size={20} sx={{ color: "#00F5E0" }} />
         Checking allowance...
-      </Button>
+      </button>
     );
   }
 
   // Pending state
   if (approvalState === ApprovalState.PENDING || isPending) {
     return (
-      <Button
-        fullWidth
-        size="large"
+      <button
         disabled
-        className={className}
-        sx={{
-          py: 1.5,
+        className={`w-full py-3 px-4 text-base font-semibold rounded-lg cursor-not-allowed flex items-center justify-center gap-2 ${className}`}
+        style={{
           backgroundColor: "#1E293B",
           color: "#94A3B8",
-          "&:disabled": {
-            backgroundColor: "#1E293B",
-            color: "#94A3B8",
-          },
+          border: "none",
         }}
       >
-        <CircularProgress size={20} sx={{ mr: 1, color: "#00F5E0" }} />
+        <CircularProgress size={20} sx={{ color: "#00F5E0" }} />
         {selectedOption === "exact" ? "Approving..." : "Approving unlimited..."}
-      </Button>
+      </button>
     );
   }
 
   return (
     <>
-      <Button
-        fullWidth
-        size="large"
+      <button
+        data-testid="approval-button"
         disabled={disabled}
         onClick={handleMenuOpen}
-        endIcon={<ArrowDropDownIcon />}
-        className={className}
-        sx={{
-          py: 1.5,
-          backgroundColor: "#3B82F6",
-          color: "white",
-          fontWeight: 600,
-          fontSize: "16px",
-          textTransform: "none",
-          "&:hover": {
-            backgroundColor: "#2563EB",
-          },
-          "&:disabled": {
-            backgroundColor: "#374151",
-            color: "#9CA3AF",
-          },
+        className={`w-full py-3 px-4 text-base font-semibold rounded-lg flex items-center justify-center gap-2 transition-colors ${
+          disabled
+            ? "cursor-not-allowed bg-[#374151] text-[#9CA3AF]"
+            : "cursor-pointer bg-[#3B82F6] text-white hover:bg-[#2563EB]"
+        } ${className}`}
+        style={{
+          border: "none",
         }}
       >
         Approve {token.ticker}
-      </Button>
+        <ArrowDropDownIcon />
+      </button>
 
       <Menu
         anchorEl={anchorEl}
@@ -205,6 +183,7 @@ export const ApprovalButton: React.FC<ApprovalButtonProps> = ({
         }}
       >
         <MenuItem
+          data-testid="approve-exact-amount"
           onClick={() => handleApproval("exact")}
           sx={{
             py: 2,
@@ -248,6 +227,7 @@ export const ApprovalButton: React.FC<ApprovalButtonProps> = ({
         <Divider sx={{ backgroundColor: "#334155", my: 0.5 }} />
 
         <MenuItem
+          data-testid="approve-unlimited-amount"
           onClick={() => handleApproval("unlimited")}
           sx={{
             py: 2,

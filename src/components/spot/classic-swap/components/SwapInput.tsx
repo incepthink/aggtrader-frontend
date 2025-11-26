@@ -74,6 +74,7 @@ export const SwapInput: React.FC<SwapInputProps> = ({
         onChange={onChange}
         disabled={disabled}
         type="number"
+        onWheel={(e) => e.currentTarget.blur()}
         style={{
           paddingLeft: inputMode === "usd" ? "35px" : "12px",
           paddingRight: "120px",

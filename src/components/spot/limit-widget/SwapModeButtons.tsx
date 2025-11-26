@@ -83,6 +83,7 @@ export const SwapModeButtons = ({ setActiveTab, activeTab }: any) => {
     return (
       <div className="flex-1">
         <button
+          data-testid={`swap-mode-button-${tab.id}`}
           onClick={() => setActiveTab(tab.id)}
           className={`w-full flex items-center justify-center space-x-2 py-3 px-4 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 ${
             isActive

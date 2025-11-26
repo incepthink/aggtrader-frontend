@@ -158,6 +158,7 @@ export const LimitTradeButton = () => {
   return (
     <>
       <button
+        data-testid="limit-trade-button"
         onClick={handleClick}
         disabled={disabled && variant !== "connect"}
         className={`w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-200 ${getButtonStyles()}`}

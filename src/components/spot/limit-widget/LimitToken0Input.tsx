@@ -112,6 +112,7 @@ export const LimitToken0Input = () => {
           {/* Amount Input */}
           <div className="flex-1">
             <input
+              data-testid="limit-token0-amount-input"
               type="text"
               value={swapAmountString || ""}
               onChange={(e) => handleAmountChange(e.target.value)}
@@ -126,6 +127,7 @@ export const LimitToken0Input = () => {
 
           {/* Token Selector */}
           <button
+            id="token-one-select-limit"
             onClick={() => openLimitTokenModal("token0")}
             disabled={isLoading}
             className="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors disabled:opacity-50"

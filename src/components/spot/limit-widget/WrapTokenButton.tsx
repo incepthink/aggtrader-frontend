@@ -66,6 +66,7 @@ export const WrapTokenButton: React.FC<WrapTokenButtonProps> = ({
 
   return (
     <button
+      data-testid="wrap-token-button"
       onClick={handleClick}
       disabled={disabled || isPending || !canWrap}
       className={`${className} disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200`}
