@@ -1,7 +1,10 @@
 import { useState, useCallback, useEffect,useRef } from "react";
 import { ChainId } from "sushi";
-import { getQuote, getSwap } from "sushi/evm";
 import { type Address } from "viem";
+import {
+  fetchQuoteFromBackend,
+  fetchSwapFromBackend
+} from "@/services/sushiswap/classicSwapApi";
 import {
   useAccount,
   usePublicClient,
@@ -61,10 +64,12 @@ export const useSushiClassic = (callbacks?: UseSushiClassicCallbacks) => {
   const publicClient = usePublicClient({ chainId });
   const queryClient = useQueryClient(); // NEW
   const hasNotified = useRef(false);
+  const lastErrorMessage = useRef<string>("");
 
   const [quote, setQuote] = useState<QuoteData | null>(null);
   const [isLoadingQuote, setIsLoadingQuote] = useState(false);
   const [quoteError, setQuoteError] = useState<string | null>(null);
+  const [quoteWarning, setQuoteWarning] = useState<string | null>(null);
   const [routerAddress, setRouterAddress] = useState<Address | null>(null);
 
   const {
@@ -110,7 +115,10 @@ export const useSushiClassic = (callbacks?: UseSushiClassicCallbacks) => {
       if (receiptData.status === 'reverted') {
         console.error('Transaction was reverted');
         callbacks?.showSnackbar?.("Transaction failed and was reverted", "error");
-        callbacks?.onSuccess?.(); // Reset state
+        // Small delay to ensure notification shows before re-enabling button
+        setTimeout(() => {
+          callbacks?.onSuccess?.(); // Reset state
+        }, 100);
         return;
       }
 
@@ -171,13 +179,25 @@ export const useSushiClassic = (callbacks?: UseSushiClassicCallbacks) => {
             executionPrice: finalPrice,
           });
 
+          // Show success notification first
           callbacks?.showSnackbar?.("Transaction successful!", "success");
+
+          // Invalidate balance queries
           console.log("Invalidating balance queries...");
           queryClient.invalidateQueries({ queryKey: ['balance'] });
-          callbacks?.onSuccess?.();
+
+          // Small delay to ensure notification shows before re-enabling button
+          setTimeout(() => {
+            callbacks?.onSuccess?.();
+          }, 100);
 
         } catch (error) {
           console.error('Error saving trade marker:', error);
+          // Still show success and reset even if trade marker fails
+          callbacks?.showSnackbar?.("Transaction successful!", "success");
+          setTimeout(() => {
+            callbacks?.onSuccess?.();
+          }, 100);
         }
       };
 
@@ -195,12 +215,42 @@ export const useSushiClassic = (callbacks?: UseSushiClassicCallbacks) => {
   // Handle transaction errors - reset state and show error notification
   useEffect(() => {
     if (sendError && !isSending) {
+      const errorMessage = sendError.message || "";
+
+      // Prevent duplicate error handling for the same error
+      if (lastErrorMessage.current === errorMessage) {
+        return;
+      }
+
+      lastErrorMessage.current = errorMessage;
       console.error("Transaction send error:", sendError);
-      callbacks?.showSnackbar?.(
-        sendError.message || "Transaction failed to send",
-        "error"
-      );
+
+      // Check if user rejected the transaction
+      const isUserRejection =
+        errorMessage.includes("User rejected") ||
+        errorMessage.includes("User denied") ||
+        errorMessage.includes("user rejected") ||
+        errorMessage.includes("rejected the request") 
+        // sendError.name === "UserRejectedRequestError";
+
+      if (isUserRejection) {
+        callbacks?.showSnackbar?.(
+          "Transaction cancelled by user",
+          "info"
+        );
+      } else {
+        // For other errors, show a clean message
+        const cleanMessage = errorMessage.length > 100
+          ? "Transaction failed. Please try again."
+          : errorMessage || "Transaction failed to send";
+
+        callbacks?.showSnackbar?.(cleanMessage, "error");
+      }
+
       callbacks?.onSuccess?.(); // Reset state even on error
+    } else if (!sendError) {
+      // Reset error tracking when error is cleared
+      lastErrorMessage.current = "";
     }
   }, [sendError, isSending, callbacks]);
 
@@ -224,72 +274,69 @@ export const useSushiClassic = (callbacks?: UseSushiClassicCallbacks) => {
       if (!amount || parseFloat(amount) === 0) {
         setQuote(null);
         setRouterAddress(null);
+        setQuoteWarning(null);
         return null;
       }
 
       setIsLoadingQuote(true);
       setQuoteError(null);
+      setQuoteWarning(null);
 
       try {
-        const amountWei = BigInt(
-          (parseFloat(amount) * 10 ** tokenIn.decimals).toFixed(0)
-        );
+        console.log("Fetching quote from backend API");
 
-        console.log("chainId", getSushiChainId());
-
-        const quoteData = await getQuote({
-          chainId: getSushiChainId(),
-          tokenIn: tokenIn.address,
-          tokenOut: tokenOut.address,
-          amount: amountWei,
-          maxSlippage: slippage / 100,
+        const response = await fetchQuoteFromBackend({
+          tokenIn: {
+            address: tokenIn.address,
+            decimals: tokenIn.decimals,
+          },
+          tokenOut: {
+            address: tokenOut.address,
+            decimals: tokenOut.decimals,
+          },
+          amount: amount, // Keep as human-readable decimal string
+          slippage: slippage, // Pass directly (backend handles /100)
         });
 
-        console.log("Quote response:", quoteData);
+        console.log("Quote response:", response);
 
-        if (address && quoteData && quoteData.status === "Success") {
-          try {
-            const swapData = await getSwap({
-              chainId: getSushiChainId(),
-              tokenIn: tokenIn.address,
-              tokenOut: tokenOut.address,
-              sender: address,
-              amount: amountWei,
-              maxSlippage: slippage / 100,
-            });
-            
-            if (swapData && 'tx' in swapData && swapData.tx?.to) {
-              setRouterAddress(swapData.tx.to);
-              console.log("Router address:", swapData.tx.to);
-            }
-          } catch (swapError) {
-            console.warn("Failed to get router address:", swapError);
-          }
-        }
+        const quoteData = response.data;
 
         if (quoteData && quoteData.status === "Success") {
           const quote: QuoteData = {
-            amountOut: quoteData.assumedAmountOut,
-            priceImpact: quoteData.priceImpact,
-            swapPrice: quoteData.swapPrice,
+            amountOut: quoteData.amountOut,
+            priceImpact: parseFloat(quoteData.priceImpact),
+            swapPrice: parseFloat(quoteData.swapPrice),
             amountIn: quoteData.amountIn,
-            tokenFrom: quoteData.tokenFrom,
-            tokenTo: quoteData.tokenTo,
+            tokenFrom: {
+              address: quoteData.tokenFrom,
+              decimals: tokenIn.decimals,
+              symbol: tokenIn.ticker,
+              name: tokenIn.name,
+            },
+            tokenTo: {
+              address: quoteData.tokenTo,
+              decimals: tokenOut.decimals,
+              symbol: tokenOut.ticker,
+              name: tokenOut.name,
+            },
             status: quoteData.status,
           };
 
+          // Router address is included in quote response
+          setRouterAddress(quoteData.routerAddress);
           setQuote(quote);
           return quote;
         } else {
           throw new Error("Failed to get quote");
         }
       } catch (error) {
-        console.error("Quote error:", error);
-        const errorMessage =
+        console.warn("Quote warning:", error);
+        const warningMessage =
           error instanceof Error ? error.message : "Failed to fetch quote";
-        setQuoteError(errorMessage);
-        setQuote(null);
-        setRouterAddress(null);
+        setQuoteWarning(warningMessage);
+        // Don't set quote to null - allow swap to proceed
+        // Swap will get fresh quote from backend
         return null;
       } finally {
         setIsLoadingQuote(false);
@@ -309,32 +356,38 @@ export const useSushiClassic = (callbacks?: UseSushiClassicCallbacks) => {
       }
 
       try {
-        const amountWei = BigInt(
-          (parseFloat(amount) * 10 ** tokenIn.decimals).toFixed(0)
-        );
+        console.log("Fetching swap data from backend API");
 
-        const swapData = await getSwap({
-          chainId: getSushiChainId(),
-          tokenIn: tokenIn.address,
-          tokenOut: tokenOut.address,
-          sender: address,
-          amount: amountWei,
-          maxSlippage: slippage / 100,
+        const response = await fetchSwapFromBackend({
+          tokenIn: {
+            address: tokenIn.address,
+            decimals: tokenIn.decimals,
+          },
+          tokenOut: {
+            address: tokenOut.address,
+            decimals: tokenOut.decimals,
+          },
+          amount: amount, // Keep as human-readable decimal string
+          slippage: slippage, // Pass directly (backend handles /100)
+          userAddress: address,
         });
 
-        console.log("Swap response:", swapData);
+        console.log("Swap response:", response);
 
-        if (swapData && 'tx' in swapData && swapData.tx) {
-          const { tx } = swapData;
+        const txData = response.data;
 
-          setRouterAddress(tx.to!);
+        if (txData && txData.to && txData.data) {
+          // Convert value string to BigInt
+          const txValue = txData.value ? BigInt(txData.value) : BigInt(0);
+
+          setRouterAddress(txData.to);
 
           try {
             const callResult = await publicClient.call({
               account: address,
-              data: tx.data,
-              to: tx.to,
-              value: tx.value || BigInt(0),
+              data: txData.data as `0x${string}`,
+              to: txData.to,
+              value: txValue,
             });
             console.log("Simulation output:", callResult);
           } catch (simulationError) {
@@ -342,9 +395,9 @@ export const useSushiClassic = (callbacks?: UseSushiClassicCallbacks) => {
           }
 
           return sendTransaction({
-            to: tx.to!,
-            data: tx.data!,
-            value: tx.value || BigInt(0),
+            to: txData.to,
+            data: txData.data as `0x${string}`,
+            value: txValue,
           });
         } else {
           throw new Error("Failed to get swap transaction");
@@ -354,7 +407,7 @@ export const useSushiClassic = (callbacks?: UseSushiClassicCallbacks) => {
         throw error;
       }
     },
-    [address, isConnected, publicClient, sendTransaction, getSushiChainId]
+    [address, isConnected, publicClient, sendTransaction]
   );
 
   const getPriceRatio = useCallback(
@@ -374,6 +427,7 @@ export const useSushiClassic = (callbacks?: UseSushiClassicCallbacks) => {
     quote,
     isLoadingQuote,
     quoteError,
+    quoteWarning,
     txHash,
     isSending,
     isConfirming,

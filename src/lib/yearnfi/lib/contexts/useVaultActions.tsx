@@ -8,18 +8,24 @@ import React, {
   useState,
   useCallback,
 } from "react";
-import { useAccount, useReadContracts, useReadContract } from "wagmi";
+import {
+  useAccount,
+  useReadContracts,
+  useReadContract,
+  useSendTransaction,
+  useWaitForTransactionReceipt,
+} from "wagmi";
 import type { TYDaemonVault } from "@/lib/yearnfi/lib/utils/schemas/yDaemonVaultsSchemas";
 import { VAULT_V3_ABI } from "@/lib/yearnfi/lib/abis/vaultV3.abi";
 import { ERC20_ABI } from "@/lib/yearnfi/lib/abis/erc20.abi";
-import {
-  checkAllowance,
-  approveERC20,
-  depositToVault,
-  withdrawFromVault,
-} from "@/lib/yearnfi/lib/utils/wagmi/transactions";
+import { checkAllowance } from "@/lib/yearnfi/lib/utils/wagmi/transactions";
 import { toNormalizedBN } from "@/lib/yearnfi/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import {
+  fetchDepositFromBackend,
+  fetchWithdrawFromBackend,
+} from "@/services/yearn/yearnApi";
+import { formatUnits } from "viem";
 
 type TNormalizedBN = {
   raw: bigint;
@@ -74,6 +80,14 @@ export function VaultActionsProvider({
   const [isApproving, setIsApproving] = useState<boolean>(false);
   const [isDepositingTx, setIsDepositingTx] = useState<boolean>(false);
   const [isWithdrawingTx, setIsWithdrawingTx] = useState<boolean>(false);
+
+  // Wagmi hooks for transaction signing
+  const { sendTransactionAsync } = useSendTransaction();
+  const [pendingTxHash, setPendingTxHash] = useState<`0x${string}` | undefined>();
+
+  const { isSuccess: isTxSuccess } = useWaitForTransactionReceipt({
+    hash: pendingTxHash,
+  });
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -229,96 +243,105 @@ export function VaultActionsProvider({
     setAmount("");
   }, []);
 
+  // onApprove is now integrated into onDeposit
+  // Keeping this as a placeholder function for backward compatibility
   const onApprove = useCallback(async () => {
-    if (!address) return;
-
-    setIsApproving(true);
     toast({
-      title: "Approval Pending",
-      description: "Please confirm the transaction in your wallet...",
+      title: "Not Required",
+      description: "Approval is now handled automatically during deposit",
     });
-
-    try {
-      const result = await approveERC20({
-        tokenAddress: vault.token.address as `0x${string}`,
-        spenderAddress: vault.address as `0x${string}`,
-        amount: BigInt(
-          "115792089237316195423570985008687907853269984665640564039457584007913129639935"
-        ),
-        chainId: vault.chainID,
-      });
-
-      if (result.isSuccessful) {
-        toast({
-          title: "Approval Successful",
-          description: `You can now deposit ${vault.token.symbol}`,
-        });
-        await fetchAllowanceData();
-        await refetch();
-      } else {
-        toast({
-          title: "Approval Failed",
-          description: result.error?.message || "Transaction failed",
-          variant: "destructive",
-        });
-      }
-    } catch (error: any) {
-      toast({
-        title: "Approval Failed",
-        description: error?.message || "An error occurred",
-        variant: "destructive",
-      });
-    } finally {
-      setIsApproving(false);
-    }
-  }, [
-    address,
-    vault.token.address,
-    vault.token.symbol,
-    vault.address,
-    vault.chainID,
-    fetchAllowanceData,
-    refetch,
-    toast,
-  ]);
+  }, [toast]);
 
   const onDeposit = useCallback(async () => {
-    if (!address || amountBigInt === BigInt(0)) return;
+    if (!address || amountBigInt === BigInt(0) || !sendTransactionAsync) return;
 
     setIsDepositingTx(true);
     toast({
-      title: "Deposit Pending",
-      description: "Please confirm the transaction in your wallet...",
+      title: "Preparing Deposit",
+      description: "Fetching transaction from backend...",
     });
 
     try {
-      const result = await depositToVault({
+      console.log("=== YEARN DEPOSIT: Fetching from backend ===");
+      console.log("vaultAddress:", vault.address);
+      console.log("amount:", amount);
+      console.log("receiverAddress:", address);
+
+      // Call backend to prepare transaction
+      const response = await fetchDepositFromBackend({
         vaultAddress: vault.address as `0x${string}`,
-        amount: amountBigInt,
-        receiver: address,
+        tokenAddress: vault.token.address as `0x${string}`,
+        amount: amount, // Human-readable amount
+        decimals: tokenDecimals,
+        receiverAddress: address,
+        userAddress: address,
         chainId: vault.chainID,
       });
 
-      if (result.isSuccessful) {
+      console.log("Backend response:", response);
+
+      // If approval needed, sign it first
+      if (response.data.approval) {
+        console.log("=== APPROVAL NEEDED ===");
         toast({
-          title: "Deposit Successful",
-          description: `Successfully deposited ${amount} ${vault.token.symbol}`,
-          variant: "success",
+          title: "Approval Required",
+          description: "Please approve the token spending...",
         });
-        setAmount("");
-        await refetch();
-        await fetchAllowanceData();
-      } else {
+
+        const approvalHash = await sendTransactionAsync({
+          to: response.data.approval.to,
+          data: response.data.approval.data as `0x${string}`,
+          value: BigInt(response.data.approval.value),
+        });
+
+        console.log("Approval tx hash:", approvalHash);
+        setPendingTxHash(approvalHash);
+
         toast({
-          title: "Deposit Failed",
-          description: result.error?.message || "Transaction failed",
-          variant: "destructive",
+          title: "Approval Sent",
+          description: "Waiting for confirmation...",
         });
+
+        // Wait a bit for approval to be mined (simple approach)
+        await new Promise((resolve) => setTimeout(resolve, 3000));
       }
+
+      // Sign deposit transaction
+      console.log("=== SIGNING DEPOSIT ===");
+      toast({
+        title: "Deposit Pending",
+        description: "Please confirm the deposit transaction...",
+      });
+
+      const depositHash = await sendTransactionAsync({
+        to: response.data.deposit.to,
+        data: response.data.deposit.data as `0x${string}`,
+        value: BigInt(response.data.deposit.value),
+      });
+
+      console.log("Deposit tx hash:", depositHash);
+      setPendingTxHash(depositHash);
+
+      toast({
+        title: "Deposit Successful",
+        description: `Successfully deposited ${amount} ${vault.token.symbol}`,
+        variant: "success",
+      });
+
+      setAmount("");
+      await refetch();
+      await fetchAllowanceData();
     } catch (error: any) {
+      console.error("=== DEPOSIT ERROR ===", error);
+
+      const errorMessage =
+        error?.message?.includes("User rejected") || error?.message?.includes("User denied")
+          ? "Transaction cancelled by user"
+          : error?.message || "Deposit failed";
+
       toast({
         title: "Deposit Failed",
-        description: error?.message || "An error occurred",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -329,51 +352,80 @@ export function VaultActionsProvider({
     amountBigInt,
     amount,
     vault.address,
+    vault.token.address,
     vault.token.symbol,
     vault.chainID,
+    tokenDecimals,
     refetch,
     fetchAllowanceData,
     toast,
+    sendTransactionAsync,
   ]);
 
   const onWithdraw = useCallback(async () => {
-    if (!address || amountBigInt === BigInt(0)) return;
+    if (!address || amountBigInt === BigInt(0) || !sendTransactionAsync) return;
 
     setIsWithdrawingTx(true);
     toast({
-      title: "Withdrawal Pending",
-      description: "Please confirm the transaction in your wallet...",
+      title: "Preparing Withdrawal",
+      description: "Fetching transaction from backend...",
     });
 
     try {
-      const result = await withdrawFromVault({
+      console.log("=== YEARN WITHDRAW: Fetching from backend ===");
+      console.log("vaultAddress:", vault.address);
+      console.log("shares:", amount);
+      console.log("receiverAddress:", address);
+      console.log("ownerAddress:", address);
+
+      // Call backend to prepare withdrawal transaction
+      const response = await fetchWithdrawFromBackend({
         vaultAddress: vault.address as `0x${string}`,
-        shares: amountBigInt,
-        receiver: address,
-        owner: address,
-        maxLoss: BigInt(1), // 0.01% max loss
+        shares: amount, // Human-readable shares amount
+        decimals: vaultDecimals,
+        receiverAddress: address,
+        ownerAddress: address,
+        maxLoss: "1", // 0.01% max loss
         chainId: vault.chainID,
       });
 
-      if (result.isSuccessful) {
-        toast({
-          title: "Withdrawal Successful",
-          description: `Successfully withdrew ${amount} ${vault.symbol}`,
-          variant: "success",
-        });
-        setAmount("");
-        await refetch();
-      } else {
-        toast({
-          title: "Withdrawal Failed",
-          description: result.error?.message || "Transaction failed",
-          variant: "destructive",
-        });
-      }
+      console.log("Backend response:", response);
+
+      // Sign withdrawal transaction
+      console.log("=== SIGNING WITHDRAWAL ===");
+      toast({
+        title: "Withdrawal Pending",
+        description: "Please confirm the withdrawal transaction...",
+      });
+
+      const withdrawHash = await sendTransactionAsync({
+        to: response.data.to,
+        data: response.data.data as `0x${string}`,
+        value: BigInt(response.data.value),
+      });
+
+      console.log("Withdrawal tx hash:", withdrawHash);
+      setPendingTxHash(withdrawHash);
+
+      toast({
+        title: "Withdrawal Successful",
+        description: `Successfully withdrew ${amount} ${vault.symbol}`,
+        variant: "success",
+      });
+
+      setAmount("");
+      await refetch();
     } catch (error: any) {
+      console.error("=== WITHDRAWAL ERROR ===", error);
+
+      const errorMessage =
+        error?.message?.includes("User rejected") || error?.message?.includes("User denied")
+          ? "Transaction cancelled by user"
+          : error?.message || "Withdrawal failed";
+
       toast({
         title: "Withdrawal Failed",
-        description: error?.message || "An error occurred",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -386,8 +438,10 @@ export function VaultActionsProvider({
     vault.address,
     vault.symbol,
     vault.chainID,
+    vaultDecimals,
     refetch,
     toast,
+    sendTransactionAsync,
   ]);
 
   const value: TVaultActionsContext = {

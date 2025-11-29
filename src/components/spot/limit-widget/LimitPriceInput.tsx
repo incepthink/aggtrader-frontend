@@ -35,7 +35,12 @@ export const LimitPriceInput = () => {
 
   // Calculate percentage difference from market price
   const percentageDiff = useMemo(() => {
-    if (!marketPrice || !limitPriceString || priceOptionIndex !== undefined) {
+    // Only show custom percentage when user has manually entered a price (priceOptionIndex is undefined)
+    if (priceOptionIndex !== undefined) {
+      return null;
+    }
+
+    if (!marketPrice || !limitPriceString) {
       return null;
     }
 
@@ -47,18 +52,19 @@ export const LimitPriceInput = () => {
 
     if (isNaN(marketPriceNum) || marketPriceNum === 0) return null;
 
-    // Calculate the effective user price (accounting for inversion)
-    let effectiveUserPrice = userPrice;
+    // For direct comparison, we need to compare like-for-like
+    // If inverted, the limitPrice is already in inverted form, and we need inverted market price
     let effectiveMarketPrice = marketPriceNum;
 
     if (isLimitPriceInverted) {
-      // When inverted, we need to compare in the same direction
-      effectiveUserPrice = 1 / userPrice;
+      // Invert the market price to match the inverted limit price
+      if (marketPriceNum === 0) return null;
       effectiveMarketPrice = 1 / marketPriceNum;
     }
 
+    // Now both userPrice and effectiveMarketPrice are in the same "space"
     // Calculate percentage difference
-    const diff = ((effectiveUserPrice - effectiveMarketPrice) / effectiveMarketPrice) * 100;
+    const diff = ((userPrice - effectiveMarketPrice) / effectiveMarketPrice) * 100;
 
     return diff;
   }, [marketPrice, limitPriceString, priceOptionIndex, isLimitPriceInverted]);

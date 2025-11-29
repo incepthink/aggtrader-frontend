@@ -41,10 +41,10 @@ export const SwapButton = memo(
       if (isLoadingPrices) return "Loading prices…";
       if (needsApproval) {
         if (isApproving) return "Approving in wallet…";
-        if (isConfirmingApproval) return "Confirming approval…";
+        if (isConfirmingApproval) return "Approving…";
         return `Approve ${tokenOneTicker}`;
       }
-      if (isSending) return "Sending…";
+      if (isSending) return "Confirming in wallet…";
       if (isConfirming) return "Confirming…";
       if (isInitiatingSwap) return "Preparing…";
       if (isLoadingQuote) return "Getting Quote...";
@@ -59,7 +59,14 @@ export const SwapButton = memo(
       }
     };
 
-    const isButtonDisabled = isDisabled || isApproving || isConfirmingApproval;
+    // Disable button during any transaction state
+    const isButtonDisabled =
+      isDisabled ||
+      isApproving ||
+      isConfirmingApproval ||
+      isSending ||
+      isConfirming ||
+      isInitiatingSwap;
 
     return (
       <div

@@ -54,6 +54,7 @@ function SushiClassicSwap() {
     quote,
     isLoadingQuote,
     quoteError,
+    quoteWarning,
     txHash,
     isSending,
     isConfirming,
@@ -195,9 +196,25 @@ function SushiClassicSwap() {
       });
     } catch (error: any) {
       console.error("Swap error:", error);
-      const errorMessage =
-        error instanceof Error ? error.message : "Swap failed";
-      showSnackbar(errorMessage, "error");
+
+      // Check if user rejected the transaction
+      const errorMessage = error?.message || "";
+      const isUserRejection =
+        errorMessage.includes("User rejected") ||
+        errorMessage.includes("User denied") ||
+        errorMessage.includes("user rejected") ||
+        errorMessage.includes("rejected the request") ||
+        error?.name === "UserRejectedRequestError";
+
+      if (isUserRejection) {
+        showSnackbar("Transaction cancelled by user", "info");
+      } else {
+        // For other errors, show a clean message
+        const cleanMessage = errorMessage.length > 100
+          ? "Transaction failed. Please try again."
+          : errorMessage || "Swap failed";
+        showSnackbar(cleanMessage, "error");
+      }
 
       // Reset loading state on error
       setIsInitiatingSwap(false);
@@ -335,6 +352,22 @@ function SushiClassicSwap() {
             tokenInAmount={tokenOneAmount}
             isLoadingQuote={isLoadingQuote}
           />
+        )}
+
+        {/* Quote warning display */}
+        {quoteWarning && (
+          <div className="mt-2 mb-2 p-2 bg-yellow-900/20 border border-yellow-600/50 rounded-lg text-yellow-400 text-sm">
+            <div className="flex items-start gap-2">
+              <span className="text-lg">⚠️</span>
+              <div>
+                <div className="font-semibold">Quote Warning</div>
+                <div>{quoteWarning}</div>
+                <div className="text-xs mt-1 opacity-75">
+                  You can still proceed with the swap. A fresh quote will be fetched during execution.
+                </div>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* swap button */}

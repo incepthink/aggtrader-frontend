@@ -53,14 +53,16 @@ export const LimitTradeReviewDialog: React.FC<LimitTradeReviewDialogProps> = ({
   const [acceptDisclaimer, setAcceptDisclaimer] = useState(true);
   const [isConfirming, setIsConfirming] = useState(false);
   const [isTrackingOrder, setIsTrackingOrder] = useState(false);
+  const [transactionError, setTransactionError] = useState<string | null>(null);
 
   const {
     sendTransactionAsync,
     isPending: isWritePending,
     data: txHash,
+    error: sendTxError,
   } = useSendTransaction();
 
-  const { status } = useWaitForTransactionReceipt({
+  const { status, error: receiptError } = useWaitForTransactionReceipt({
     hash: txHash,
   });
 
@@ -105,16 +107,49 @@ export const LimitTradeReviewDialog: React.FC<LimitTradeReviewDialogProps> = ({
   }, [trade, isLimitOrder, token0, token1, token1PriceUSD]);
 
   const handleConfirm = useCallback(async () => {
-    console.log("USETRADE", "trade", trade);
+    console.log(
+      "🚀 [LIMIT ORDER] Initiating transaction with trade data:",
+      trade
+    );
 
     if (!trade?.tx || !sendTransactionAsync) return;
 
     setIsConfirming(true);
+    setTransactionError(null);
+
     try {
-      await sendTransactionAsync(trade.tx);
+      // console.log("📤 [LIMIT ORDER] Sending transaction:", {
+      //   to: trade.tx.to,
+      //   data: trade.tx.data,
+      //   value: trade.tx.value,
+      //   chainId: trade.tx.chainId,
+      // });
+
+      const hash = await sendTransactionAsync(trade.tx);
+      console.log(
+        "✅ [LIMIT ORDER] Transaction sent successfully, hash:",
+        hash
+      );
       // Success will be handled by the transaction receipt hook
-    } catch (error) {
-      console.error("Transaction failed:", error);
+    } catch (error: any) {
+      console.error("❌ [LIMIT ORDER] Transaction failed:", error);
+      console.error("❌ [LIMIT ORDER] Error details:", {
+        message: error?.message,
+        cause: error?.cause,
+        shortMessage: error?.shortMessage,
+        details: error?.details,
+        metaMessages: error?.metaMessages,
+      });
+
+      // Extract user-friendly error message
+      let errorMsg = "Transaction failed";
+      if (error?.shortMessage) {
+        errorMsg = error.shortMessage;
+      } else if (error?.message) {
+        errorMsg = error.message;
+      }
+
+      setTransactionError(errorMsg);
       setIsConfirming(false);
     }
   }, [trade?.tx, sendTransactionAsync]);
@@ -180,13 +215,30 @@ export const LimitTradeReviewDialog: React.FC<LimitTradeReviewDialogProps> = ({
   // Handle transaction status
   React.useEffect(() => {
     if (status === "success" && !isTrackingOrder) {
+      console.log("✅ [LIMIT ORDER] Transaction confirmed on-chain");
       // Track order in backend first, THEN call onSuccess
       trackNewlyCreatedOrder();
     } else if (status === "error") {
+      console.error(
+        "❌ [LIMIT ORDER] Transaction receipt error:",
+        receiptError
+      );
+      // console.error("❌ [LIMIT ORDER] Receipt error details:", {
+      //   message: receiptError?.message,
+      //   cause: receiptError?.cause,
+      //   shortMessage: receiptError?.shortMessage,
+      // });
+
+      let errorMsg = "Transaction failed on-chain";
+      if (receiptError?.message) {
+        errorMsg = receiptError.message;
+      }
+
+      setTransactionError(errorMsg);
       setIsConfirming(false);
       setIsTrackingOrder(false);
     }
-  }, [status, isTrackingOrder, trackNewlyCreatedOrder]);
+  }, [status, isTrackingOrder, trackNewlyCreatedOrder, receiptError]);
 
   if (!isOpen) return null;
 
@@ -294,7 +346,7 @@ export const LimitTradeReviewDialog: React.FC<LimitTradeReviewDialogProps> = ({
             </h3>
             <p className="text-gray-400">
               {trade
-                ? `Receive at least ${Number(trade.minAmountOut.toExact())} ${
+                ? `Receive at least ${Number(trade.minAmountOut?.toExact())} ${
                     token1?.ticker
                   }`
                 : "Loading..."}
@@ -378,7 +430,17 @@ export const LimitTradeReviewDialog: React.FC<LimitTradeReviewDialogProps> = ({
         </div>
 
         {/* Actions */}
-        <div className="p-6 border-t border-gray-700">
+        <div className="p-6 border-t border-gray-700 space-y-3">
+          {/* Error Display */}
+          {transactionError && (
+            <div className="p-3 bg-red-900/30 border border-red-500/50 rounded-lg">
+              <p className="text-sm text-red-400 font-medium">Error:</p>
+              <p className="text-xs text-red-300 mt-1 break-words">
+                {transactionError}
+              </p>
+            </div>
+          )}
+
           {!address ? (
             <button className="w-full py-3 bg-gray-600 text-gray-300 rounded-lg cursor-not-allowed">
               Connect Wallet

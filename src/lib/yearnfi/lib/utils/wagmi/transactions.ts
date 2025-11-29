@@ -226,6 +226,8 @@ export async function checkAllowance(params: {
 }): Promise<bigint> {
   try {
     const { tokenAddress, owner, spender, chainId } = params;
+    console.log(tokenAddress, owner, spender, chainId);
+    
 
     const allowance = await readContract(config, {
       address: tokenAddress,
@@ -245,7 +247,8 @@ export async function checkAllowance(params: {
       args: [owner, spender],
       chainId: chainId as any,
     });
-
+    console.log(allowance);
+    
     return allowance;
   } catch (error) {
     console.error('Failed to check allowance:', error);

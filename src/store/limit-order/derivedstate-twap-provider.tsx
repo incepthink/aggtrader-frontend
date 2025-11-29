@@ -40,6 +40,7 @@ import {
   DerivedstateSimpleSwapProvider,
   useDerivedStateSimpleSwap,
 } from "./derivedstate-simple-swap-provider";
+import { prepareLimitOrder } from "@/services/twap/twapService";
 
 type DerivedStateSimpleSwapState = ReturnType<typeof useDerivedStateSimpleSwap>;
 
@@ -494,142 +495,145 @@ const useTwapTrade = () => {
     },
   } = useDerivedStateTwap();
 
-  return useMemo(() => {
-    console.log("TRADE PREPARATION DEBUG - Starting:", {
-      swapAmount: swapAmount
-        ? {
-            token: swapAmount.token.ticker,
-            quotient: swapAmount.quotient.toString(),
-            toSignificant: swapAmount.toSignificant(6),
-          }
-        : "undefined",
-      token0: token0?.ticker,
-      token1: token1?.ticker,
-      minAmountOut: minAmountOut
-        ? {
-            token: minAmountOut.token.ticker,
-            quotient: minAmountOut.quotient.toString(),
-            toSignificant: minAmountOut.toSignificant(6),
-          }
-        : "undefined",
-      chunks,
-      isLimitOrder,
-    });
+  const [tradeData, setTradeData] = useState<{
+    data: UseTwapTradeReturn | undefined;
+    error: any;
+  }>({ data: undefined, error: undefined });
 
-    if (
-      !swapAmount ||
-      !token0 ||
-      !token1 ||
-      !minAmountOut ||
-      !amountInPerChunk ||
-      !fillDelay ||
-      !chunks
-    ) {
-      console.log("TRADE PREPARATION DEBUG - Missing required data");
-      return { data: undefined, error: undefined };
-    }
-
-    const srcTokenAddress =
-      token0.address === "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-        ? token0.address
-        : token0.address;
-
-    const destTokenAddress =
-      token1.address === "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
-        ? zeroAddress
-        : token1.address;
-
-    console.log("TRADE PREPARATION DEBUG - Token addresses:", {
-      srcTokenAddress,
-      destTokenAddress,
-      token0Original: token0.address,
-      token1Original: token1.address,
-    });
-
-    const sdkParams = TwapSDK.onNetwork(chainId).getAskParams({
-      destTokenMinAmount: minAmountOut.quotient.toString(),
-      srcChunkAmount: amountInPerChunk.quotient.toString(),
-      deadline,
-      fillDelay,
-      srcAmount: swapAmount.quotient.toString(),
-      srcTokenAddress,
-      destTokenAddress,
-    });
-
-    console.log("TRADE PREPARATION DEBUG - SDK params:", {
-      destTokenMinAmount: minAmountOut.quotient.toString(),
-      srcChunkAmount: amountInPerChunk.quotient.toString(),
-      deadline,
-      fillDelay,
-      srcAmount: swapAmount.quotient.toString(),
-      srcTokenAddress,
-      destTokenAddress,
-    });
-
-    const parseResult = prepareOrderArgsValidator.safeParse(sdkParams);
-    console.log("USETRADE", "parseResult", parseResult);
-
-    if (!parseResult.success) {
-      console.log(
-        "TRADE PREPARATION DEBUG - Validation failed:",
-        parseResult.error
-      );
-      return {
-        data: undefined,
-        error: parseResult.error,
-      };
-    }
-    const params = parseResult.data;
-
-    const tx = {
-      chainId,
-      to: TwapSDK.onNetwork(chainId).config.twapAddress as Address,
-      data: encodeFunctionData({
-        abi: twapAbi_ask,
-        functionName: "ask",
-        args: [
-          {
-            exchange: params[0],
-            srcToken: params[1],
-            dstToken: params[2],
-            srcAmount: params[3],
-            srcBidAmount: params[4],
-            dstMinAmount: params[5],
-            deadline: params[6],
-            bidDelay: params[7],
-            fillDelay: params[8],
-            data: params[9],
-          },
-        ],
-      }),
-    };
-
-    console.log("USETRADE", "tx", tx);
-
-    return {
-      data: {
-        isLimitOrder,
-        limitPrice,
-        marketPrice,
-        amountIn: swapAmount,
+  useEffect(() => {
+    const prepareTransaction = async () => {
+      console.log("TRADE PREPARATION DEBUG - Starting:", {
+        swapAmount: swapAmount
+          ? {
+              token: swapAmount.token.ticker,
+              quotient: swapAmount.quotient.toString(),
+              toSignificant: swapAmount.toSignificant(6),
+            }
+          : "undefined",
+        token0: token0?.ticker,
+        token1: token1?.ticker,
+        minAmountOut: minAmountOut
+          ? {
+              token: minAmountOut.token.ticker,
+              quotient: minAmountOut.quotient.toString(),
+              toSignificant: minAmountOut.toSignificant(6),
+            }
+          : "undefined",
         chunks,
-        fillDelay,
-        amountInPerChunk,
-        amountOut,
-        minAmountOut,
-        tx,
-        params,
-        fee: isLimitOrder
-          ? getFeeString({
-              fromToken: token0,
-              toToken: token1,
-              tokenOutPrice: token1PriceUSD,
-              minAmountOut,
-            })
-          : undefined,
-      } satisfies UseTwapTradeReturn,
-      error: undefined,
+        isLimitOrder,
+      });
+
+      if (
+        !swapAmount ||
+        !token0 ||
+        !token1 ||
+        !minAmountOut ||
+        !amountInPerChunk ||
+        !fillDelay ||
+        !chunks
+      ) {
+        console.log("TRADE PREPARATION DEBUG - Missing required data");
+        setTradeData({ data: undefined, error: undefined });
+        return;
+      }
+
+      const srcTokenAddress =
+        token0.address === "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+          ? token0.address
+          : token0.address;
+
+      const destTokenAddress =
+        token1.address === "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+          ? token1.address
+          : token1.address;
+
+      console.log("TRADE PREPARATION DEBUG - Token addresses:", {
+        srcTokenAddress,
+        destTokenAddress,
+        token0Original: token0.address,
+        token1Original: token1.address,
+      });
+
+      try {
+        // Convert fillDelay TimeUnit to API format
+        let fillDelayUnit: "Seconds" | "Minutes" | "Hours" | "Days";
+        switch (fillDelay.unit) {
+          case TimeUnit.Minutes:
+            fillDelayUnit = "Minutes";
+            break;
+          case TimeUnit.Hours:
+            fillDelayUnit = "Hours";
+            break;
+          case TimeUnit.Days:
+            fillDelayUnit = "Days";
+            break;
+          default:
+            fillDelayUnit = "Minutes";
+        }
+
+        // Call the backend API
+        const apiResponse = await prepareLimitOrder({
+          srcToken: srcTokenAddress,
+          dstToken: destTokenAddress,
+          srcAmount: swapAmount.quotient.toString(),
+          dstMinAmount: minAmountOut.quotient.toString(),
+          srcChunkAmount: amountInPerChunk.quotient.toString(),
+          deadline: deadline,
+          fillDelay: {
+            unit: fillDelayUnit,
+            value: fillDelay.value,
+          },
+        });
+
+        console.log("TRADE PREPARATION DEBUG - API response:", apiResponse);
+
+        // Create transaction object from API response
+        const tx = {
+          chainId,
+          to: apiResponse.data.to as Address,
+          data: apiResponse.data.data as Hex,
+          value: BigInt(apiResponse.data.value || "0"),
+        };
+
+        console.log("USETRADE - Final tx:", tx);
+
+        // Create params array for compatibility (empty since we're using API now)
+        const params = [] as any;
+
+        setTradeData({
+          data: {
+            isLimitOrder,
+            limitPrice,
+            marketPrice,
+            amountIn: swapAmount,
+            chunks,
+            fillDelay,
+            amountInPerChunk,
+            amountOut,
+            minAmountOut,
+            tx,
+            params,
+            fee: isLimitOrder
+              ? getFeeString({
+                  fromToken: token0,
+                  toToken: token1,
+                  tokenOutPrice: token1PriceUSD,
+                  minAmountOut,
+                })
+              : undefined,
+          } satisfies UseTwapTradeReturn,
+          error: undefined,
+        });
+      } catch (error) {
+        console.error("TRADE PREPARATION DEBUG - API call failed:", error);
+        setTradeData({
+          data: undefined,
+          error,
+        });
+      }
     };
+
+    prepareTransaction();
   }, [
     token0,
     token1,
@@ -646,6 +650,8 @@ const useTwapTrade = () => {
     token1PriceUSD,
     isLimitOrder,
   ]);
+
+  return tradeData;
 };
 
 const useTwapTradeErrors = () => {

@@ -57,6 +57,7 @@ const SushiClassicSwap = memo(() => {
     handleApprove, // NEW
     quote,
     isLoadingQuote,
+    quoteWarning,
     isSending,
     isConfirming,
     prices,
@@ -309,6 +310,22 @@ const SushiClassicSwap = memo(() => {
             tokenInAmount={tokenOneAmount}
             isLoadingQuote={isLoadingQuote}
           />
+        )}
+
+        {/* Quote warning display */}
+        {quoteWarning && (
+          <div className="mt-2 mb-2 p-2 bg-yellow-900/20 border border-yellow-600/50 rounded-lg text-yellow-400 text-sm">
+            <div className="flex items-start gap-2">
+              <span className="text-lg">⚠️</span>
+              <div>
+                <div className="font-semibold">Quote Warning</div>
+                <div>{quoteWarning}</div>
+                <div className="text-xs mt-1 opacity-75">
+                  You can still proceed with the swap. A fresh quote will be fetched during execution.
+                </div>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* UPDATED: Pass new props */}

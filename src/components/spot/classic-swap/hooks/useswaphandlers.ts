@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useEffect } from "react";
 import { formatUnits } from "viem";
 import type { Token, SnackbarSeverity } from "../types";
 import { useSushiClassic } from "./usesushiclassic";
@@ -44,6 +44,7 @@ export function useSwapHandlers({
     quote,
     isLoadingQuote,
     quoteError,
+    quoteWarning,
     txHash,
     isSending,
     isConfirming,
@@ -129,6 +130,13 @@ export function useSwapHandlers({
 
   const needsApproval = approvalState === ApprovalState.NOT_APPROVED;
 
+  // Show success notification when approval completes
+  useEffect(() => {
+    if (isApprovalConfirmed && approvalState === ApprovalState.APPROVED) {
+      showSnackbar(`${tokenOne.ticker} approved successfully!`, "success");
+    }
+  }, [isApprovalConfirmed, approvalState, tokenOne.ticker, showSnackbar]);
+
   useQuoteDebounce({
     tokenOneAmount,
     tokenOne,
@@ -206,13 +214,26 @@ export function useSwapHandlers({
 
     try {
       await approve();
-      showSnackbar(`Approving ${tokenOne.ticker}...`, "info");
+      // Don't show "Approving..." notification - button state shows this
     } catch (error: any) {
       console.error("Approval error:", error);
-      showSnackbar(
-        error?.message || "Approval failed",
-        "error"
-      );
+
+      // Check if user rejected the approval
+      const errorMessage = error?.message || "";
+      const isUserRejection =
+        errorMessage.includes("User rejected") ||
+        errorMessage.includes("User denied") ||
+        errorMessage.includes("user rejected") ||
+        errorMessage.includes("rejected the request");
+
+      if (isUserRejection) {
+        showSnackbar("Approval cancelled by user", "info");
+      } else {
+        showSnackbar(
+          errorMessage || "Approval failed",
+          "error"
+        );
+      }
     }
   }, [approve, isApproving, isConfirmingApproval, tokenOne, showSnackbar]);
 
@@ -237,9 +258,26 @@ export function useSwapHandlers({
       });
     } catch (error: any) {
       console.error("Swap error:", error);
-      const errorMessage =
-        error instanceof Error ? error.message : "Swap failed";
-      showSnackbar(errorMessage, "error");
+
+      // Check if user rejected the transaction
+      const errorMessage = error?.message || "";
+      const isUserRejection =
+        errorMessage.includes("User rejected") ||
+        errorMessage.includes("User denied") ||
+        errorMessage.includes("user rejected") ||
+        errorMessage.includes("rejected the request") ||
+        error?.name === "UserRejectedRequestError";
+
+      if (isUserRejection) {
+        showSnackbar("Transaction cancelled by user", "info");
+      } else {
+        // For other errors, show a clean message
+        const cleanMessage = errorMessage.length > 100
+          ? "Transaction failed. Please try again."
+          : errorMessage || "Swap failed";
+        showSnackbar(cleanMessage, "error");
+      }
+
       setIsInitiatingSwap(false);
     }
   }, [
@@ -267,6 +305,7 @@ export function useSwapHandlers({
     quote,
     isLoadingQuote,
     quoteError,
+    quoteWarning,
     txHash,
     isSending,
     isConfirming,
