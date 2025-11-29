@@ -3,6 +3,9 @@ import { BACKEND_URL } from "@/utils/constants";
 interface ClassicSwapTrackingData {
   walletAddress: string;
   txHash: string;
+  chainId?: number;
+  blockNumber?: number;
+  blockTimestamp?: string;
   tokenFrom: {
     address: string;
     symbol: string;
@@ -15,6 +18,9 @@ interface ClassicSwapTrackingData {
   };
   usdVolume: number;
   executionPrice: number;
+  poolId?: string;
+  timestamp?: string;
+  status?: 'success' | 'failed' | 'pending';
 }
 
 /**

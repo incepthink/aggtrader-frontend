@@ -153,6 +153,47 @@ export const useSushiClassic = (callbacks?: UseSushiClassicCallbacks) => {
           console.log('Saving trade marker:', tradeMarker);
           saveTradeMarker(tradeMarker);
 
+          // Track the swap to backend for analytics
+          const amountInFloat = parseFloat(quote.amountIn) / (10 ** quote.tokenFrom.decimals);
+          const amountOutFloat = parseFloat(quote.amountOut) / (10 ** quote.tokenTo.decimals);
+
+          // Calculate USD volume - use the token price from usePriceBackend
+          const fromTokenPrice = currentPriceForMarker && chartToken.address.toLowerCase() === quote.tokenFrom.address.toLowerCase()
+            ? currentPriceForMarker
+            : null;
+          const toTokenPrice = currentPriceForMarker && chartToken.address.toLowerCase() === quote.tokenTo.address.toLowerCase()
+            ? currentPriceForMarker
+            : null;
+
+          // Calculate USD volume - prefer from token for consistency
+          const usdVolume = fromTokenPrice
+            ? amountInFloat * fromTokenPrice
+            : toTokenPrice
+              ? amountOutFloat * toTokenPrice
+              : amountInFloat * finalPrice; // Fallback to swap price
+
+          await trackClassicSwap({
+            walletAddress: address,
+            txHash: receiptData.transactionHash,
+            chainId: 747474,
+            blockNumber: Number(receiptData.blockNumber),
+            blockTimestamp: new Date(Number(block.timestamp) * 1000).toISOString(),
+            tokenFrom: {
+              address: quote.tokenFrom.address,
+              symbol: quote.tokenFrom.symbol,
+              amount: amountInFloat.toString(),
+            },
+            tokenTo: {
+              address: quote.tokenTo.address,
+              symbol: quote.tokenTo.symbol,
+              amount: amountOutFloat.toString(),
+            },
+            usdVolume,
+            executionPrice: finalPrice,
+            timestamp: new Date(Number(block.timestamp) * 1000).toISOString(),
+            status: 'success',
+          });
+
           callbacks?.showSnackbar?.("Transaction successful!", "success");
 
           // Invalidate balance queries
