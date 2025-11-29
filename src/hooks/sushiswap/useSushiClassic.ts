@@ -153,33 +153,6 @@ export const useSushiClassic = (callbacks?: UseSushiClassicCallbacks) => {
           console.log('Saving trade marker:', tradeMarker);
           saveTradeMarker(tradeMarker);
 
-          // Backend tracking for classic swap
-          const amountInFormatted = parseFloat(quote.amountIn) / (10 ** quote.tokenFrom.decimals);
-          const amountOutFormatted = parseFloat(quote.amountOut) / (10 ** quote.tokenTo.decimals);
-
-          // Calculate USD volume using current price or swap price
-          const usdVolume = currentPriceForMarker
-            ? amountInFormatted * currentPriceForMarker
-            : amountInFormatted * (quote.tokenFrom.symbol === chartToken.ticker ? finalPrice : 1/finalPrice);
-
-          await trackClassicSwap({
-            walletAddress: address,
-            txHash: receiptData.transactionHash,
-            tokenFrom: {
-              address: quote.tokenFrom.address,
-              symbol: quote.tokenFrom.symbol,
-              amount: amountInFormatted.toString(),
-            },
-            tokenTo: {
-              address: quote.tokenTo.address,
-              symbol: quote.tokenTo.symbol,
-              amount: amountOutFormatted.toString(),
-            },
-            usdVolume,
-            executionPrice: finalPrice,
-          });
-
-          // Show success notification first
           callbacks?.showSnackbar?.("Transaction successful!", "success");
 
           // Invalidate balance queries
