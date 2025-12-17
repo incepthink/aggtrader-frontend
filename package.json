@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint"
   },
+  "type": "module",
   "dependencies": {
     "@aave/contract-helpers": "^1.35.0",
     "@aave/math-utils": "^1.35.0",
@@ -21,7 +22,12 @@
     "@emotion/styled": "^11.14.1",
     "@lingui/macro": "^5.3.2",
     "@morpho-org/blue-sdk": "^4.4.0",
+    "@morpho-org/blue-sdk-viem": "^4.1.2",
+    "@morpho-org/bundler-sdk-viem": "^4.1.2",
+    "@morpho-org/morpho-test": "^2.4.3",
     "@morpho-org/morpho-ts": "^2.4.1",
+    "@morpho-org/simulation-sdk": "^3.2.2",
+    "@morpho-org/test": "^2.6.3",
     "@mui/icons-material": "^7.2.0",
     "@mui/material": "^7.2.0",
     "@next/third-parties": "^15.5.2",

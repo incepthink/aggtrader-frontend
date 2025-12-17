@@ -12,7 +12,9 @@
       "Bash(node -e:*)",
       "Bash(git restore:*)",
       "Bash(cat:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(npx tsc:*)",
+      "mcp__ide__getDiagnostics"
     ],
     "deny": [],
     "ask": []

@@ -3,63 +3,39 @@
 
 import { useState, useCallback } from "react";
 import { useAccount, usePublicClient, useWalletClient } from "wagmi";
-import { parseUnits, Address, erc20Abi, formatUnits } from "viem";
+import { parseUnits, Address } from "viem";
 import { MarketData } from "@/hooks/lend-morpho/MarketDetailHooks";
 
-// Morpho Blue contract address
-const MORPHO_BLUE_ADDRESS = "0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb";
+import { type Account, WalletClient, zeroAddress } from "viem";
+import { parseAccount } from "viem/accounts";
+ 
+import {
+  addresses,
+  ChainId,
+  DEFAULT_SLIPPAGE_TOLERANCE,
+  MarketId,
+  MarketParams,
+  UnknownMarketParamsError,
+  getUnwrappedToken,
+  Market,
+} from "@morpho-org/blue-sdk";
+import {
+  type BundlingOptions,
+  type InputBundlerOperation,
+  type BundlerOperation,
+  encodeBundle,
+  finalizeBundle,
+  populateBundle,
+} from "@morpho-org/bundler-sdk-viem";
+import "@morpho-org/blue-sdk-viem/lib/augment";
+import "@morpho-org/blue-sdk-viem/lib/augment/Market";
+import {
+  SimulationState,
+} from "@morpho-org/simulation-sdk";
+import { morph } from "viem/chains";
 
-// Morpho Blue ABI - Only the functions we need
-const MorphoBlueABI = [
-  {
-    name: "supplyCollateral",
-    type: "function",
-    stateMutability: "nonpayable",
-    inputs: [
-      {
-        name: "marketParams",
-        type: "tuple",
-        components: [
-          { name: "loanToken", type: "address" },
-          { name: "collateralToken", type: "address" },
-          { name: "oracle", type: "address" },
-          { name: "irm", type: "address" },
-          { name: "lltv", type: "uint256" },
-        ],
-      },
-      { name: "assets", type: "uint256" },
-      { name: "onBehalf", type: "address" },
-      { name: "data", type: "bytes" },
-    ],
-    outputs: [],
-  },
-  {
-    name: "borrow",
-    type: "function",
-    stateMutability: "nonpayable",
-    inputs: [
-      {
-        name: "marketParams",
-        type: "tuple",
-        components: [
-          { name: "loanToken", type: "address" },
-          { name: "collateralToken", type: "address" },
-          { name: "oracle", type: "address" },
-          { name: "irm", type: "address" },
-          { name: "lltv", type: "uint256" },
-        ],
-      },
-      { name: "assets", type: "uint256" },
-      { name: "shares", type: "uint256" },
-      { name: "onBehalf", type: "address" },
-      { name: "receiver", type: "address" },
-    ],
-    outputs: [
-      { name: "assetsBorrowed", type: "uint256" },
-      { name: "sharesBorrowed", type: "uint256" },
-    ],
-  },
-] as const;
+// Morpho Blue contract address (kept for reference, bundler handles the actual calls)
+const MORPHO_BLUE_ADDRESS = "0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb";
 
 interface BorrowParams {
   market: MarketData;
@@ -91,274 +67,115 @@ export const useMorphoBorrowNew = () => {
   };
 
   /**
-   * Step 1: Check if collateral token needs approval
+   * Setup and execute bundled Morpho operations
+   * This function handles approval, collateral supply, and borrowing in a single transaction
    */
-  const checkAllowance = useCallback(
-    async (
-      tokenAddress: Address,
-      amount: bigint
-    ): Promise<boolean> => {
-      if (!address || !publicClient) {
-        console.log("❌ Cannot check allowance: missing address or publicClient");
-        return false;
-      }
+  const setupBundle = async (
+  client: WalletClient,
+  startData: SimulationState,
+  inputOperations: InputBundlerOperation[],
+  {
+    account: account_ = client.account,
+    supportsSignature,
+    unwrapTokens,
+    unwrapSlippage,
+    onBundleTx,
+    ...options
+  }: BundlingOptions & {
+    account?: Address | Account;
+    supportsSignature?: boolean;
+    unwrapTokens?: Set<Address>;
+    unwrapSlippage?: bigint;
+    onBundleTx?: (data: SimulationState) => Promise<void> | void;
+  } = {}
+) => {
+  if (!account_) throw new Error("Account is required");
+  const account = parseAccount(account_);
 
-      console.log("📋 Checking allowance...");
-      console.log("  Token:", tokenAddress);
-      console.log("  Spender:", MORPHO_BLUE_ADDRESS);
-      console.log("  Amount needed:", amount.toString());
+  let { operations } = populateBundle(inputOperations, startData, {
+    ...options,
+    publicAllocatorOptions: {
+      enabled: true,
+      ...options.publicAllocatorOptions,
+    },
+  });
+  operations = finalizeBundle(
+    operations,
+    startData,
+    account.address,
+    unwrapTokens,
+    unwrapSlippage
+  );
+ 
+  const bundle = encodeBundle(operations, startData, supportsSignature);
+ 
+  const tokens = new Set<Address>();
 
+  operations.forEach((operation) => {
+    // BundlerOperation has similar structure to Operation but with omitted callback
+    // We can safely check the type field which exists on both
+    if (
+      operation.type.startsWith("Blue_") &&
+      operation.type !== "Blue_SetAuthorization" &&
+      'args' in operation &&
+      'id' in (operation.args as any)
+    ) {
       try {
-        const allowance = await publicClient.readContract({
-          address: tokenAddress,
-          abi: erc20Abi,
-          functionName: "allowance",
-          args: [address, MORPHO_BLUE_ADDRESS as Address],
-        });
+        const marketParams = MarketParams.get((operation.args as any).id);
 
-        console.log("  Current allowance:", allowance.toString());
+        if (marketParams.loanToken !== zeroAddress)
+          tokens.add(marketParams.loanToken);
 
-        const hasEnoughAllowance = allowance >= amount;
-        console.log(hasEnoughAllowance ? "✅ Allowance sufficient" : "⚠️ Approval required");
-
-        return hasEnoughAllowance;
+        if (marketParams.collateralToken !== zeroAddress)
+          tokens.add(marketParams.collateralToken);
       } catch (error) {
-        console.error("❌ Error checking allowance:", error);
-        return false;
+        if (!(error instanceof UnknownMarketParamsError)) throw error;
       }
-    },
-    [address, publicClient]
+    }
+
+    if (operation.type.startsWith("MetaMorpho_") && 'address' in operation) {
+      tokens.add(operation.address as Address);
+
+      const vault = startData.tryGetVault(operation.address as Address);
+      if (vault) tokens.add(vault.asset);
+    }
+
+    if (operation.type.startsWith("Erc20_") && 'address' in operation) {
+      tokens.add(operation.address as Address);
+
+      const unwrapped = getUnwrappedToken(operation.address as Address, startData.chainId);
+      if (unwrapped != null) tokens.add(unwrapped);
+    }
+  });
+ 
+  await onBundleTx?.(startData);
+ 
+  // here EOA should sign tx, if it is a contract, this can be ignored/removed
+  await Promise.all(
+    bundle.requirements.signatures.map((requirement) =>
+      requirement.sign(client, account)
+    )
   );
+ 
+  const txs = bundle.requirements.txs.map(({ tx }) => tx).concat([bundle.tx()]);
+
+  for (const tx of txs) {
+    // Remove the type field to avoid conflicts with viem's type expectations
+    const { type, ...txWithoutType } = tx;
+    await client.sendTransaction({ ...txWithoutType, account } as any);
+  }
+ 
+  return { operations, bundle };
+};
 
   /**
-   * Step 2: Approve collateral token
-   */
-  const approveToken = useCallback(
-    async (
-      tokenAddress: Address,
-      amount: bigint
-    ): Promise<boolean> => {
-      if (!address || !walletClient || !publicClient) {
-        console.log("❌ Cannot approve: missing wallet client");
-        updateState({ error: "Wallet not connected" });
-        return false;
-      }
-
-      updateState({ step: "approving", error: null });
-
-      console.log("\n🔐 STEP 1: Approving collateral token...");
-      console.log("  Token:", tokenAddress);
-      console.log("  Spender:", MORPHO_BLUE_ADDRESS);
-      console.log("  Amount:", amount.toString());
-
-      try {
-        const hash = await walletClient.writeContract({
-          address: tokenAddress,
-          abi: erc20Abi,
-          functionName: "approve",
-          args: [MORPHO_BLUE_ADDRESS as Address, amount],
-        });
-
-        console.log("  📝 Approval tx sent:", hash);
-        console.log("  ⏳ Waiting for confirmation...");
-
-        const receipt = await publicClient.waitForTransactionReceipt({ hash });
-
-        if (receipt.status === "success") {
-          console.log("  ✅ Approval confirmed!");
-          return true;
-        } else {
-          throw new Error("Approval transaction failed");
-        }
-      } catch (error: any) {
-        console.error("  ❌ Approval failed:", error);
-
-        let errorMessage = "Approval failed";
-        if (error.message?.includes("User rejected")) {
-          errorMessage = "User rejected approval";
-        }
-
-        updateState({ error: errorMessage, step: "idle" });
-        return false;
-      }
-    },
-    [address, walletClient, publicClient]
-  );
-
-  /**
-   * Step 3: Supply collateral to Morpho
-   */
-  const supplyCollateral = useCallback(
-    async (
-      market: MarketData,
-      collateralAmountBN: bigint
-    ): Promise<boolean> => {
-      if (!address || !walletClient || !publicClient) {
-        console.log("❌ Cannot supply: missing wallet client");
-        return false;
-      }
-
-      updateState({ step: "supplying" });
-
-      console.log("\n💰 STEP 2: Supplying collateral...");
-
-      const marketParams = {
-        loanToken: market.loanAsset.address as Address,
-        collateralToken: market.collateralAsset.address as Address,
-        oracle: market.oracleAddress as Address,
-        irm: market.irmAddress as Address,
-        lltv: BigInt(market.lltv),
-      };
-
-      console.log("  Market params:", {
-        loanToken: marketParams.loanToken,
-        collateralToken: marketParams.collateralToken,
-        oracle: marketParams.oracle,
-        irm: marketParams.irm,
-        lltv: marketParams.lltv.toString(),
-      });
-      console.log("  Amount:", collateralAmountBN.toString());
-      console.log("  On behalf:", address);
-
-      try {
-        const hash = await walletClient.writeContract({
-          address: MORPHO_BLUE_ADDRESS as Address,
-          abi: MorphoBlueABI,
-          functionName: "supplyCollateral",
-          args: [
-            marketParams,
-            collateralAmountBN,
-            address,
-            "0x" // empty callback data
-          ],
-        });
-
-        console.log("  📝 Supply tx sent:", hash);
-        console.log("  ⏳ Waiting for confirmation...");
-
-        const receipt = await publicClient.waitForTransactionReceipt({ hash });
-
-        console.log("  Receipt status:", receipt.status);
-        console.log("  Gas used:", receipt.gasUsed.toString());
-        console.log("  Logs emitted:", receipt.logs.length);
-
-        if (receipt.status === "success") {
-          if (receipt.logs.length > 0) {
-            console.log("  ✅ Collateral supplied successfully!");
-            console.log("  📊 Events emitted:", receipt.logs.length);
-            return true;
-          } else {
-            console.log("  ⚠️ Transaction succeeded but no events emitted");
-            console.log("  This may indicate the operation had no effect");
-            return false;
-          }
-        } else {
-          throw new Error("Supply collateral transaction failed");
-        }
-      } catch (error: any) {
-        console.error("  ❌ Supply failed:", error);
-        updateState({ error: error.message || "Supply failed", step: "idle" });
-        return false;
-      }
-    },
-    [address, walletClient, publicClient]
-  );
-
-  /**
-   * Step 4: Borrow assets from Morpho
-   */
-  const borrowAssets = useCallback(
-    async (
-      market: MarketData,
-      borrowAmountBN: bigint
-    ): Promise<string | null> => {
-      if (!address || !walletClient || !publicClient) {
-        console.log("❌ Cannot borrow: missing wallet client");
-        return null;
-      }
-
-      updateState({ step: "borrowing" });
-
-      console.log("\n💸 STEP 3: Borrowing assets...");
-
-      const marketParams = {
-        loanToken: market.loanAsset.address as Address,
-        collateralToken: market.collateralAsset.address as Address,
-        oracle: market.oracleAddress as Address,
-        irm: market.irmAddress as Address,
-        lltv: BigInt(market.lltv),
-      };
-
-      console.log("  Market params:", {
-        loanToken: marketParams.loanToken,
-        collateralToken: marketParams.collateralToken,
-      });
-      console.log("  Borrow amount:", borrowAmountBN.toString());
-      console.log("  Shares:", "0 (using assets)");
-      console.log("  On behalf:", address);
-      console.log("  Receiver:", address);
-
-      try {
-        const hash = await walletClient.writeContract({
-          address: MORPHO_BLUE_ADDRESS as Address,
-          abi: MorphoBlueABI,
-          functionName: "borrow",
-          args: [
-            marketParams,
-            borrowAmountBN,
-            BigInt(0), // shares = 0 means we're using assets parameter
-            address,    // onBehalf
-            address     // receiver
-          ],
-        });
-
-        console.log("  📝 Borrow tx sent:", hash);
-        console.log("  ⏳ Waiting for confirmation...");
-
-        const receipt = await publicClient.waitForTransactionReceipt({ hash });
-
-        console.log("  Receipt status:", receipt.status);
-        console.log("  Gas used:", receipt.gasUsed.toString());
-        console.log("  Logs emitted:", receipt.logs.length);
-
-        if (receipt.status === "success") {
-          if (receipt.logs.length > 0) {
-            console.log("  ✅ Borrow successful!");
-            console.log("  📊 Events emitted:", receipt.logs.length);
-            updateState({ txHash: hash, step: "complete" });
-            return hash;
-          } else {
-            console.log("  ⚠️ Transaction succeeded but no events emitted");
-            updateState({ error: "Borrow had no effect", step: "idle" });
-            return null;
-          }
-        } else {
-          throw new Error("Borrow transaction failed");
-        }
-      } catch (error: any) {
-        console.error("  ❌ Borrow failed:", error);
-
-        let errorMessage = "Borrow failed";
-        if (error.message?.includes("insufficient collateral")) {
-          errorMessage = "Insufficient collateral for borrow amount";
-        } else if (error.message?.includes("User rejected")) {
-          errorMessage = "User rejected transaction";
-        }
-
-        updateState({ error: errorMessage, step: "idle" });
-        return null;
-      }
-    },
-    [address, walletClient, publicClient]
-  );
-
-  /**
-   * Main function: Execute complete borrow flow
+   * Main function: Execute complete borrow flow using Morpho bundlers
+   * This combines collateral supply and borrowing into a single seamless transaction
    */
   const borrow = useCallback(
     async ({ market, collateralAmount, borrowAmount }: BorrowParams): Promise<boolean> => {
       console.log("\n" + "=".repeat(60));
-      console.log("🚀 STARTING MORPHO BORROW FLOW");
+      console.log("🚀 STARTING MORPHO BORROW FLOW (BUNDLER)");
       console.log("=".repeat(60));
       console.log("Market:", market.uniqueKey);
       console.log("Collateral:", collateralAmount, market.collateralAsset.symbol);
@@ -376,8 +193,18 @@ export const useMorphoBorrowNew = () => {
         return false;
       }
 
+      if (!publicClient) {
+        updateState({ error: "Public client not ready - please try again" });
+        return false;
+      }
+
       if (!collateralAmount || !borrowAmount) {
         updateState({ error: "Invalid amounts" });
+        return false;
+      }
+
+      if (!chainId) {
+        updateState({ error: "Chain ID not available" });
         return false;
       }
 
@@ -398,52 +225,80 @@ export const useMorphoBorrowNew = () => {
         console.log("  Collateral:", collateralAmountBN.toString(), "units");
         console.log("  Borrow:", borrowAmountBN.toString(), "units");
 
-        // STEP 1: Check and approve collateral if needed
-        const hasAllowance = await checkAllowance(
-          market.collateralAsset.address as Address,
-          collateralAmountBN
+        // Get the market ID from the market unique key
+        const marketId = market.uniqueKey as MarketId;
+        console.log("\n📡 Fetching market data from blockchain...");
+        console.log("  Market ID:", marketId);
+        console.log("  Chain ID:", chainId);
+
+        // Fetch market data from blockchain
+        let fetchedMarket: Market;
+        try {
+          fetchedMarket = await Market.fetch(marketId, publicClient);
+          console.log("  ✅ Market data loaded successfully", fetchedMarket);
+        } catch (error) {
+          console.error("  ❌ Failed to fetch market data:", error);
+          throw new Error("Market not found on-chain. Please verify the market exists and is valid.");
+        }
+
+        // Initialize SimulationState for bundler with fetched market data
+        console.log("\n🔄 Initializing simulation state with market data...");
+
+        // Get current block information
+        const block = await publicClient.getBlock();
+
+        const simulationState = new SimulationState({
+          chainId: chainId,
+          block: {
+            number: block.number,
+            timestamp: block.timestamp,
+          },
+          markets: {
+            [marketId]: fetchedMarket,
+          },
+        });
+
+        // Execute bundled transaction using setupBundle
+        console.log("\n📦 Creating bundled transaction...");
+        updateState({ step: "approving" });
+
+        const { operations, bundle } = await setupBundle(
+          walletClient,
+          simulationState,
+          [
+            {
+              type: "Blue_SupplyCollateral",
+              sender: address,
+              args: {
+                id: marketId,
+                assets: collateralAmountBN,
+                onBehalf: address,
+              },
+            },
+            {
+              type: "Blue_Borrow",
+              sender: address,
+              args: {
+                id: marketId,
+                assets: borrowAmountBN,
+                onBehalf: address,
+                receiver: address,
+                slippage: DEFAULT_SLIPPAGE_TOLERANCE,
+              },
+            },
+          ]
         );
 
-        if (!hasAllowance) {
-          const approved = await approveToken(
-            market.collateralAsset.address as Address,
-            collateralAmountBN
-          );
+        console.log("  ✅ Bundle created with", operations.length, "operations");
+        console.log("  📋 Operations:", operations.map(op => op.type).join(", "));
 
-          if (!approved) {
-            console.log("\n❌ FLOW ABORTED: Approval failed");
-            updateState({ isLoading: false });
-            return false;
-          }
-        } else {
-          console.log("\n✅ Approval not needed (sufficient allowance)");
-        }
-
-        // STEP 2: Supply collateral
-        const supplied = await supplyCollateral(market, collateralAmountBN);
-
-        if (!supplied) {
-          console.log("\n❌ FLOW ABORTED: Supply collateral failed");
-          updateState({ isLoading: false });
-          return false;
-        }
-
-        // STEP 3: Borrow assets
-        const txHash = await borrowAssets(market, borrowAmountBN);
-
-        if (!txHash) {
-          console.log("\n❌ FLOW ABORTED: Borrow failed");
-          updateState({ isLoading: false });
-          return false;
-        }
-
-        // Success!
+        // The setupBundle function already executes the transaction
         console.log("\n" + "=".repeat(60));
-        console.log("✅ BORROW FLOW COMPLETE!");
-        console.log("   Transaction hash:", txHash);
+        console.log("✅ BORROW FLOW COMPLETE (BUNDLED)!");
+        console.log("   Executed", operations.length, "operations in a single transaction");
         console.log("=".repeat(60) + "\n");
 
-        updateState({ isLoading: false });
+        updateState({ isLoading: false, step: "complete" });
         return true;
 
       } catch (error: any) {
@@ -453,9 +308,18 @@ export const useMorphoBorrowNew = () => {
         console.error(error);
         console.error("=".repeat(60) + "\n");
 
+        let errorMessage = "Borrow flow failed";
+        if (error.message?.includes("User rejected")) {
+          errorMessage = "User rejected transaction";
+        } else if (error.message?.includes("insufficient")) {
+          errorMessage = "Insufficient collateral or balance";
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+
         updateState({
           isLoading: false,
-          error: error.message || "Borrow flow failed",
+          error: errorMessage,
           step: "idle",
         });
         return false;
@@ -465,10 +329,8 @@ export const useMorphoBorrowNew = () => {
       address,
       isConnected,
       walletClient,
-      checkAllowance,
-      approveToken,
-      supplyCollateral,
-      borrowAssets,
+      publicClient,
+      chainId,
     ]
   );
 

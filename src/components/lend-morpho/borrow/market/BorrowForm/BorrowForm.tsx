@@ -1,5 +1,5 @@
-// /components/lend-morpho/borrow/market/BorrowForm/BorrowForm.tsx
 "use client";
+// /components/lend-morpho/borrow/market/BorrowForm/BorrowForm.tsx
 
 import React, { useState, useEffect } from "react";
 import { Box, Paper, Alert, Button, CircularProgress } from "@mui/material";
@@ -8,10 +8,7 @@ import { useAccount, useBalance } from "wagmi";
 import { formatUnits, Address } from "viem";
 import { usePriceBackend } from "@/hooks/sushiswap/usePriceBackend";
 import { useBorrowCalculations } from "@/hooks/lend-morpho/useBorrowCalculations";
-import { useMorphoBorrow } from "@/hooks/lend-morpho/useMorphoBorrow";
 import { useMorphoRepay } from "@/hooks/lend-morpho/useMorphoRepay";
-import { useTokenApproval } from "@/hooks/lend-morpho/useTokenApproval";
-import { useRepayTokenApproval } from "@/hooks/lend-morpho/useRepayTokenApproval";
 import { useMorphoPosition } from "@/hooks/lend-morpho/useMorphoPosition";
 import { BorrowRepayHeader } from "./BorrowRepayHeader";
 import { BorrowTabContent } from "./BorrowTabContent";
@@ -57,13 +54,9 @@ export function BorrowForm({
     error: loanPriceError,
   } = usePriceBackend(market.loanAsset.address as Address);
 
-  // Morpho hooks
-  const morphoBorrow = useMorphoBorrowNew();
-  const morphoRepay = useMorphoRepay();
-
-  // Token approval hooks
-  const tokenApproval = useTokenApproval(); // For collateral (borrow)
-  const repayTokenApproval = useRepayTokenApproval(); // For loan token (repay)
+  // Morpho hooks (all now bundler-based)
+  const morphoBorrow = useMorphoBorrowNew(); // Bundler-based borrow (handles approval + supply + borrow)
+  const morphoRepay = useMorphoRepay(); // Bundler-based repay (handles approval + repay + optional withdraw)
 
   // Get real user position via GraphQL API
   const {
@@ -79,9 +72,8 @@ export function BorrowForm({
   );
 
   // Get wallet balances
-  // Note: vbETH (0xee7d8bcfb72bc1880d0cf19822eb0a2e6577ab62) is an ERC20 token (Vault Bridge ETH)
-  // It is NOT native ETH, so we should always fetch it as a token balance
   // Only check for actual native ETH address (0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee)
+  // All other tokens (including WETH, vbETH, etc.) are fetched as ERC20 token balances
   const isCollateralNativeETH =
     market.collateralAsset.address.toLowerCase() ===
     "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
@@ -162,32 +154,7 @@ export function BorrowForm({
   const hasDebt = userPosition?.hasDebt || false;
   const hasPosition = userPosition?.hasPosition || false;
 
-  // Check token approval when amounts change
-  useEffect(() => {
-    if (
-      activeTab === "borrow" &&
-      collateralAmount &&
-      parseFloat(collateralAmount) > 0
-    ) {
-      tokenApproval.checkApproval({
-        tokenAddress: market.collateralAsset.address as Address,
-        spenderAddress: MORPHO_BLUE_ADDRESS as Address,
-        amount: collateralAmount,
-        decimals: market.collateralAsset.decimals,
-      });
-    }
-  }, [collateralAmount, market.collateralAsset, activeTab]);
-
-  useEffect(() => {
-    if (activeTab === "repay" && repayAmount && parseFloat(repayAmount) > 0) {
-      repayTokenApproval.checkApproval({
-        tokenAddress: market.loanAsset.address as Address,
-        spenderAddress: MORPHO_BLUE_ADDRESS as Address,
-        amount: repayAmount,
-        decimals: market.loanAsset.decimals,
-      });
-    }
-  }, [repayAmount, market.loanAsset, activeTab]);
+  // Note: Bundlers now handle all approvals automatically for both borrow and repay
 
   // Reset form when switching tabs
   useEffect(() => {
@@ -197,8 +164,6 @@ export function BorrowForm({
     setWithdrawAmount("");
     morphoBorrow.reset();
     morphoRepay.reset();
-    tokenApproval.reset();
-    repayTokenApproval.reset();
   }, [activeTab]);
 
   // Refetch position after successful transactions
@@ -274,89 +239,11 @@ export function BorrowForm({
     }
   };
 
-  const handleApprove = async () => {
-    console.log("=== handleApprove CALLED ===");
-    console.log("collateralAmount:", collateralAmount);
-    console.log("borrowAmount:", borrowAmount);
-    console.log("tokenApproval.isApproved:", tokenApproval.isApproved);
-    console.log("⚠️ BOT USERS: This is APPROVAL only, not borrowing yet!");
-
-    if (!collateralAmount) {
-      console.log("No collateralAmount, returning early");
-      return;
-    }
-
-    console.log("Approving token:", {
-      tokenAddress: market.collateralAsset.address,
-      spenderAddress: MORPHO_BLUE_ADDRESS,
-      amount: collateralAmount,
-      decimals: market.collateralAsset.decimals,
-    });
-
-    await tokenApproval.approve({
-      tokenAddress: market.collateralAsset.address as Address,
-      spenderAddress: MORPHO_BLUE_ADDRESS as Address,
-      amount: collateralAmount,
-      decimals: market.collateralAsset.decimals,
-    });
-
-    console.log(
-      "Approval complete. tokenApproval.isApproved:",
-      tokenApproval.isApproved
-    );
-    console.log(
-      "⚠️ BOT USERS: After approval, you need to click the button AGAIN to borrow!"
-    );
-  };
-
-  const handleRepayApprove = async () => {
-    if (!repayAmount) return;
-
-    await repayTokenApproval.approve({
-      tokenAddress: market.loanAsset.address as Address,
-      spenderAddress: MORPHO_BLUE_ADDRESS as Address,
-      amount: repayAmount,
-      decimals: market.loanAsset.decimals,
-    });
-  };
-
   const handleBorrow = async () => {
-    console.log("=== handleBorrow CALLED ===");
+    console.log("=== handleBorrow CALLED (BUNDLER) ===");
     console.log("React State - collateralAmount:", collateralAmount);
     console.log("React State - borrowAmount:", borrowAmount);
     console.log("React State - borrowInputMode:", borrowInputMode);
-
-    // DEBUG: Check what the DOM inputs actually have
-    const collateralInput = document.querySelector(
-      '[data-testid="collateral-input"]'
-    ) as HTMLInputElement;
-    const borrowInput = document.querySelector(
-      '[data-testid="borrow-input"]'
-    ) as HTMLInputElement;
-    console.log("DOM collateralInput.value:", collateralInput?.value);
-    console.log("DOM borrowInput.value:", borrowInput?.value);
-    console.log(
-      "DOM borrowInput.dataset.inputMode:",
-      borrowInput?.dataset?.inputMode
-    );
-
-    // ⚠️ BOT WARNING: If React state doesn't match DOM values, state hasn't updated yet!
-    if (collateralInput?.value !== collateralAmount) {
-      console.warn(
-        "⚠️ STATE MISMATCH! DOM collateral:",
-        collateralInput?.value,
-        "vs State:",
-        collateralAmount
-      );
-    }
-    if (borrowInput?.value !== borrowAmount) {
-      console.warn(
-        "⚠️ STATE MISMATCH! DOM borrow:",
-        borrowInput?.value,
-        "vs State:",
-        borrowAmount
-      );
-    }
 
     if (!collateralAmount || !borrowAmount) {
       console.log("Missing amounts in React state, returning early");
@@ -365,42 +252,61 @@ export function BorrowForm({
 
     // Always pass token amounts to borrow
     const tokenBorrowAmount = getBorrowTokenAmount();
-    console.log("=== Calling morphoBorrow.borrow ===");
+    console.log(
+      "=== Calling morphoBorrow.borrow (BUNDLER - single atomic transaction) ==="
+    );
     console.log("market:", market.uniqueKey);
     console.log("collateralAmount:", collateralAmount);
     console.log("tokenBorrowAmount (converted):", tokenBorrowAmount);
-    console.log("tokenBorrowAmount.toString():", tokenBorrowAmount.toString());
+    console.log(
+      "This will execute approval + supply collateral + borrow in ONE transaction"
+    );
 
-    await morphoBorrow.borrow({
+    const success = await morphoBorrow.borrow({
       market,
       collateralAmount,
       borrowAmount: tokenBorrowAmount.toString(),
     });
 
     // Reset form on success
-    if (morphoBorrow.txHash) {
-      console.log("Borrow successful, resetting form");
+    if (success) {
+      console.log("Borrow successful (bundled), resetting form");
       setCollateralAmount("");
       setBorrowAmount("");
     }
   };
 
   const handleRepay = async () => {
+    console.log("=== handleRepay CALLED (BUNDLER) ===");
+    console.log("React State - repayAmount:", repayAmount);
+    console.log("React State - withdrawAmount:", withdrawAmount);
+    console.log("React State - repayInputMode:", repayInputMode);
+
     if (!repayAmount && !withdrawAmount) {
       return;
     }
 
     // Always pass token amount to repay
     const tokenRepayAmount = getRepayTokenAmount();
+    console.log(
+      "=== Calling morphoRepay.repay (BUNDLER - single atomic transaction) ==="
+    );
+    console.log("market:", market.uniqueKey);
+    console.log("tokenRepayAmount (converted):", tokenRepayAmount);
+    console.log("withdrawAmount:", withdrawAmount || "0");
+    console.log(
+      "This will execute approval + repay + optional withdraw in ONE transaction"
+    );
 
-    await morphoRepay.repay({
+    const success = await morphoRepay.repay({
       market,
       repayAmount: tokenRepayAmount > 0 ? tokenRepayAmount.toString() : "0",
       withdrawAmount: withdrawAmount || "0",
     });
 
     // Reset form on success
-    if (morphoRepay.txHash) {
+    if (success) {
+      console.log("Repay successful (bundled), resetting form");
       setRepayAmount("");
       setWithdrawAmount("");
     }
@@ -410,15 +316,9 @@ export function BorrowForm({
   const currentError =
     morphoBorrow.error ||
     morphoRepay.error ||
-    tokenApproval.error ||
-    repayTokenApproval.error ||
     (positionError ? positionError.message : null);
 
-  const isLoading =
-    morphoBorrow.isLoading ||
-    morphoRepay.isLoading ||
-    tokenApproval.isLoading ||
-    repayTokenApproval.isLoading;
+  const isLoading = morphoBorrow.isLoading || morphoRepay.isLoading;
 
   console.log("Position Data:", {
     userPosition,
@@ -539,14 +439,14 @@ export function BorrowForm({
               {(morphoBorrow.txHash || morphoRepay.txHash)?.slice(0, 10)}...
               <Button
                 size="small"
-                onClick={() =>
+                onClick={() => {
                   window.open(
                     `https://etherscan.io/tx/${
                       morphoBorrow.txHash || morphoRepay.txHash
                     }`,
                     "_blank"
-                  )
-                }
+                  );
+                }}
                 sx={{
                   color: "white",
                   textDecoration: "underline",
@@ -569,7 +469,7 @@ export function BorrowForm({
               onCollateralAmountChange={setCollateralAmount}
               onBorrowAmountChange={setBorrowAmount}
               onMaxCollateral={handleMaxCollateral}
-              onBorrow={tokenApproval.isApproved ? handleBorrow : handleApprove}
+              onBorrow={handleBorrow}
               onConnect={onConnectWallet}
               isConnected={isWalletProperlyConnected}
               isLoading={isLoading}
@@ -579,9 +479,7 @@ export function BorrowForm({
               loanTokenPrice={loanTokenPrice || 0}
               isLoadingCollateralBalance={collateralBalanceQuery.isLoading}
               calculations={calculations}
-              needsApproval={
-                !tokenApproval.isApproved && parseFloat(collateralAmount) > 0
-              }
+              needsApproval={false}
               userPosition={userPosition || null}
               borrowInputMode={borrowInputMode}
               onToggleBorrowMode={handleToggleBorrowMode}
@@ -595,9 +493,7 @@ export function BorrowForm({
               onRepayAmountChange={setRepayAmount}
               onWithdrawAmountChange={setWithdrawAmount}
               onMaxRepay={handleMaxRepay}
-              onRepay={
-                repayTokenApproval.isApproved ? handleRepay : handleRepayApprove
-              }
+              onRepay={handleRepay}
               onConnect={onConnectWallet}
               isConnected={isWalletProperlyConnected}
               isLoading={isLoading}
@@ -608,9 +504,7 @@ export function BorrowForm({
               userPosition={userPosition || null}
               calculations={calculations}
               collateralTokenPrice={collateralTokenPrice || 0}
-              needsApproval={
-                !repayTokenApproval.isApproved && parseFloat(repayAmount) > 0
-              }
+              needsApproval={false}
               repayInputMode={repayInputMode}
               onToggleRepayMode={handleToggleRepayMode}
               isLoadingLoanPrice={isLoadingLoanPrice}

@@ -1,37 +1,44 @@
 // hooks/useMorphoDeposit.ts
 "use client";
-import React, { useState } from "react";
+import { useState, useCallback } from "react";
 import { useAccount, usePublicClient, useWalletClient } from "wagmi";
-import { parseUnits, Address, erc20Abi } from "viem";
+import { parseUnits, Address } from "viem";
+import { type Account, WalletClient, zeroAddress } from "viem";
+import { parseAccount } from "viem/accounts";
 
-// MetaMorpho ABI - Deposit functions only
-const MetaMorphoDepositABI = [
-  {
-    name: "deposit",
-    type: "function",
-    stateMutability: "nonpayable",
-    inputs: [
-      { name: "assets", type: "uint256" },
-      { name: "receiver", type: "address" },
-    ],
-    outputs: [{ name: "shares", type: "uint256" }],
-  },
-  {
-    name: "previewDeposit",
-    type: "function",
-    stateMutability: "view",
-    inputs: [{ name: "assets", type: "uint256" }],
-    outputs: [{ name: "", type: "uint256" }],
-  },
-] as const;
+import {
+  addresses,
+  ChainId,
+  DEFAULT_SLIPPAGE_TOLERANCE,
+  MarketId,
+  MarketParams,
+  UnknownMarketParamsError,
+  getUnwrappedToken,
+  Market,
+  Vault,
+  VaultMarketConfig,
+  Position,
+} from "@morpho-org/blue-sdk";
+import {
+  type BundlingOptions,
+  type InputBundlerOperation,
+  type BundlerOperation,
+  encodeBundle,
+  finalizeBundle,
+  populateBundle,
+} from "@morpho-org/bundler-sdk-viem";
+import "@morpho-org/blue-sdk-viem/lib/augment";
+import "@morpho-org/blue-sdk-viem/lib/augment/Market";
+import "@morpho-org/blue-sdk-viem/lib/augment/Vault";
+import "@morpho-org/blue-sdk-viem/lib/augment/VaultMarketConfig";
+import "@morpho-org/blue-sdk-viem/lib/augment/Position";
+import { SimulationState } from "@morpho-org/simulation-sdk";
 
 export interface DepositState {
   isLoading: boolean;
   error: string | null;
   txHash: string | null;
-  isApproving: boolean;
-  needsApproval: boolean;
-  allowance: bigint;
+  step: "idle" | "approving" | "depositing" | "complete";
 }
 
 export const useMorphoDeposit = (
@@ -43,9 +50,7 @@ export const useMorphoDeposit = (
     isLoading: false,
     error: null,
     txHash: null,
-    isApproving: false,
-    needsApproval: false,
-    allowance: BigInt(0),
+    step: "idle",
   });
 
   const { address, isConnected, chainId } = useAccount();
@@ -56,264 +61,377 @@ export const useMorphoDeposit = (
     setState((prev) => ({ ...prev, ...updates }));
   };
 
-  // Basic validation helper
-  const validateConnection = () => {
-    if (!address || !isConnected) {
-      return { valid: false, error: "Wallet not connected" };
+  /**
+   * Setup and execute bundled Morpho operations
+   * This function handles approval and deposit in a single transaction
+   */
+  const setupBundle = async (
+    client: WalletClient,
+    startData: SimulationState,
+    inputOperations: InputBundlerOperation[],
+    {
+      account: account_ = client.account,
+      supportsSignature,
+      unwrapTokens,
+      unwrapSlippage,
+      onBundleTx,
+      ...options
+    }: BundlingOptions & {
+      account?: Address | Account;
+      supportsSignature?: boolean;
+      unwrapTokens?: Set<Address>;
+      unwrapSlippage?: bigint;
+      onBundleTx?: (data: SimulationState) => Promise<void> | void;
+    } = {}
+  ) => {
+    if (!account_) throw new Error("Account is required");
+    const account = parseAccount(account_);
+
+    let { operations } = populateBundle(inputOperations, startData, {
+      ...options,
+      publicAllocatorOptions: {
+        enabled: true,
+        ...options.publicAllocatorOptions,
+      },
+    });
+    operations = finalizeBundle(
+      operations,
+      startData,
+      account.address,
+      unwrapTokens,
+      unwrapSlippage
+    );
+
+    const bundle = encodeBundle(operations, startData, supportsSignature);
+
+    const tokens = new Set<Address>();
+
+    operations.forEach((operation) => {
+      if (
+        operation.type.startsWith("Blue_") &&
+        operation.type !== "Blue_SetAuthorization" &&
+        "args" in operation &&
+        "id" in (operation.args as any)
+      ) {
+        try {
+          const marketParams = MarketParams.get((operation.args as any).id);
+
+          if (marketParams.loanToken !== zeroAddress)
+            tokens.add(marketParams.loanToken);
+
+          if (marketParams.collateralToken !== zeroAddress)
+            tokens.add(marketParams.collateralToken);
+        } catch (error) {
+          if (!(error instanceof UnknownMarketParamsError)) throw error;
+        }
+      }
+
+      if (operation.type.startsWith("MetaMorpho_") && "address" in operation) {
+        tokens.add(operation.address as Address);
+
+        const vault = startData.tryGetVault(operation.address as Address);
+        if (vault) tokens.add(vault.asset);
+      }
+
+      if (operation.type.startsWith("Erc20_") && "address" in operation) {
+        tokens.add(operation.address as Address);
+
+        const unwrapped = getUnwrappedToken(
+          operation.address as Address,
+          startData.chainId
+        );
+        if (unwrapped != null) tokens.add(unwrapped);
+      }
+    });
+
+    await onBundleTx?.(startData);
+
+    // Sign signatures if required
+    await Promise.all(
+      bundle.requirements.signatures.map((requirement) =>
+        requirement.sign(client, account)
+      )
+    );
+
+    const txs = bundle.requirements.txs
+      .map(({ tx }) => tx)
+      .concat([bundle.tx()]);
+
+    for (const tx of txs) {
+      // Remove the type field to avoid conflicts with viem's type expectations
+      const { type, ...txWithoutType } = tx;
+      await client.sendTransaction({ ...txWithoutType, account } as any);
     }
-    if (!publicClient) {
-      return { valid: false, error: "Public client not available" };
-    }
-    if (!walletClient) {
-      return { valid: false, error: "Wallet client not available" };
-    }
-    return { valid: true, error: null };
+
+    return { operations, bundle };
   };
 
-  // Check current allowance for deposits
-  const checkAllowance = React.useCallback(
-    async (amount: string): Promise<boolean> => {
-      if (!address || !isConnected || !publicClient) {
-        return false;
-      }
-
-      // Skip approval for ETH
-      if (assetAddress === "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee") {
-        updateState({ needsApproval: false });
-        return true;
-      }
-
-      try {
-        const amountToDeposit = parseUnits(amount, decimals);
-
-        const allowance = await publicClient.readContract({
-          address: assetAddress as Address,
-          abi: erc20Abi,
-          functionName: "allowance",
-          args: [address, vaultAddress as Address],
-        });
-
-        const needsApproval = allowance < amountToDeposit;
-
-        updateState({
-          allowance,
-          needsApproval,
-        });
-
-        return !needsApproval;
-      } catch (error) {
-        console.error("Error checking allowance:", error);
-        return false;
-      }
-    },
-    [address, isConnected, publicClient, assetAddress, vaultAddress, decimals]
-  );
-
-  // Approve the vault for deposits (standalone function)
-  const approve = React.useCallback(
-    async (amount: string): Promise<boolean> => {
-      const validation = validateConnection();
-      if (!validation.valid) {
-        updateState({ error: validation.error });
-        return false;
-      }
-
-      // Skip approval for ETH
-      if (assetAddress === "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee") {
-        return true;
-      }
-
-      updateState({ isApproving: true, error: null });
-
-      try {
-        const amountToDeposit = parseUnits(amount, decimals);
-
-        const hash = await walletClient!.writeContract({
-          address: assetAddress as Address,
-          abi: erc20Abi,
-          functionName: "approve",
-          args: [vaultAddress as Address, amountToDeposit],
-        });
-
-        // Wait for approval transaction
-        const receipt = await publicClient!.waitForTransactionReceipt({ hash });
-
-        if (receipt.status === "success") {
-          updateState({ isApproving: false, needsApproval: false });
-          return true;
-        } else {
-          throw new Error("Approval transaction failed");
-        }
-      } catch (error) {
-        console.error("Approval error:", error);
-        let errorMessage = "Approval failed";
-
-        if (error instanceof Error) {
-          if (error.message.includes("User rejected")) {
-            errorMessage = "Transaction rejected by user";
-          } else {
-            errorMessage = error.message;
-          }
-        }
-
-        updateState({
-          isApproving: false,
-          error: errorMessage,
-        });
-        return false;
-      }
-    },
-    [
-      address,
-      isConnected,
-      walletClient,
-      publicClient,
-      assetAddress,
-      vaultAddress,
-      decimals,
-    ]
-  );
-
-  // Main deposit function - handles approval automatically like BorrowForm
-  const deposit = React.useCallback(
+  /**
+   * Main function: Execute deposit using Morpho bundlers
+   * This combines approval and deposit into a single seamless transaction
+   */
+  const deposit = useCallback(
     async (amount: string, receiver?: Address): Promise<boolean> => {
-      const validation = validateConnection();
-      if (!validation.valid) {
-        updateState({ error: validation.error });
+      console.log("\n" + "=".repeat(60));
+      console.log("🚀 STARTING MORPHO DEPOSIT FLOW (BUNDLER)");
+      console.log("=".repeat(60));
+      console.log("Vault:", vaultAddress);
+      console.log("Amount:", amount, "units");
+      console.log("Receiver:", receiver || address);
+      console.log("=".repeat(60));
+
+      // Validate inputs
+      if (!address || !isConnected) {
+        updateState({ error: "Wallet not connected" });
         return false;
       }
 
-      updateState({ isLoading: true, error: null, txHash: null });
+      if (!walletClient) {
+        updateState({ error: "Wallet client not ready - please try again" });
+        return false;
+      }
+
+      if (!publicClient) {
+        updateState({ error: "Public client not ready - please try again" });
+        return false;
+      }
+
+      if (!amount) {
+        updateState({ error: "Invalid amount" });
+        return false;
+      }
+
+      if (!chainId) {
+        updateState({ error: "Chain ID not available" });
+        return false;
+      }
+
+      updateState({ isLoading: true, error: null, step: "idle" });
 
       try {
+        // Parse amount to BigInt
         const amountToDeposit = parseUnits(amount, decimals);
-        const receiverAddress = receiver || address!;
+        const receiverAddress = receiver || address;
 
-        console.log("Starting deposit process:", {
-          amount,
-          amountToDeposit: amountToDeposit.toString(),
-          assetAddress,
-          vaultAddress,
-          userAddress: address,
-          receiverAddress,
-        });
+        console.log("\n📊 Parsed amounts:");
+        console.log("  Deposit:", amountToDeposit.toString(), "units");
+        console.log("  Receiver:", receiverAddress);
 
-        // Handle approval automatically for ERC20 tokens
-        if (assetAddress !== "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee") {
-          console.log("Checking allowance for ERC20 token...");
+        // Fetch vault data from blockchain
+        console.log("\n📡 Fetching vault data from blockchain...");
+        console.log("  Vault Address:", vaultAddress);
+        console.log("  Chain ID:", chainId);
 
-          // Check current allowance
-          const allowance = await publicClient!.readContract({
-            address: assetAddress as Address,
-            abi: erc20Abi,
-            functionName: "allowance",
-            args: [address!, vaultAddress as Address],
-          });
+        let fetchedVault: Vault;
+        try {
+          fetchedVault = await Vault.fetch(
+            vaultAddress as Address,
+            publicClient
+          );
+          console.log("  ✅ Vault data loaded successfully");
+          console.log("  Supply Queue:", fetchedVault.supplyQueue);
+          console.log("  Withdraw Queue:", fetchedVault.withdrawQueue);
+        } catch (error) {
+          console.error("  ❌ Failed to fetch vault data:", error);
+          throw new Error(
+            "Vault not found on-chain. Please verify the vault exists and is valid."
+          );
+        }
 
-          console.log("Current allowance:", allowance.toString());
-          console.log("Required amount:", amountToDeposit.toString());
+        // Get all unique market IDs from vault's queues
+        console.log("\n📡 Fetching data for all markets in vault queues...");
+        const allMarketIds = [
+          ...new Set([
+            ...fetchedVault.supplyQueue,
+            ...fetchedVault.withdrawQueue,
+          ]),
+        ];
+        console.log(`  Found ${allMarketIds.length} unique markets`);
 
-          // If allowance is insufficient, request approval first
-          if (allowance < amountToDeposit) {
-            console.log("Insufficient allowance, requesting approval...");
-            updateState({ isApproving: true });
+        // Fetch Market data for each market
+        console.log("\n📡 Fetching market data...");
+        const markets: Record<MarketId, Market | undefined> = {};
 
-            try {
-              const approvalHash = await walletClient!.writeContract({
-                address: assetAddress as Address,
-                abi: erc20Abi,
-                functionName: "approve",
-                args: [vaultAddress as Address, amountToDeposit],
-              });
-
-              console.log("Approval transaction sent:", approvalHash);
-
-              // Wait for approval to complete
-              const approvalReceipt =
-                await publicClient!.waitForTransactionReceipt({
-                  hash: approvalHash,
-                });
-
-              if (approvalReceipt.status !== "success") {
-                throw new Error("Approval transaction failed");
-              }
-
-              console.log("Approval successful!");
-            } catch (approvalError) {
-              console.error("Approval failed:", approvalError);
-
-              // Handle approval-specific errors
-              if (
-                approvalError instanceof Error &&
-                approvalError.message.includes("User rejected")
-              ) {
-                updateState({
-                  isLoading: false,
-                  isApproving: false,
-                  error: "Approval rejected by user",
-                });
-              } else {
-                updateState({
-                  isLoading: false,
-                  isApproving: false,
-                  error: "Approval failed",
-                });
-              }
-              return false;
-            }
-
-            updateState({ isApproving: false });
+        for (const marketId of allMarketIds) {
+          try {
+            const market = await Market.fetch(marketId, publicClient);
+            markets[marketId] = market;
+            console.log(`  ✅ Loaded market data for ${marketId}`);
+          } catch (error) {
+            console.warn(
+              `  ⚠️  Failed to fetch market data for ${marketId}:`,
+              error
+            );
+            // Continue even if one market fetch fails
           }
         }
 
-        console.log("Executing deposit transaction...");
+        // Fetch VaultMarketConfig for all markets
+        console.log("\n📡 Fetching vault market configurations...");
+        const vaultMarketConfigs: Record<
+          MarketId,
+          VaultMarketConfig | undefined
+        > = {};
 
-        // Execute deposit transaction
-        const depositTxHash = await walletClient!.writeContract({
-          address: vaultAddress as Address,
-          abi: MetaMorphoDepositABI,
-          functionName: "deposit",
-          args: [amountToDeposit, receiverAddress],
-        });
-
-        console.log("Deposit transaction sent:", depositTxHash);
-
-        updateState({ txHash: depositTxHash });
-
-        // Wait for transaction confirmation
-        const receipt = await publicClient!.waitForTransactionReceipt({
-          hash: depositTxHash,
-        });
-
-        if (receipt.status === "success") {
-          console.log("Deposit successful:", depositTxHash);
-          updateState({
-            isLoading: false,
-            isApproving: false,
-            needsApproval: false,
-          });
-          return true;
-        } else {
-          throw new Error("Deposit transaction failed");
-        }
-      } catch (error) {
-        console.error("Deposit error:", error);
-
-        let errorMessage = "Deposit failed";
-        if (error instanceof Error) {
-          if (error.message.includes("User rejected")) {
-            errorMessage = "Transaction rejected by user";
-          } else if (error.message.includes("insufficient")) {
-            errorMessage = "Insufficient balance";
-          } else {
-            errorMessage = error.message;
+        for (const marketId of allMarketIds) {
+          try {
+            const config = await VaultMarketConfig.fetch(
+              vaultAddress as Address,
+              marketId,
+              publicClient
+            );
+            vaultMarketConfigs[marketId] = config;
+            console.log(`  ✅ Loaded config for market ${marketId}`);
+          } catch (error) {
+            console.warn(
+              `  ⚠️  Failed to fetch config for market ${marketId}:`,
+              error
+            );
+            // Continue even if one market config fails
           }
+        }
+
+        // Fetch vault's positions on all markets (vault itself has positions on markets)
+        console.log("\n📡 Fetching vault positions on markets...");
+        const vaultPositions: Record<MarketId, Position | undefined> = {};
+
+        for (const marketId of allMarketIds) {
+          try {
+            const position = await Position.fetch(
+              vaultAddress as Address,  // Fetch vault's position, not user's!
+              marketId,
+              publicClient
+            );
+            vaultPositions[marketId] = position;
+            console.log(
+              `  ✅ Loaded vault position for market ${marketId}`,
+              position
+            );
+          } catch (error) {
+            console.warn(
+              `  ⚠️  Failed to fetch vault position for market ${marketId}:`,
+              error
+            );
+            // Continue even if one position fetch fails
+          }
+        }
+
+        // Also fetch user's position on the vault (if depositing to track existing shares)
+        console.log("\n📡 Fetching user position on vault...");
+        const userPositions: Record<MarketId, Position | undefined> = {};
+
+        for (const marketId of allMarketIds) {
+          try {
+            const position = await Position.fetch(
+              address,
+              marketId,
+              publicClient
+            );
+            userPositions[marketId] = position;
+            console.log(
+              `  ✅ Loaded user position for market ${marketId}`,
+              position
+            );
+          } catch (error) {
+            console.warn(
+              `  ⚠️  Failed to fetch user position for market ${marketId}:`,
+              error
+            );
+            // Continue even if one position fetch fails
+          }
+        }
+
+        // Initialize SimulationState for bundler with fetched vault data
+        console.log(
+          "\n🔄 Initializing simulation state with vault, market configs, and positions..."
+        );
+
+        // Get current block information
+        const block = await publicClient.getBlock();
+
+        const simulationState = new SimulationState({
+          chainId: chainId,
+          block: {
+            number: block.number,
+            timestamp: block.timestamp,
+          },
+          markets: markets,  // Market data for all markets in vault queues
+          vaults: {
+            [vaultAddress as Address]: fetchedVault,
+          },
+          vaultMarketConfigs: {
+            [vaultAddress as Address]: vaultMarketConfigs,
+          },
+          positions: {
+            [vaultAddress as Address]: vaultPositions,  // Vault's positions on markets
+            [address]: userPositions,  // User's positions on markets
+          },
+        });
+
+        console.log("  Block:", block.number.toString());
+
+        // Execute bundled transaction using setupBundle
+        console.log("\n📦 Creating bundled transaction...");
+        updateState({ step: "approving" });
+
+        const { operations, bundle } = await setupBundle(
+          walletClient,
+          simulationState,
+          [
+            {
+              type: "MetaMorpho_Deposit",
+              address: vaultAddress as Address,
+              sender: address,
+              args: {
+                assets: amountToDeposit,
+                owner: receiverAddress,
+              },
+            },
+          ]
+        );
+
+        console.log(
+          "  ✅ Bundle created with",
+          operations.length,
+          "operations"
+        );
+        console.log(
+          "  📋 Operations:",
+          operations.map((op) => op.type).join(", ")
+        );
+
+        // The setupBundle function already executes the transaction
+        console.log("\n" + "=".repeat(60));
+        console.log("✅ DEPOSIT FLOW COMPLETE (BUNDLED)!");
+        console.log(
+          "   Executed",
+          operations.length,
+          "operations in a single transaction"
+        );
+        console.log("=".repeat(60) + "\n");
+
+        updateState({ isLoading: false, step: "complete" });
+        return true;
+      } catch (error: any) {
+        console.error("\n" + "=".repeat(60));
+        console.error("❌ DEPOSIT FLOW ERROR");
+        console.error("=".repeat(60));
+        console.error(error);
+        console.error("=".repeat(60) + "\n");
+
+        let errorMessage = "Deposit flow failed";
+        if (error.message?.includes("User rejected")) {
+          errorMessage = "User rejected transaction";
+        } else if (error.message?.includes("insufficient")) {
+          errorMessage = "Insufficient balance";
+        } else if (error.message) {
+          errorMessage = error.message;
         }
 
         updateState({
           isLoading: false,
-          isApproving: false,
           error: errorMessage,
+          step: "idle",
         });
         return false;
       }
@@ -321,61 +439,26 @@ export const useMorphoDeposit = (
     [
       address,
       isConnected,
-      publicClient,
       walletClient,
-      assetAddress,
+      publicClient,
+      chainId,
       vaultAddress,
       decimals,
     ]
   );
 
-  // Get deposit preview
-  const previewDeposit = React.useCallback(
-    async (amount: string): Promise<bigint | null> => {
-      if (!publicClient || !amount) {
-        return null;
-      }
-
-      try {
-        const amountToDeposit = parseUnits(amount, decimals);
-
-        const shares = await publicClient.readContract({
-          address: vaultAddress as Address,
-          abi: MetaMorphoDepositABI,
-          functionName: "previewDeposit",
-          args: [amountToDeposit],
-        });
-
-        return shares as bigint;
-      } catch (error) {
-        console.error("Preview deposit error:", error);
-        return null;
-      }
-    },
-    [publicClient, decimals, vaultAddress]
-  );
-
-  // Reset state
-  const reset = React.useCallback(() => {
+  const reset = useCallback(() => {
     setState({
       isLoading: false,
       error: null,
       txHash: null,
-      isApproving: false,
-      needsApproval: false,
-      allowance: BigInt(0),
+      step: "idle",
     });
   }, []);
 
   return {
-    // Main functions
     deposit,
-    approve,
-    checkAllowance,
-    previewDeposit,
     reset,
-
-    // State
     ...state,
   };
 };

@@ -3,6 +3,7 @@
 
 import { useChain } from "@/context/ChainContext";
 import { useQuery } from "@tanstack/react-query";
+import { id } from "ethers/lib/utils";
 
 // Types based on Morpho API structure
 export interface MarketAsset {
@@ -42,6 +43,7 @@ export interface MarketReward {
 }
 
 export interface MarketData {
+  id: string;
   uniqueKey: string;
   lltv: string;
   whitelisted: boolean;
@@ -92,6 +94,7 @@ const GET_MARKET_QUERY = `
   query GetMarket($uniqueKey: String!, $chainId: Int!) {
     marketByUniqueKey(uniqueKey: $uniqueKey, chainId: $chainId) {
       uniqueKey
+      id
       lltv
       whitelisted
       oracleAddress
@@ -261,6 +264,7 @@ export function useMarkets() {
     query GetMarkets($chainId: Int!) {
       markets(where: { chainId_in: [$chainId] }, first: 50, orderBy: SupplyAssetsUsd, orderDirection: Desc) {
         items {
+          id
           uniqueKey
           lltv
           whitelisted
@@ -373,6 +377,7 @@ export function useMarkets() {
 
         return {
           ...market,
+          id: market.id,
           // Ensure required fields exist
           whitelisted: market.whitelisted || false,
           oracle: market.oracle || { address: "", type: "" },

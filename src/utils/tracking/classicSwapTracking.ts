@@ -18,9 +18,12 @@ interface ClassicSwapTrackingData {
   };
   usdVolume: number;
   executionPrice: number;
+  priceImpact?: number; // Price impact percentage from backend swap response
   poolId?: string;
   timestamp?: string;
   status?: 'success' | 'failed' | 'pending';
+  poolFee?: number; // Fee tier in basis points (e.g., 30 for 0.3%)
+  fees_usd?: number; // Calculated swap fees in USD
 }
 
 /**

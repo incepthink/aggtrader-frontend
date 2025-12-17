@@ -43,6 +43,7 @@ export interface SwapBackendResponse {
     to: Address;
     data: string; // hex string
     value: string;
+    priceImpact: number
   };
 }
 

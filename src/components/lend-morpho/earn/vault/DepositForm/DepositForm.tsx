@@ -106,11 +106,8 @@ export const DepositForm: React.FC<DepositFormProps> = ({
   // Separate hooks for deposit and withdraw
   const {
     deposit,
-    approve,
-    checkAllowance,
     isLoading: isDepositing,
-    isApproving,
-    needsApproval,
+    step: depositStep,
     error: depositError,
     txHash: depositTxHash,
     reset: resetDeposit,
@@ -120,6 +117,9 @@ export const DepositForm: React.FC<DepositFormProps> = ({
     vault.asset.decimals
   );
 
+  // Derive isApproving from step for backward compatibility
+  const isApproving = depositStep === "approving";
+
   // Pass userPosition from API to withdraw hook (handles undefined)
   const {
     withdraw,
@@ -127,6 +127,7 @@ export const DepositForm: React.FC<DepositFormProps> = ({
     getMaxWithdrawableTokens,
     hasWithdrawablePosition,
     isLoading: isWithdrawing,
+    step: withdrawStep,
     error: withdrawError,
     txHash: withdrawTxHash,
     userShares,
@@ -254,16 +255,6 @@ export const DepositForm: React.FC<DepositFormProps> = ({
     }
   };
 
-  const handleApprove = async () => {
-    if (!amount) return;
-    // ✅ Clear any existing errors before approval
-    if (depositError) {
-      resetDeposit();
-    }
-    // Always pass token amount to approve
-    await approve(depositAmount.toString());
-  };
-
   const handleDeposit = async () => {
     if (!amount) return;
     // ✅ Clear any existing errors before deposit
@@ -331,7 +322,8 @@ export const DepositForm: React.FC<DepositFormProps> = ({
       isLoadingPosition;
 
     const getButtonText = () => {
-      if (isWithdrawing) return "Processing Withdrawal...";
+      if (withdrawStep === "withdrawing") return "Processing Withdrawal...";
+      if (withdrawStep === "complete" && !withdrawError) return "Withdrawal Complete!";
       if (isLoadingPosition) return "Loading Position...";
       if (!hasWithdrawablePosition()) return "No position to withdraw";
       if (!amount || withdrawAmount === 0) return "Enter an amount";
@@ -567,11 +559,11 @@ export const DepositForm: React.FC<DepositFormProps> = ({
               symbol={vault.asset.symbol}
               isLoading={isDepositing || isApproving} // ✅ Show loading for both states
               isApproving={isApproving}
-              needsApproval={false} // ✅ Always false - handle approval internally
+              needsApproval={false} // ✅ Always false - bundler handles approval internally
               txHash={depositTxHash}
               error={currentError}
-              onDeposit={handleDeposit} // ✅ Always call deposit (handles approval internally)
-              onApprove={handleApprove} // ✅ Not used but required by interface
+              onDeposit={handleDeposit} // ✅ Always call deposit (bundler handles approval internally)
+              onApprove={() => {}} // ✅ No-op since bundler handles approval
               onConnect={onConnectWallet}
               onReset={() => {
                 setWalletError(null);

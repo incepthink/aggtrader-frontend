@@ -71,6 +71,7 @@ export const useSushiClassic = (callbacks?: UseSushiClassicCallbacks) => {
   const [quoteError, setQuoteError] = useState<string | null>(null);
   const [quoteWarning, setQuoteWarning] = useState<string | null>(null);
   const [routerAddress, setRouterAddress] = useState<Address | null>(null);
+  const [swapPriceImpact, setSwapPriceImpact] = useState<number | null>(null);
 
   const {
     data: txHash,
@@ -91,12 +92,51 @@ export const useSushiClassic = (callbacks?: UseSushiClassicCallbacks) => {
 
   console.log("TRX DATA:", receiptData);
 
+  // Calculate operator fee from receipt data
+  if (receiptData?.operatorFeeConstant && receiptData?.operatorFeeScalar) {
+    const feeConstantHex = receiptData.operatorFeeConstant;
+    const feeScalarHex = receiptData.operatorFeeScalar;
+
+    const feeConstantDecimal = BigInt(feeConstantHex);
+    const feeScalarDecimal = BigInt(feeScalarHex);
+
+    // Calculate fee (constant / 1e18 for wei to ether conversion)
+    const feeValue = Number(feeConstantDecimal) / 1e18;
+
+    console.log("Operator Fee Details:", {
+      operatorFeeConstant: {
+        hex: feeConstantHex,
+        decimal: feeConstantDecimal.toString(),
+      },
+      operatorFeeScalar: {
+        hex: feeScalarHex,
+        decimal: feeScalarDecimal.toString(),
+      },
+      calculatedFee: feeValue,
+      formattedFee: feeValue.toFixed(18),
+    });
+  }
+
   const chartToken = useSpotStore((s) => s.chartToken);
 
   const {
     tokenPrice: currentPriceForMarker,
   } = usePriceBackend(
     chartToken.address as any,
+    undefined,
+    747474,
+    {
+      enabled: true,
+      refetchInterval: 30000,
+      staleTime: 15000,
+    }
+  );
+
+  // Fetch ETH price for fee calculation (using wrapped ETH address)
+  const {
+    tokenPrice: ethPrice,
+  } = usePriceBackend(
+    "0xEE7D8BCFb72bC1880D0Cf19822eB0A2e6577aB62" as Address,
     undefined,
     747474,
     {
@@ -172,6 +212,19 @@ export const useSushiClassic = (callbacks?: UseSushiClassicCallbacks) => {
               ? amountOutFloat * toTokenPrice
               : amountInFloat * finalPrice; // Fallback to swap price
 
+          // Calculate fees_usd from receipt data
+          let fees_usd: number | undefined;
+          if (receiptData?.operatorFeeConstant && ethPrice) {
+            const feeConstantDecimal = BigInt(receiptData.operatorFeeConstant);
+            const feeValue = Number(feeConstantDecimal) / 1e18; // Convert wei to ether
+            fees_usd = feeValue * ethPrice;
+            console.log("Calculated fees_usd:", {
+              feeValue,
+              ethPrice,
+              fees_usd,
+            });
+          }
+
           await trackClassicSwap({
             walletAddress: address,
             txHash: receiptData.transactionHash,
@@ -190,8 +243,10 @@ export const useSushiClassic = (callbacks?: UseSushiClassicCallbacks) => {
             },
             usdVolume,
             executionPrice: finalPrice,
+            priceImpact: swapPriceImpact ?? undefined,
             timestamp: new Date(Number(block.timestamp) * 1000).toISOString(),
             status: 'success',
+            fees_usd,
           });
 
           callbacks?.showSnackbar?.("Transaction successful!", "success");
@@ -217,7 +272,7 @@ export const useSushiClassic = (callbacks?: UseSushiClassicCallbacks) => {
 
       saveTradeData();
     }
-  }, [isDone, receiptData, quote, chartToken, publicClient, queryClient, callbacks, address, currentPriceForMarker]);
+  }, [isDone, receiptData, quote, chartToken, publicClient, queryClient, callbacks, address, currentPriceForMarker, ethPrice, swapPriceImpact]);
 
   // NEW: Reset flag when starting new transaction
   useEffect(() => {
@@ -395,6 +450,11 @@ export const useSushiClassic = (callbacks?: UseSushiClassicCallbacks) => {
           const txValue = txData.value ? BigInt(txData.value) : BigInt(0);
 
           setRouterAddress(txData.to);
+
+          // Store priceImpact from swap response for tracking
+          if (txData.priceImpact !== undefined) {
+            setSwapPriceImpact(txData.priceImpact);
+          }
 
           try {
             const callResult = await publicClient.call({
