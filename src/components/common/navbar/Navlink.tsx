@@ -28,7 +28,7 @@ export default function NavLink({ href, children }: NavLinkProps) {
       id={`navbtn-${children?.toString().toLowerCase()}`}
       href={primaryHref}
       target={newTab ? "_blank" : ""}
-      className={`text-lg relative pb-3 px-2 after:absolute after:inset-x-0 after:bottom-0 hover:text-[#00ffe9] transition after:bg-gradient-to-r after:from-[#00FFE9] after:to-[#003B3C] ${
+      className={`text-md relative pb-3 px-2 after:absolute after:inset-x-0 after:bottom-0 hover:text-[#00ffe9] transition after:bg-gradient-to-r after:from-[#00FFE9] after:to-[#003B3C] ${
         isActive ? "text-[#00ffe9]" : "text-white"
       }`}
       aria-current={isActive ? "page" : undefined}

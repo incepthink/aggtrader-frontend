@@ -121,6 +121,7 @@ export const TwapOrdersDialog: React.FC<TwapOrdersDialogProps> = ({
     account: address,
     enabled: isOpen,
   });
+  console.log("TWAP ORDERS", orders);
 
   const [orderFilter, setOrderFilter] = useState<OrderFilter>(OrderFilter.All);
   const [selectedOrderIndex, setSelectedOrderIndex] = useState<
