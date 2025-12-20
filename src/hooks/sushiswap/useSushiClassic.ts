@@ -93,8 +93,11 @@ export const useSushiClassic = (callbacks?: UseSushiClassicCallbacks) => {
   console.log("TRX DATA:", receiptData);
 
   // Calculate operator fee from receipt data
+  // @ts-ignore - operatorFeeConstant and operatorFeeScalar exist at runtime
   if (receiptData?.operatorFeeConstant && receiptData?.operatorFeeScalar) {
+    // @ts-ignore
     const feeConstantHex = receiptData.operatorFeeConstant;
+    // @ts-ignore
     const feeScalarHex = receiptData.operatorFeeScalar;
 
     const feeConstantDecimal = BigInt(feeConstantHex);
@@ -214,7 +217,9 @@ export const useSushiClassic = (callbacks?: UseSushiClassicCallbacks) => {
 
           // Calculate fees_usd from receipt data
           let fees_usd: number | undefined;
+          // @ts-ignore - operatorFeeConstant exists at runtime
           if (receiptData?.operatorFeeConstant && ethPrice) {
+            // @ts-ignore
             const feeConstantDecimal = BigInt(receiptData.operatorFeeConstant);
             const feeValue = Number(feeConstantDecimal) / 1e18; // Convert wei to ether
             fees_usd = feeValue * ethPrice;

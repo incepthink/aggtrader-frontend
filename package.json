@@ -55,6 +55,7 @@
     "react-dom": "^19.0.0",
     "react-minimal-pie-chart": "^9.1.0",
     "recharts": "^2.15.3",
+    "reflect-metadata": "^0.2.2",
     "sushi": "^6.1.0",
     "swr": "^2.3.6",
     "viem": "^2.31.3",
