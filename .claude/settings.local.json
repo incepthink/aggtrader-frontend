@@ -18,7 +18,10 @@
       "WebFetch(domain:sdk-js-docs-v1.kuma.bid)",
       "WebFetch(domain:api-docs-v1.kuma.bid)",
       "Bash(find:*)",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "Bash(npm install:*)",
+      "Bash(rm:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []

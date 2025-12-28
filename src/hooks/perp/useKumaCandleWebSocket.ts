@@ -15,6 +15,14 @@ export interface UseKumaCandleWebSocketOptions {
   enabled?: boolean;
 }
 
+interface HistoricalCandleData {
+  start: number;
+  open: string;
+  high: string;
+  low: string;
+  close: string;
+}
+
 export function useKumaCandleWebSocket({
   market = 'BTC-USD',
   interval = CandleInterval.FIVE_MINUTES,
@@ -96,7 +104,7 @@ export function useKumaCandleWebSocket({
           throw new Error(`API responded with status: ${response.status}`);
         }
 
-        const historicalCandles = await response.json();
+        const historicalCandles: HistoricalCandleData[] = await response.json();
 
         // Transform and populate the candle map
         historicalCandles.forEach((candle) => {

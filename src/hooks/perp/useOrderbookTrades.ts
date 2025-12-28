@@ -112,13 +112,10 @@ export function useOrderbookTrades(market: string = 'BTC-USD') {
         });
 
         // Convert REST trades to WebSocket trade format
-        const initialTrades: KumaTradeEventData[] = tradesResponse.map((trade) => ({
-          market: trade.market,
-          price: trade.price,
-          quantity: trade.quantity,
-          time: trade.time,
-          makerSide: trade.makerSide,
-          fillId: trade.fillId,
+        // REST API doesn't include market in response, so we add it from the request param
+        const initialTrades: KumaTradeEventData[] = tradesResponse.map((trade, index) => ({
+          ...trade,
+          market, // Add market from the request parameter
         }));
 
         setTrades(initialTrades);

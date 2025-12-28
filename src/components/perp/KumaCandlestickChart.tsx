@@ -14,26 +14,26 @@ interface KumaCandlestickChartProps {
   initialInterval?: CandleInterval;
 }
 
-// Map TimeframeOption to CandleInterval
-const timeframeToInterval: Record<TimeframeOption, CandleInterval> = {
+// Map TimeframeOption to CandleInterval (Kuma SDK only supports up to 1d)
+const timeframeToInterval: Partial<Record<TimeframeOption, CandleInterval>> = {
   '5m': CandleInterval.FIVE_MINUTES,
   '15m': CandleInterval.FIFTEEN_MINUTES,
   '30m': CandleInterval.THIRTY_MINUTES,
   '1h': CandleInterval.ONE_HOUR,
   '4h': CandleInterval.FOUR_HOURS,
   '1d': CandleInterval.ONE_DAY,
-  '1w': CandleInterval.ONE_WEEK,
+  // Note: '1w' is not supported by Kuma SDK
 };
 
 // Map CandleInterval to TimeframeOption
-const intervalToTimeframe: Record<CandleInterval, TimeframeOption> = {
+// Note: ONE_MINUTE is not included as it's not a standard TimeframeOption
+const intervalToTimeframe: Partial<Record<CandleInterval, TimeframeOption>> = {
   [CandleInterval.FIVE_MINUTES]: '5m',
   [CandleInterval.FIFTEEN_MINUTES]: '15m',
   [CandleInterval.THIRTY_MINUTES]: '30m',
   [CandleInterval.ONE_HOUR]: '1h',
   [CandleInterval.FOUR_HOURS]: '4h',
   [CandleInterval.ONE_DAY]: '1d',
-  [CandleInterval.ONE_WEEK]: '1w',
 };
 
 const KumaCandlestickChart: React.FC<KumaCandlestickChartProps> = ({
@@ -49,8 +49,8 @@ const KumaCandlestickChart: React.FC<KumaCandlestickChartProps> = ({
   );
   const [isProcessingTimeframe, setIsProcessingTimeframe] = useState(false);
 
-  // Derive interval from timeframe
-  const interval = timeframeToInterval[timeframe];
+  // Derive interval from timeframe (fallback to FIVE_MINUTES if unsupported)
+  const interval = timeframeToInterval[timeframe] || CandleInterval.FIVE_MINUTES;
 
   // Refs to prevent loops
   const lastMarket = useRef<string>(market);
@@ -77,6 +77,12 @@ const KumaCandlestickChart: React.FC<KumaCandlestickChartProps> = ({
 
   // Handle timeframe change
   const handleTimeframeChange = useCallback((newTimeframe: TimeframeOption) => {
+    // Only allow supported timeframes
+    if (!timeframeToInterval[newTimeframe]) {
+      console.warn(`Timeframe ${newTimeframe} is not supported by Kuma SDK`);
+      return;
+    }
+
     setIsProcessingTimeframe(true);
     setTimeframe(newTimeframe);
     // Reset processing state after a short delay
