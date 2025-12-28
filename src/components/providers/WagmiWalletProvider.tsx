@@ -18,7 +18,7 @@ import { WagmiProvider } from "wagmi";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 import { createConfig, http } from "wagmi";
 
-// Katana chain - the only supported chain
+// Katana chain - for spot trading, lending, vaults
 export const katana = {
   id: 747474,
   name: "Katana",
@@ -42,6 +42,28 @@ export const katana = {
     multicall3: {
       address: "0xcA11bde05977b3631167028862bE2a173976CA11",
       blockCreated: 1,
+    },
+  },
+} as const;
+
+// XCHAIN - for perpetual trading only (perp page)
+export const xchain = {
+  id: 94524,
+  name: "XCHAIN",
+  nativeCurrency: {
+    decimals: 6,
+    name: "USDC",
+    symbol: "USDC",
+  },
+  rpcUrls: {
+    default: {
+      http: ["https://xchain-rpc.kuma.bid/"],
+    },
+  },
+  blockExplorers: {
+    default: {
+      name: "XCHAIN Explorer",
+      url: "https://xchain-explorer.kuma.bid",
     },
   },
 } as const;
@@ -81,10 +103,11 @@ const connectors = connectorsForWallets(
 
 export const config = createConfig({
   connectors,
-  // Katana is the only supported chain
-  chains: [katana],
+  // Support both Katana (spot/lending) and XCHAIN (perp trading)
+  chains: [katana, xchain],
   transports: {
     [katana.id]: http(),
+    [xchain.id]: http(),
   },
   ssr: false, // Disabled for injected provider compatibility
 });

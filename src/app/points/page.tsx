@@ -4,8 +4,9 @@ import React, { useEffect, useState } from "react";
 import { useAccount } from "wagmi";
 import { Container, Box, Stack, Typography } from "@mui/material";
 import { BACKEND_URL } from "@/utils/constants";
-import { XpDashboardData, ApiResponse } from "@/types/xp";
+import { XpDashboardData, ApiResponse, XpPreviewData } from "@/types/xp";
 import XpHeaderStats from "@/components/points/XpHeaderStats";
+import XpPreviewCard from "@/components/points/XpPreviewCard";
 import WeeklyBreakdownCard from "@/components/points/WeeklyBreakdownCard";
 import {
   NotConnectedState,
@@ -17,6 +18,7 @@ import {
 const PointsPage: React.FC = () => {
   const { address, isConnected } = useAccount();
   const [xpData, setXpData] = useState<XpDashboardData | null>(null);
+  const [previewData, setPreviewData] = useState<XpPreviewData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,14 +30,49 @@ const PointsPage: React.FC = () => {
       setError(null);
 
       try {
-        const response = await fetch(`${BACKEND_URL}/user/xp/${address}`);
-        const data: ApiResponse = await response.json();
-        console.log(data);
+        // Fetch both actual XP and preview data in parallel
+        const [xpResponse, previewResponse] = await Promise.all([
+          fetch(`${BACKEND_URL}/user/xp/${address}`),
+          fetch(`${BACKEND_URL}/xp/preview/${address}`),
+        ]);
 
-        if (data.status === "success" && data.data) {
-          setXpData(data.data);
-        } else {
-          setError(data.msg || "Failed to fetch XP data");
+        let hasHistoricalData = false;
+        let hasPreviewData = false;
+
+        // Handle historical XP data
+        try {
+          const xpDataResult: ApiResponse = await xpResponse.json();
+          console.log("XP Data:", xpDataResult);
+
+          if (xpDataResult.status === "success" && xpDataResult.data) {
+            setXpData(xpDataResult.data);
+            hasHistoricalData = true;
+          } else {
+            // Don't set error for "no data yet" - user might be new
+            console.log("No historical XP data:", xpDataResult.msg);
+          }
+        } catch (xpErr) {
+          console.warn("Failed to fetch historical XP:", xpErr);
+          // Don't set error - user might be new
+        }
+
+        // Handle preview data (optional - don't fail if preview isn't available)
+        try {
+          const previewDataResult: XpPreviewData = await previewResponse.json();
+          console.log("Preview Data:", previewDataResult);
+
+          if (previewDataResult && previewDataResult.is_preview) {
+            setPreviewData(previewDataResult);
+            hasPreviewData = true;
+          }
+        } catch (previewErr) {
+          console.warn("Preview data not available:", previewErr);
+          // Don't set error - preview is optional
+        }
+
+        // Only set error if we have neither historical nor preview data
+        if (!hasHistoricalData && !hasPreviewData) {
+          setError("No XP data found. Start trading to earn XP!");
         }
       } catch (err) {
         console.error("Failed to fetch XP:", err);
@@ -49,6 +86,7 @@ const PointsPage: React.FC = () => {
       fetchXP();
     } else {
       setXpData(null);
+      setPreviewData(null);
       setError(null);
     }
   }, [isConnected, address]);
@@ -63,8 +101,8 @@ const PointsPage: React.FC = () => {
     return <LoadingState />;
   }
 
-  // Render error state
-  if (error && !xpData) {
+  // Render error state only if no data at all (neither historical nor preview)
+  if (error && !xpData && !previewData) {
     return <ErrorState error={error} />;
   }
 
@@ -72,34 +110,100 @@ const PointsPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-900">
       <Container maxWidth="xl" sx={{ py: { xs: 4, sm: 6, lg: 10 } }}>
-        {/* Header Stats */}
-        {xpData && <XpHeaderStats xpData={xpData} />}
+        {/* Page Title */}
+        <Typography
+          variant="h3"
+          component="h1"
+          gutterBottom
+          sx={{
+            fontSize: { xs: "2rem", sm: "2.5rem", lg: "3rem" },
+            fontWeight: 700,
+            color: "white",
+            mb: 4,
+          }}
+        >
+          XP Dashboard
+        </Typography>
 
-        {/* Weekly Breakdown */}
-        <Box>
-          <Typography
-            variant="h4"
-            gutterBottom
+        {/* First-time user welcome message */}
+        {!xpData && previewData && (
+          <Box
             sx={{
-              fontSize: { xs: "1.5rem", sm: "2rem" },
-              fontWeight: 600,
-              color: "white",
-              mb: 3,
+              bgcolor: "rgba(0, 245, 224, 0.05)",
+              border: "1px solid rgba(0, 245, 224, 0.2)",
+              borderRadius: 2,
+              p: 3,
+              mb: 4,
             }}
           >
-            Weekly Breakdown
-          </Typography>
+            <Typography
+              variant="h6"
+              sx={{ color: "#00F5E0", fontWeight: 600, mb: 1 }}
+            >
+              Welcome to XP! 🎉
+            </Typography>
+            <Typography variant="body1" sx={{ color: "rgba(255,255,255,0.8)" }}>
+              You&apos;ve started earning XP this week! Your points will be officially
+              distributed at the end of the week. Keep trading to maximize your
+              rewards!
+            </Typography>
+          </Box>
+        )}
 
-          {xpData && xpData.weekly_data.length > 0 ? (
-            <Stack spacing={3}>
-              {xpData.weekly_data.map((week, index) => (
-                <WeeklyBreakdownCard key={index} week={week} />
-              ))}
-            </Stack>
-          ) : (
-            <NoWeeklyDataState />
-          )}
-        </Box>
+        {/* Header Stats - only show if historical data exists */}
+        {xpData && <XpHeaderStats xpData={xpData} />}
+
+        {/* Expected Points Preview */}
+        {previewData && (
+          <Box mb={6}>
+            <Typography
+              variant="h4"
+              gutterBottom
+              sx={{
+                fontSize: { xs: "1.5rem", sm: "2rem" },
+                fontWeight: 600,
+                color: "white",
+                mb: 3,
+              }}
+            >
+              {xpData ? "Current Week Progress" : "Your First Week"}
+            </Typography>
+            <XpPreviewCard previewData={previewData} />
+          </Box>
+        )}
+
+        {/* Weekly Breakdown - only show if historical data exists */}
+        {xpData && (
+          <Box>
+            <Typography
+              variant="h4"
+              gutterBottom
+              sx={{
+                fontSize: { xs: "1.5rem", sm: "2rem" },
+                fontWeight: 600,
+                color: "white",
+                mb: 3,
+              }}
+            >
+              Weekly Breakdown
+            </Typography>
+
+            {xpData.weekly_data.length > 0 ? (
+              <Stack spacing={3}>
+                {xpData.weekly_data.map((week, index) => (
+                  <WeeklyBreakdownCard key={index} week={week} />
+                ))}
+              </Stack>
+            ) : (
+              <NoWeeklyDataState />
+            )}
+          </Box>
+        )}
+
+        {/* No data at all state */}
+        {!xpData && !previewData && (
+          <NoWeeklyDataState />
+        )}
       </Container>
     </div>
   );

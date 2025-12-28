@@ -1,5 +1,5 @@
 // hooks/sushiswap/useChartLifecycle.ts (MODIFIED)
-import { useRef, useCallback, MutableRefObject } from 'react';
+import { useRef, useCallback, MutableRefObject, useEffect } from 'react';
 import { createChart, IChartApi, CandlestickData, UTCTimestamp } from 'lightweight-charts';
 import { getVisibleBarsForTimeframe, TimeframeOption } from '@/utils/chartVisibleRange';
 
@@ -25,6 +25,47 @@ export const useChartLifecycle = ({
   const candlestickSeriesRef = useRef<any>(null);
   const containerObserverRef = useRef<ResizeObserver | null>(null);
   const resizeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const handleResizeRef = useRef<(() => void) | null>(null);
+  const onChartReadyRef = useRef(onChartReady);
+  const onErrorRef = useRef(onError);
+
+  // Update refs when callbacks change
+  useEffect(() => {
+    onChartReadyRef.current = onChartReady;
+    onErrorRef.current = onError;
+  }, [onChartReady, onError]);
+
+  // Debounced resize handler - MOVED BEFORE cleanupChart to fix initialization order
+  const handleResize = useCallback(() => {
+    if (resizeTimeoutRef.current) {
+      clearTimeout(resizeTimeoutRef.current);
+    }
+
+    resizeTimeoutRef.current = setTimeout(() => {
+      if (chartRef.current && chartContainerRef.current) {
+        const rect = chartContainerRef.current.getBoundingClientRect();
+        const newWidth = Math.floor(rect.width);
+        const newHeight = Math.floor(rect.height);
+
+        // Only resize if dimensions are valid and have changed meaningfully
+        if (newWidth > 0 && newHeight > 0) {
+          try {
+            chartRef.current.applyOptions({
+              width: newWidth,
+              height: newHeight,
+            });
+          } catch (err) {
+            console.error('[Chart] Error resizing chart:', err);
+          }
+        }
+      }
+    }, 100); // Debounce resize by 100ms
+  }, []);
+
+  // Update ref whenever handleResize changes
+  useEffect(() => {
+    handleResizeRef.current = handleResize;
+  }, [handleResize]);
 
   // Clean up chart function
   const cleanupChart = useCallback(() => {
@@ -40,6 +81,12 @@ export const useChartLifecycle = ({
       containerObserverRef.current = null;
     }
 
+    // Remove window resize event listener (CRITICAL MEMORY LEAK FIX)
+    // Use ref to avoid dependency issues
+    if (handleResizeRef.current) {
+      window.removeEventListener('resize', handleResizeRef.current);
+    }
+
     // Remove chart
     if (chartRef.current) {
       try {
@@ -50,65 +97,40 @@ export const useChartLifecycle = ({
       chartRef.current = null;
       candlestickSeriesRef.current = null;
     }
-    onChartReady(false);
-  }, [onChartReady]);
-
-  // Debounced resize handler
-  const handleResize = useCallback(() => {
-    if (resizeTimeoutRef.current) {
-      clearTimeout(resizeTimeoutRef.current);
-    }
-
-    resizeTimeoutRef.current = setTimeout(() => {
-      if (chartRef.current && chartContainerRef.current) {
-        const rect = chartContainerRef.current.getBoundingClientRect();
-        const newWidth = Math.floor(rect.width);
-        const newHeight = Math.floor(rect.height);
-        
-        // Only resize if dimensions are valid and have changed meaningfully
-        if (newWidth > 0 && newHeight > 0) {
-          try {
-            chartRef.current.applyOptions({
-              width: newWidth,
-              height: newHeight,
-            });
-            console.log('Chart resized to:', { width: newWidth, height: newHeight });
-          } catch (err) {
-            console.error('Error resizing chart:', err);
-          }
-        }
-      }
-    }, 100); // Debounce resize by 100ms
+    onChartReadyRef.current(false);
   }, []);
 
   // Initialize chart function
   const initializeChart = useCallback(() => {
-    console.log('initializeChart called:', { tokenAddress, enabled }); // CHANGED: logging
-    
-    if (!chartContainerRef.current || !tokenAddress || !enabled) { // CHANGED: use enabled
-      console.log('Initialization conditions not met');
+    if (!chartContainerRef.current || !tokenAddress || !enabled) {
       return;
     }
 
     try {
-      cleanupChart();
+      // Cleanup any existing chart before creating new one
+      if (chartRef.current) {
+        try {
+          chartRef.current.remove();
+        } catch (err) {
+          console.error('Error removing chart:', err);
+        }
+        chartRef.current = null;
+        candlestickSeriesRef.current = null;
+      }
 
       const container = chartContainerRef.current;
 
       // Wait for container to be properly sized
       const checkAndCreateChart = () => {
         const rect = container.getBoundingClientRect();
-        console.log('Container dimensions:', rect);
 
         // Make sure container has meaningful dimensions
         if (rect.width < 100 || rect.height < 100) {
-          console.log('Container too small, retrying...', rect);
           setTimeout(checkAndCreateChart, 100);
           return;
         }
 
         try {
-          console.log('Creating chart with dimensions:', { width: rect.width, height: rect.height });
           
           // Create chart with responsive dimensions
           const chart = createChart(container, {
@@ -199,19 +221,20 @@ export const useChartLifecycle = ({
 
           // Set up resize observer with debouncing
           if (window.ResizeObserver) {
-            containerObserverRef.current = new ResizeObserver(handleResize);
+            containerObserverRef.current = new ResizeObserver(handleResizeRef.current!);
             containerObserverRef.current.observe(container);
           }
 
           // Fallback for browsers without ResizeObserver
-          window.addEventListener('resize', handleResize);
+          if (handleResizeRef.current) {
+            window.addEventListener('resize', handleResizeRef.current);
+          }
 
-          console.log('Chart created successfully');
-          onChartReady(true);
+          onChartReadyRef.current(true);
 
         } catch (err) {
-          console.error('Error creating chart:', err);
-          onError(`Chart creation error: ${err}`);
+          console.error('[Chart] Error creating chart:', err);
+          onErrorRef.current(`${err}`);
         }
       };
 
@@ -219,31 +242,26 @@ export const useChartLifecycle = ({
       setTimeout(checkAndCreateChart, 50);
 
     } catch (err) {
-      console.error('Error initializing chart:', err);
-      onError(`Chart initialization error: ${err}`);
+      console.error('[Chart] Error initializing chart:', err);
+      onErrorRef.current(`${err}`);
     }
-  }, [tokenAddress, enabled, onChartReady, onError, handleResize]); // CHANGED: removed cleanupChart
+  }, [tokenAddress, enabled, minMove]);
 
   // Update chart data - MODIFIED TO USE DYNAMIC VISIBLE RANGE
   const updateChartData = useCallback((newData: CandlestickData[]) => {
-    console.log('updateChartData called with:', newData.length, 'points');
-    
     if (!chartRef.current || !candlestickSeriesRef.current) {
-      console.log('Chart or series not ready');
       return;
     }
 
     try {
       if (newData.length === 0) {
-        console.log('No data, clearing chart');
         candlestickSeriesRef.current.setData([]);
         return;
       }
 
       // Sort data by time to ensure proper order
       const sortedData = [...newData].sort((a, b) => (a.time as number) - (b.time as number));
-      
-      console.log('Setting chart data:', sortedData.length, 'candles');
+
       candlestickSeriesRef.current.setData(sortedData);
 
       // Set initial visible range based on timeframe
@@ -261,21 +279,12 @@ export const useChartLifecycle = ({
               const barsToGoBack = Math.min(visibleBars, sortedData.length);
               const fromIndex = Math.max(0, sortedData.length - barsToGoBack);
               const startTime = sortedData[fromIndex].time as number;
-              
-              console.log(`Setting visible range for ${currentTimeframe}:`, { 
-                visibleBars,
-                barsToGoBack,
-                totalBars: sortedData.length,
-                from: new Date(startTime * 1000).toISOString(), 
-                to: new Date(lastTime * 1000).toISOString() 
-              });
-              
+
               chartRef.current.timeScale().setVisibleRange({
                 from: startTime as UTCTimestamp,
                 to: lastTime as UTCTimestamp,
               });
             } catch (err) {
-              console.warn('Failed to set initial time range, using fit content:', err);
               chartRef.current.timeScale().fitContent();
             }
           }
@@ -283,9 +292,9 @@ export const useChartLifecycle = ({
       }
     } catch (err) {
       console.error('Error updating chart data:', err);
-      onError(`Chart update error: ${err}`);
+      onErrorRef.current(`Chart update error: ${err}`);
     }
-  }, [onError, currentTimeframe]); // CHANGED: added currentTimeframe
+  }, [currentTimeframe]);
 
   // Set markers on the candlestick series
 const setMarkers = useCallback((markers: Array<{
@@ -296,15 +305,13 @@ const setMarkers = useCallback((markers: Array<{
   text?: string;
 }>) => {
   if (!candlestickSeriesRef.current) {
-    console.log('Series not ready for markers');
     return;
   }
 
   try {
     candlestickSeriesRef.current.setMarkers(markers);
-    console.log('Markers set on chart:', markers.length);
   } catch (err) {
-    console.error('Error setting markers:', err);
+    console.error('[Chart] Error setting markers:', err);
   }
 }, []);
 

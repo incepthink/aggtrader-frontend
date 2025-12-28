@@ -30,3 +30,44 @@ export interface ApiResponse {
   data?: XpDashboardData;
   msg?: string;
 }
+
+// XP Preview Types (Expected Points)
+export interface PerPairResult {
+  pair: string;
+  eligibleVolume: number;
+  totalFees: number;
+  xp_raw: number;
+  xp_decayed: number;
+  decayFraction: number;
+}
+
+export interface SwapTypeBreakdown {
+  classic: number;
+  limitOrder: number;
+  total: number;
+  classicVolume: number;
+  limitOrderVolume: number;
+}
+
+export interface XpPreviewData {
+  wallet_address: string;
+  user_id: number;
+  week_start: string;
+  week_end: string;
+  league: LeagueType;
+  swap_xp_raw: number;
+  swap_xp_decayed: number;
+  pair_bonus_xp: number;
+  total_xp: number;
+  eligible_volume: number;
+  total_fees: number;
+  unique_pairs_count: number;
+  new_pairs_count: number;
+  total_swaps: number;
+  per_pair_results: PerPairResult[];
+  new_pairs: string[];
+  swap_type_breakdown: SwapTypeBreakdown;
+  is_preview: boolean;
+  calculated_at: string;
+  cached: boolean;
+}

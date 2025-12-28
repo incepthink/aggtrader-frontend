@@ -14,7 +14,11 @@
       "Bash(cat:*)",
       "WebSearch",
       "Bash(npx tsc:*)",
-      "mcp__ide__getDiagnostics"
+      "mcp__ide__getDiagnostics",
+      "WebFetch(domain:sdk-js-docs-v1.kuma.bid)",
+      "WebFetch(domain:api-docs-v1.kuma.bid)",
+      "Bash(find:*)",
+      "WebFetch(domain:github.com)"
     ],
     "deny": [],
     "ask": []

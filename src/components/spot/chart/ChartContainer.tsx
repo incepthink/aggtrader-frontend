@@ -1,5 +1,5 @@
 // components/chart/ChartContainer.tsx (MODIFIED)
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import { CandlestickData } from "lightweight-charts";
 import { useChartLifecycle } from "@/hooks/sushiswap/useChartLifecycle";
 
@@ -40,8 +40,10 @@ const ChartContainer: React.FC<ChartContainerProps> = ({
   const currentRenderKey = useRef<number>(renderKey);
   const [isChartInitialized, setIsChartInitialized] = useState(false);
 
-  let minMove =
-    chartData.length > 0 ? (chartData[0].open < 0.1 ? 0.00001 : 0.01) : 0.01;
+  // CRITICAL: Memoize minMove to prevent infinite re-renders
+  const minMove = useMemo(() => {
+    return chartData.length > 0 ? (chartData[0].open < 0.1 ? 0.00001 : 0.01) : 0.01;
+  }, [chartData.length > 0 ? chartData[0]?.open : 0]);
 
   const {
     chartContainerRef,
@@ -78,10 +80,6 @@ const ChartContainer: React.FC<ChartContainerProps> = ({
 
     const timer = setTimeout(() => {
       if (currentInit === initializationRef.current) {
-        console.log(
-          `[${chainType.toUpperCase()}] Initializing chart for token:`,
-          tokenAddress
-        );
         initializeChart();
       }
     }, 100);
@@ -97,36 +95,21 @@ const ChartContainer: React.FC<ChartContainerProps> = ({
 
   // Update chart data when chart is ready AND data is available
   useEffect(() => {
-    console.log(`[${chainType.toUpperCase()}] Data update effect:`, {
-      isChartInitialized,
-      enabled,
-      chartDataLength: chartData.length,
-      hasData: chartData.length > 0,
-    });
-
     if (isChartInitialized && enabled && chartData.length > 0) {
       const timer = setTimeout(() => {
-        console.log(
-          `[${chainType.toUpperCase()}] Updating chart with data after initialization...`
-        );
         updateChartData(chartData);
       }, 100);
 
       return () => clearTimeout(timer);
     }
-  }, [isChartInitialized, chartData, enabled, chainType]);
+  }, [isChartInitialized, chartData, enabled]);
 
   // NEW: Update markers when they change
   useEffect(() => {
     if (isChartInitialized && markers.length > 0) {
-      console.log(
-        `[${chainType.toUpperCase()}] Setting ${
-          markers.length
-        } markers on chart`
-      );
       setMarkers(markers);
     }
-  }, [isChartInitialized, markers, setMarkers, chainType]);
+  }, [isChartInitialized, markers, setMarkers]);
 
   // Handle resolution changes with cleanup
   useEffect(() => {
@@ -135,9 +118,6 @@ const ChartContainer: React.FC<ChartContainerProps> = ({
 
       const timer = setTimeout(() => {
         if (currentInit === initializationRef.current) {
-          console.log(
-            `[${chainType.toUpperCase()}] Resolution changed, reinitializing chart...`
-          );
           cleanupChart();
           setIsChartInitialized(false);
           setTimeout(() => {
@@ -150,7 +130,7 @@ const ChartContainer: React.FC<ChartContainerProps> = ({
 
       return () => clearTimeout(timer);
     }
-  }, [resolution, chainType, tokenAddress, enabled]);
+  }, [resolution, tokenAddress, enabled]);
 
   return (
     <div

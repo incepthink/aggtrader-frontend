@@ -14,20 +14,6 @@ const XpHeaderStats: React.FC<XpHeaderStatsProps> = ({ xpData }) => {
 
   return (
     <Box mb={6}>
-      <Typography
-        variant="h3"
-        component="h1"
-        gutterBottom
-        sx={{
-          fontSize: { xs: "2rem", sm: "2.5rem", lg: "3rem" },
-          fontWeight: 700,
-          color: "white",
-          mb: 4,
-        }}
-      >
-        XP Dashboard
-      </Typography>
-
       <Grid container spacing={3}>
         <Grid size={{ xs: 12, sm: 6, lg: 4 }}>
           <GlowBox padding={3}>
