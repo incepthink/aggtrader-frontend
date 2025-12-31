@@ -28,12 +28,38 @@ export const useChartLifecycle = ({
   const handleResizeRef = useRef<(() => void) | null>(null);
   const onChartReadyRef = useRef(onChartReady);
   const onErrorRef = useRef(onError);
+  // MEMORY LEAK FIX: Track all timeouts for cleanup
+  const visibleRangeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const initChartTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const checkChartTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Update refs when callbacks change
   useEffect(() => {
     onChartReadyRef.current = onChartReady;
     onErrorRef.current = onError;
   }, [onChartReady, onError]);
+
+  // MEMORY LEAK FIX: Cleanup all timeouts on unmount or dependency changes
+  useEffect(() => {
+    return () => {
+      if (resizeTimeoutRef.current) {
+        clearTimeout(resizeTimeoutRef.current);
+        resizeTimeoutRef.current = null;
+      }
+      if (visibleRangeTimeoutRef.current) {
+        clearTimeout(visibleRangeTimeoutRef.current);
+        visibleRangeTimeoutRef.current = null;
+      }
+      if (initChartTimeoutRef.current) {
+        clearTimeout(initChartTimeoutRef.current);
+        initChartTimeoutRef.current = null;
+      }
+      if (checkChartTimeoutRef.current) {
+        clearTimeout(checkChartTimeoutRef.current);
+        checkChartTimeoutRef.current = null;
+      }
+    };
+  }, []);
 
   // Debounced resize handler - MOVED BEFORE cleanupChart to fix initialization order
   const handleResize = useCallback(() => {
@@ -69,10 +95,22 @@ export const useChartLifecycle = ({
 
   // Clean up chart function
   const cleanupChart = useCallback(() => {
-    // Clear resize timeout
+    // MEMORY LEAK FIX: Clear all timeouts
     if (resizeTimeoutRef.current) {
       clearTimeout(resizeTimeoutRef.current);
       resizeTimeoutRef.current = null;
+    }
+    if (visibleRangeTimeoutRef.current) {
+      clearTimeout(visibleRangeTimeoutRef.current);
+      visibleRangeTimeoutRef.current = null;
+    }
+    if (initChartTimeoutRef.current) {
+      clearTimeout(initChartTimeoutRef.current);
+      initChartTimeoutRef.current = null;
+    }
+    if (checkChartTimeoutRef.current) {
+      clearTimeout(checkChartTimeoutRef.current);
+      checkChartTimeoutRef.current = null;
     }
 
     // Disconnect resize observer
@@ -126,7 +164,8 @@ export const useChartLifecycle = ({
 
         // Make sure container has meaningful dimensions
         if (rect.width < 100 || rect.height < 100) {
-          setTimeout(checkAndCreateChart, 100);
+          // MEMORY LEAK FIX: Track timeout for cleanup
+          checkChartTimeoutRef.current = setTimeout(checkAndCreateChart, 100);
           return;
         }
 
@@ -239,7 +278,8 @@ export const useChartLifecycle = ({
       };
 
       // Initial check with a slight delay to ensure DOM is ready
-      setTimeout(checkAndCreateChart, 50);
+      // MEMORY LEAK FIX: Track timeout for cleanup
+      initChartTimeoutRef.current = setTimeout(checkAndCreateChart, 50);
 
     } catch (err) {
       console.error('[Chart] Error initializing chart:', err);
@@ -266,15 +306,21 @@ export const useChartLifecycle = ({
 
       // Set initial visible range based on timeframe
       if (sortedData.length > 0) {
-        setTimeout(() => {
+        // MEMORY LEAK FIX: Clear previous timeout before creating new one
+        if (visibleRangeTimeoutRef.current) {
+          clearTimeout(visibleRangeTimeoutRef.current);
+          visibleRangeTimeoutRef.current = null;
+        }
+
+        visibleRangeTimeoutRef.current = setTimeout(() => {
           if (chartRef.current) {
             try {
               // Get the number of bars to show based on timeframe
               const visibleBars = getVisibleBarsForTimeframe(currentTimeframe as TimeframeOption);
-              
+
               const lastTime = sortedData[sortedData.length - 1].time as number;
               const firstTime = sortedData[0].time as number;
-              
+
               // Calculate how many bars to go back
               const barsToGoBack = Math.min(visibleBars, sortedData.length);
               const fromIndex = Math.max(0, sortedData.length - barsToGoBack);
@@ -288,6 +334,7 @@ export const useChartLifecycle = ({
               chartRef.current.timeScale().fitContent();
             }
           }
+          visibleRangeTimeoutRef.current = null;
         }, 150);
       }
     } catch (err) {

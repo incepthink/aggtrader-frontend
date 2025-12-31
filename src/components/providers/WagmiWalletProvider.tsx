@@ -47,11 +47,13 @@ export const katana = {
 } as const;
 
 // XCHAIN - for perpetual trading only (perp page)
+// Note: MetaMask requires nativeCurrency.decimals to be 18 for wallet_addEthereumChain
+// Even though XCHAIN uses USDC with 6 decimals, we must specify 18 for MetaMask compatibility
 export const xchain = {
   id: 94524,
   name: "XCHAIN",
   nativeCurrency: {
-    decimals: 6,
+    decimals: 18, // Required by MetaMask for EVM chains
     name: "USDC",
     symbol: "USDC",
   },

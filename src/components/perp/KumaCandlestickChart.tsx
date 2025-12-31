@@ -55,6 +55,8 @@ const KumaCandlestickChart: React.FC<KumaCandlestickChartProps> = ({
   // Refs to prevent loops
   const lastMarket = useRef<string>(market);
   const lastInterval = useRef<CandleInterval>(interval);
+  // MEMORY LEAK FIX: Track timeout for cleanup
+  const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Get candle data from WebSocket
   const { isConnected, candleData, latestCandle, error, isLoadingHistory } =
@@ -75,6 +77,16 @@ const KumaCandlestickChart: React.FC<KumaCandlestickChartProps> = ({
     }
   }, [market, interval]);
 
+  // MEMORY LEAK FIX: Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (processingTimeoutRef.current) {
+        clearTimeout(processingTimeoutRef.current);
+        processingTimeoutRef.current = null;
+      }
+    };
+  }, []);
+
   // Handle timeframe change
   const handleTimeframeChange = useCallback((newTimeframe: TimeframeOption) => {
     // Only allow supported timeframes
@@ -83,11 +95,18 @@ const KumaCandlestickChart: React.FC<KumaCandlestickChartProps> = ({
       return;
     }
 
+    // MEMORY LEAK FIX: Clear previous timeout before creating new one
+    if (processingTimeoutRef.current) {
+      clearTimeout(processingTimeoutRef.current);
+      processingTimeoutRef.current = null;
+    }
+
     setIsProcessingTimeframe(true);
     setTimeframe(newTimeframe);
     // Reset processing state after a short delay
-    setTimeout(() => {
+    processingTimeoutRef.current = setTimeout(() => {
       setIsProcessingTimeframe(false);
+      processingTimeoutRef.current = null;
     }, 300);
   }, []);
 

@@ -2,28 +2,16 @@
 
 import { Box, Typography, Button, Tooltip } from '@mui/material';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-
-// Types for future data integration
-export interface AccountBalance {
-  balance: number;
-  freeCollateral: number;
-  availableCollateral: number;
-  unrealizedPnl: number;
-}
+import { KumaAccountBalance } from '@/hooks/perp/useKumaAuth';
 
 interface DepositWithdrawProps {
-  accountBalance?: AccountBalance;
+  accountBalance?: KumaAccountBalance | null;
   onDeposit?: () => void;
   onWithdraw?: () => void;
 }
 
 const DepositWithdraw = ({
-  accountBalance = {
-    balance: 0,
-    freeCollateral: 0,
-    availableCollateral: 0,
-    unrealizedPnl: 0,
-  },
+  accountBalance,
   onDeposit,
   onWithdraw,
 }: DepositWithdrawProps) => {
@@ -45,9 +33,13 @@ const DepositWithdraw = ({
     }
   };
 
-  const formatCurrency = (value: number) => {
-    return `$${value.toFixed(2)}`;
+  const formatCurrency = (value: string | number) => {
+    const numValue = typeof value === 'string' ? parseFloat(value) : value;
+    return `$${numValue.toFixed(2)}`;
   };
+
+  // Debug: Log accountBalance
+  console.log('[DepositWithdraw] accountBalance:', accountBalance);
 
   return (
     <Box
@@ -72,7 +64,7 @@ const DepositWithdraw = ({
             >
               Balance
             </Typography>
-            <Tooltip title="Total account balance including all positions and unrealized P&L">
+            <Tooltip title="Total account equity including all positions and unrealized P&L">
               <InfoOutlinedIcon
                 sx={{
                   fontSize: 14,
@@ -89,7 +81,7 @@ const DepositWithdraw = ({
               fontWeight: 500,
             }}
           >
-            {formatCurrency(accountBalance.balance)}
+            {accountBalance ? formatCurrency(accountBalance.equity) : '$0.00'}
           </Typography>
         </Box>
 
@@ -121,7 +113,7 @@ const DepositWithdraw = ({
               fontWeight: 500,
             }}
           >
-            {formatCurrency(accountBalance.freeCollateral)}
+            {accountBalance ? formatCurrency(accountBalance.freeCollateral) : '$0.00'}
           </Typography>
         </Box>
 
@@ -153,7 +145,7 @@ const DepositWithdraw = ({
               fontWeight: 500,
             }}
           >
-            {formatCurrency(accountBalance.availableCollateral)}
+            {accountBalance ? formatCurrency(accountBalance.availableCollateral) : '$0.00'}
           </Typography>
         </Box>
 
@@ -170,16 +162,16 @@ const DepositWithdraw = ({
           <Typography
             sx={{
               color:
-                accountBalance.unrealizedPnl > 0
+                accountBalance && parseFloat(accountBalance.unrealizedPnL) > 0
                   ? '#00FF88'
-                  : accountBalance.unrealizedPnl < 0
+                  : accountBalance && parseFloat(accountBalance.unrealizedPnL) < 0
                   ? '#FF4444'
                   : '#fff',
               fontSize: '0.875rem',
               fontWeight: 500,
             }}
           >
-            {formatCurrency(accountBalance.unrealizedPnl)}
+            {accountBalance ? formatCurrency(accountBalance.unrealizedPnL) : '$0.00'}
           </Typography>
         </Box>
       </Box>

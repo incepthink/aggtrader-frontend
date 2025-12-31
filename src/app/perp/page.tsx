@@ -8,7 +8,9 @@ import PositionsPanel from "@/components/perp/PositionsPanel";
 import DepositWithdraw from "@/components/perp/DepositWithdraw";
 import OrderForm from "@/components/perp/OrderForm";
 import XChainSwitcher from "@/components/perp/XChainSwitcher";
+import { KumaAuthWrapper } from "@/components/perp/KumaAuthWrapper";
 import { useKumaWebSocket } from "@/hooks/perp/useWebsocketClient";
+import { useKumaBalance } from "@/hooks/perp/useKumaBalance";
 import { CandleInterval } from "@kumabid/kuma-sdk";
 import GlowBox from "@/components/common/ui/GlowBox";
 import { useAccount, useChainId } from "wagmi";
@@ -19,6 +21,7 @@ const PerpPage = () => {
   const { isConnected: isWalletConnected } = useAccount();
   const chainId = useChainId();
   const { isConnected, tickerData, error } = useKumaWebSocket("BTC-USD");
+  const { balance: accountBalance } = useKumaBalance();
 
   // Extract current price from ticker data
   const currentPrice = tickerData?.close ? parseFloat(tickerData.close) : undefined;
@@ -28,18 +31,22 @@ const PerpPage = () => {
   const needsChainSwitch = isWalletConnected && !isOnXChain;
 
   return (
-    <Box
-      sx={{
-        width: "100%",
-        height: "100vh",
-        background: "#050C19",
-        display: "flex",
-        flexDirection: "column",
-        overflow: "hidden",
-      }}
-    >
-      {/* Chain Switcher Banner - Shows when wallet is on wrong chain */}
-      <XChainSwitcher />
+    <>
+      {/* Kuma Auth - Triggers unlock modal on page load if wallet connected */}
+      <KumaAuthWrapper />
+
+      <Box
+        sx={{
+          width: "100%",
+          height: "100vh",
+          background: "#050C19",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+        }}
+      >
+        {/* Chain Switcher Banner - Shows when wallet is on wrong chain */}
+        <XChainSwitcher />
 
       {/* Error Display */}
       {error && (
@@ -111,7 +118,7 @@ const PerpPage = () => {
               background: "rgba(5, 12, 25, 0.6)",
             }}
           >
-            <OrderForm market="BTC-USD" currentPrice={currentPrice} />
+            <OrderForm market="BTC-USD" currentPrice={currentPrice} tickerData={tickerData} />
           </GlowBox>
         </Box>
 
@@ -139,11 +146,12 @@ const PerpPage = () => {
               p: 0,
             }}
           >
-            <DepositWithdraw />
+            <DepositWithdraw accountBalance={accountBalance} />
           </GlowBox>
         </Box>
       </Box>
-    </Box>
+      </Box>
+    </>
   );
 };
 

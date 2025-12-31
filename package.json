@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
+    "dev:turbo": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -62,6 +63,7 @@
     "stream-browserify": "^3.0.0",
     "sushi": "^6.1.0",
     "swr": "^2.3.6",
+    "uuid": "^13.0.0",
     "viem": "^2.31.3",
     "wagmi": "^2.15.6",
     "zustand": "^5.0.5"
@@ -71,6 +73,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/uuid": "^10.0.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

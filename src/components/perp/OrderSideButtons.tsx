@@ -1,15 +1,16 @@
 'use client';
 
-import { Stack, Button } from '@mui/material';
+import { Stack, Button, CircularProgress } from '@mui/material';
 import { usePerpStore } from '@/store/perpStore';
 
 interface OrderSideButtonsProps {
   onBuy: () => void;
   onSell: () => void;
   disabled?: boolean;
+  loading?: boolean;
 }
 
-const OrderSideButtons = ({ onBuy, onSell, disabled = false }: OrderSideButtonsProps) => {
+const OrderSideButtons = ({ onBuy, onSell, disabled = false, loading = false }: OrderSideButtonsProps) => {
   const setOrderSide = usePerpStore((s) => s.setOrderSide);
 
   const handleBuyClick = () => {
@@ -47,7 +48,11 @@ const OrderSideButtons = ({ onBuy, onSell, disabled = false }: OrderSideButtonsP
           },
         }}
       >
-        Buy / Long
+        {loading ? (
+          <CircularProgress size={20} sx={{ color: '#000' }} />
+        ) : (
+          'Buy / Long'
+        )}
       </Button>
 
       {/* Sell / Short Button */}
@@ -73,7 +78,11 @@ const OrderSideButtons = ({ onBuy, onSell, disabled = false }: OrderSideButtonsP
           },
         }}
       >
-        Sell / Short
+        {loading ? (
+          <CircularProgress size={20} sx={{ color: '#fff' }} />
+        ) : (
+          'Sell / Short'
+        )}
       </Button>
     </Stack>
   );

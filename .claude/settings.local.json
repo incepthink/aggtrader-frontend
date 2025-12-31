@@ -21,7 +21,8 @@
       "WebFetch(domain:github.com)",
       "Bash(npm install:*)",
       "Bash(rm:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(if exist .next rmdir /s /q .next)"
     ],
     "deny": [],
     "ask": []

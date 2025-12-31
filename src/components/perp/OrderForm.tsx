@@ -1,20 +1,30 @@
 'use client';
 
-import { Box, FormControlLabel, Checkbox, Divider } from '@mui/material';
+import { Box, FormControlLabel, Checkbox, Divider, Alert } from '@mui/material';
+import { useAccount } from 'wagmi';
 import { usePerpStore } from '@/store/perpStore';
+import { useKumaAuth } from '@/hooks/perp/useKumaAuth';
+import { useCreateOrder } from '@/hooks/perp/useCreateOrder';
+import { KumaTicker } from '@kumabid/kuma-sdk';
 import OrderTypeTabs from './OrderTypeTabs';
 import LeverageSelector from './LeverageSelector';
 import LeverageModal from './LeverageModal';
 import QuantityInput from './QuantityInput';
 import OrderSideButtons from './OrderSideButtons';
 import OrderSummary from './OrderSummary';
+import TpSlModal from './TpSlModal';
 
 interface OrderFormProps {
   market: string;
   currentPrice?: number;
+  tickerData: KumaTicker | null;
 }
 
-const OrderForm = ({ market, currentPrice }: OrderFormProps) => {
+const OrderForm = ({ market, currentPrice, tickerData }: OrderFormProps) => {
+  const { isConnected } = useAccount();
+  const { isAssociated } = useKumaAuth();
+  const { createMarketOrder, isSubmitting, error: orderError } = useCreateOrder();
+
   const quantity = usePerpStore((s) => s.quantity);
   const leverage = usePerpStore((s) => s.leverage);
   const reduceOnly = usePerpStore((s) => s.reduceOnly);
@@ -22,33 +32,81 @@ const OrderForm = ({ market, currentPrice }: OrderFormProps) => {
   const freeCollateral = usePerpStore((s) => s.freeCollateral);
   const setReduceOnly = usePerpStore((s) => s.setReduceOnly);
   const setTpSlEnabled = usePerpStore((s) => s.setTpSlEnabled);
+  const openTpSlModal = usePerpStore((s) => s.openTpSlModal);
 
-  // Placeholder handlers for buy/sell actions
-  // TODO: Connect to useCreateOrder hook
-  const handleBuy = () => {
-    console.log('Buy order initiated:', {
-      market,
-      side: 'buy',
-      quantity,
-      leverage,
-      currentPrice,
-      reduceOnly,
-    });
+  // Check if wallet is unlocked (connected and associated)
+  const isWalletUnlocked = isConnected && isAssociated;
+
+  // Buy order handler
+  const handleBuy = async () => {
+    if (!isWalletUnlocked) {
+      // Wallet not unlocked - KumaAuthWrapper handles the unlock flow
+      console.warn('Wallet not unlocked for trading');
+      return;
+    }
+
+    try {
+      const result = await createMarketOrder({
+        market,
+        side: 'buy',
+        quantity,
+        leverage,
+        reduceOnly,
+      });
+
+      console.log('Buy order filled:', result);
+      // TODO: Show success notification
+      // TODO: Refresh balance and positions
+    } catch (err) {
+      // Error is already set in the hook's error state
+      console.error('Buy order failed:', err);
+    }
   };
 
-  const handleSell = () => {
-    console.log('Sell order initiated:', {
-      market,
-      side: 'sell',
-      quantity,
-      leverage,
-      currentPrice,
-      reduceOnly,
-    });
+  // Sell order handler
+  const handleSell = async () => {
+    if (!isWalletUnlocked) {
+      // Wallet not unlocked - KumaAuthWrapper handles the unlock flow
+      console.warn('Wallet not unlocked for trading');
+      return;
+    }
+
+    try {
+      const result = await createMarketOrder({
+        market,
+        side: 'sell',
+        quantity,
+        leverage,
+        reduceOnly,
+      });
+
+      console.log('Sell order filled:', result);
+      // TODO: Show success notification
+      // TODO: Refresh balance and positions
+    } catch (err) {
+      // Error is already set in the hook's error state
+      console.error('Sell order failed:', err);
+    }
   };
 
-  // Disable order buttons if quantity is empty or zero
-  const isOrderDisabled = !quantity || parseFloat(quantity) === 0;
+  // Disable order buttons if quantity is empty or zero or if submitting
+  const isOrderDisabled = !quantity || parseFloat(quantity) === 0 || isSubmitting;
+
+  // Handle TP/SL checkbox change
+  const handleTpSlChange = (checked: boolean) => {
+    if (checked) {
+      // Validate that quantity is entered before opening TP/SL modal
+      if (!quantity || parseFloat(quantity) === 0) {
+        alert('Please enter quantity first');
+        return;
+      }
+      // Open the TP/SL modal
+      openTpSlModal();
+      setTpSlEnabled(true);
+    } else {
+      setTpSlEnabled(false);
+    }
+  };
 
   return (
     <Box
@@ -108,15 +166,11 @@ const OrderForm = ({ market, currentPrice }: OrderFormProps) => {
           control={
             <Checkbox
               checked={tpSlEnabled}
-              onChange={(e) => setTpSlEnabled(e.target.checked)}
-              disabled // Disabled until TP/SL implementation
+              onChange={(e) => handleTpSlChange(e.target.checked)}
               sx={{
                 color: 'rgba(255, 255, 255, 0.3)',
                 '&.Mui-checked': {
                   color: '#00F5E0',
-                },
-                '&.Mui-disabled': {
-                  color: 'rgba(255, 255, 255, 0.2)',
                 },
                 '& .MuiSvgIcon-root': {
                   fontSize: 20,
@@ -128,14 +182,26 @@ const OrderForm = ({ market, currentPrice }: OrderFormProps) => {
           sx={{
             '& .MuiFormControlLabel-label': {
               fontSize: '0.875rem',
-              color: 'rgba(255, 255, 255, 0.4)',
+              color: 'rgba(255, 255, 255, 0.7)',
             },
           }}
         />
       </Box>
 
+      {/* Error Display */}
+      {orderError && (
+        <Alert severity="error" sx={{ fontSize: '0.875rem' }}>
+          {orderError}
+        </Alert>
+      )}
+
       {/* Order Side Buttons */}
-      <OrderSideButtons onBuy={handleBuy} onSell={handleSell} disabled={isOrderDisabled} />
+      <OrderSideButtons
+        onBuy={handleBuy}
+        onSell={handleSell}
+        disabled={isOrderDisabled}
+        loading={isSubmitting}
+      />
 
       <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.1)' }} />
 
@@ -144,6 +210,9 @@ const OrderForm = ({ market, currentPrice }: OrderFormProps) => {
 
       {/* Leverage Modal */}
       <LeverageModal />
+
+      {/* TP/SL Modal */}
+      <TpSlModal market={market} tickerData={tickerData} />
     </Box>
   );
 };

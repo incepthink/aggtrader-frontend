@@ -74,6 +74,22 @@ export function useOrderbookTrades(market: string = 'BTC-USD') {
       .sort((a, b) => parseFloat(a[0]) - parseFloat(b[0]))
       .slice(0, 30); // Keep top 30 levels
 
+    // CRITICAL MEMORY LEAK FIX: Clear and rebuild Maps with only the top 30 levels
+    // Without this, Maps grow indefinitely as new price levels are added
+    if (bidsMapRef.current.size > 30) {
+      bidsMapRef.current.clear();
+      bidsArray.forEach((bid) => {
+        bidsMapRef.current.set(bid[0], bid);
+      });
+    }
+
+    if (asksMapRef.current.size > 30) {
+      asksMapRef.current.clear();
+      asksArray.forEach((ask) => {
+        asksMapRef.current.set(ask[0], ask);
+      });
+    }
+
     // Create orderbook snapshot
     const orderbook: RestResponseGetOrderBookLevel2 = {
       sequence: update.sequence,

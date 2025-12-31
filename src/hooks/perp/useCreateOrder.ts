@@ -1,5 +1,20 @@
 import { useState } from 'react';
-// import { OrderType, OrderSide } from '@kumabid/kuma-sdk';
+import { useAccount, useWalletClient } from 'wagmi';
+
+// Kuma SDK order type enums
+enum OrderType {
+  market = 0,
+  limit = 1,
+  stopMarket = 2,
+  stopLimit = 3,
+  takeProfitMarket = 4,
+  takeProfitLimit = 5,
+}
+
+enum OrderSide {
+  buy = 0,
+  sell = 1,
+}
 
 interface CreateOrderParams {
   market: string;
@@ -10,6 +25,9 @@ interface CreateOrderParams {
 }
 
 export const useCreateOrder = () => {
+  const { address } = useAccount();
+  const { data: walletClient } = useWalletClient();
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [orderResult, setOrderResult] = useState<any>(null);
@@ -25,48 +43,92 @@ export const useCreateOrder = () => {
     try {
       console.log('Creating market order:', params);
 
-      // TODO: Implement Kuma API order submission
-      // const client = new RestAuthenticatedClient({
-      //   apiKey: process.env.NEXT_PUBLIC_KUMA_API_KEY || '',
-      //   apiSecret: process.env.NEXT_PUBLIC_KUMA_API_SECRET || '',
-      //   wallet: walletAddress,
-      // });
-      //
-      // Note: Leverage is typically set at account level, not per-order
-      // You may need to call client.updateLeverage() before placing order
-      //
-      // const order = await client.createOrder({
-      //   type: OrderType.market,
-      //   side: params.side === 'buy' ? OrderSide.buy : OrderSide.sell,
-      //   market: params.market,
-      //   quantity: params.quantity,
-      //   reduceOnly: params.reduceOnly || false,
-      //   // Note: Market orders don't have price or timeInForce
-      // });
-      //
-      // setOrderResult(order);
-      // console.log('Order created successfully:', order);
+      // Validate wallet connection
+      if (!address || !walletClient) {
+        throw new Error('Wallet not connected');
+      }
 
-      // Mock success response
-      const mockOrder = {
-        orderId: `mock-${Date.now()}`,
-        market: params.market,
-        side: params.side,
-        quantity: params.quantity,
-        type: 'market',
-        status: 'filled',
-        createdAt: new Date().toISOString(),
-      };
+      // Convert side to Kuma enum
+      const sideEnum = params.side === 'buy' ? OrderSide.buy : OrderSide.sell;
 
-      setOrderResult(mockOrder);
-      console.log('Mock order created:', mockOrder);
+      // Step 1: Get the typed data structure from our API
+      const typedDataResponse = await fetch('/api/kuma/get-order-typed-data', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          wallet: address,
+          market: params.market,
+          type: OrderType.market,
+          side: sideEnum,
+          quantity: params.quantity,
+        }),
+      });
 
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      if (!typedDataResponse.ok) {
+        const error = await typedDataResponse.json();
+        throw new Error(error.error || 'Failed to get order typed data');
+      }
+
+      const { nonce, typedData } = await typedDataResponse.json();
+
+      // Step 2: Request signature from user's wallet
+      console.log('Requesting order signature from wallet...');
+      const signature = await walletClient.signTypedData({
+        domain: typedData.domain,
+        types: typedData.types,
+        primaryType: typedData.primaryType,
+        message: typedData.message,
+      });
+
+      console.log('Signature received, submitting order to Kuma API...');
+
+      // Step 3: Submit order to Kuma API via our Next.js API route
+      const response = await fetch('/api/kuma/create-order', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          nonce,
+          wallet: address,
+          market: params.market,
+          type: OrderType.market,
+          side: sideEnum,
+          quantity: params.quantity,
+          signature,
+          reduceOnly: params.reduceOnly,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to create order');
+      }
+
+      console.log('Order created successfully:', result);
+      setOrderResult(result);
+
+      return result;
     } catch (err: any) {
-      const errorMessage = err.message || 'Failed to create order';
-      setError(errorMessage);
       console.error('Error creating order:', err);
+
+      let errorMessage = 'Failed to create order';
+
+      if (err.message) {
+        errorMessage = err.message;
+      }
+
+      // Check for specific error cases
+      if (errorMessage.includes('User rejected') || errorMessage.includes('User denied')) {
+        errorMessage = 'Order signature was rejected. Please try again.';
+      } else if (errorMessage.includes('insufficient')) {
+        errorMessage = 'Insufficient balance or margin to place order.';
+      }
+
+      setError(errorMessage);
       throw err;
     } finally {
       setIsSubmitting(false);

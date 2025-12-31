@@ -33,8 +33,43 @@ interface PerpStore {
   // ========== Advanced Options ==========
   reduceOnly: boolean;
   setReduceOnly: (reduceOnly: boolean) => void;
-  tpSlEnabled: boolean; // For future TP/SL implementation
+  tpSlEnabled: boolean;
   setTpSlEnabled: (enabled: boolean) => void;
+
+  // ========== TP/SL Modal & Configuration ==========
+  tpSlModalOpen: boolean;
+  openTpSlModal: () => void;
+  closeTpSlModal: () => void;
+
+  // Take Profit settings
+  takeProfitEnabled: boolean;
+  setTakeProfitEnabled: (enabled: boolean) => void;
+  takeProfitTriggerType: 'index' | 'last'; // Price type for trigger (Index or Last)
+  setTakeProfitTriggerType: (type: 'index' | 'last') => void;
+  takeProfitPrice: string; // Trigger price value
+  setTakeProfitPrice: (value: string) => void;
+  takeProfitPercentage: string; // Percentage change
+  setTakeProfitPercentage: (value: string) => void;
+  // Legacy fields (keeping for compatibility)
+  takeProfitValue: string; // Percentage or absolute price
+  setTakeProfitValue: (value: string) => void;
+  takeProfitMode: 'percentage' | 'price'; // Change % or absolute price
+  setTakeProfitMode: (mode: 'percentage' | 'price') => void;
+
+  // Stop Loss settings
+  stopLossEnabled: boolean;
+  setStopLossEnabled: (enabled: boolean) => void;
+  stopLossTriggerType: 'index' | 'last'; // Price type for trigger (Index or Last)
+  setStopLossTriggerType: (type: 'index' | 'last') => void;
+  stopLossPrice: string; // Trigger price value
+  setStopLossPrice: (value: string) => void;
+  stopLossPercentage: string; // Percentage change
+  setStopLossPercentage: (value: string) => void;
+  // Legacy fields (keeping for compatibility)
+  stopLossValue: string;
+  setStopLossValue: (value: string) => void;
+  stopLossMode: 'percentage' | 'price';
+  setStopLossMode: (mode: 'percentage' | 'price') => void;
 
   // ========== Future Expansion Fields (Initially Unused) ==========
   limitPrice?: string; // For limit orders
@@ -72,6 +107,20 @@ const initialState = {
   triggerPrice: undefined,
   timeInForce: undefined,
   freeCollateral: 0,
+  // TP/SL Modal & Settings
+  tpSlModalOpen: false,
+  takeProfitEnabled: false,
+  takeProfitTriggerType: "index" as const,
+  takeProfitPrice: "",
+  takeProfitPercentage: "",
+  takeProfitValue: "",
+  takeProfitMode: "percentage" as const,
+  stopLossEnabled: false,
+  stopLossTriggerType: "index" as const,
+  stopLossPrice: "",
+  stopLossPercentage: "",
+  stopLossValue: "",
+  stopLossMode: "percentage" as const,
 };
 
 export const usePerpStore = create<PerpStore>((set) => ({
@@ -98,6 +147,26 @@ export const usePerpStore = create<PerpStore>((set) => ({
   // ========== Advanced Options Actions ==========
   setReduceOnly: (reduceOnly: boolean) => set({ reduceOnly }),
   setTpSlEnabled: (enabled: boolean) => set({ tpSlEnabled: enabled }),
+
+  // ========== TP/SL Modal Actions ==========
+  openTpSlModal: () => set({ tpSlModalOpen: true }),
+  closeTpSlModal: () => set({ tpSlModalOpen: false }),
+
+  // Take Profit Actions
+  setTakeProfitEnabled: (enabled: boolean) => set({ takeProfitEnabled: enabled }),
+  setTakeProfitTriggerType: (type: 'index' | 'last') => set({ takeProfitTriggerType: type }),
+  setTakeProfitPrice: (value: string) => set({ takeProfitPrice: value }),
+  setTakeProfitPercentage: (value: string) => set({ takeProfitPercentage: value }),
+  setTakeProfitValue: (value: string) => set({ takeProfitValue: value }),
+  setTakeProfitMode: (mode: 'percentage' | 'price') => set({ takeProfitMode: mode }),
+
+  // Stop Loss Actions
+  setStopLossEnabled: (enabled: boolean) => set({ stopLossEnabled: enabled }),
+  setStopLossTriggerType: (type: 'index' | 'last') => set({ stopLossTriggerType: type }),
+  setStopLossPrice: (value: string) => set({ stopLossPrice: value }),
+  setStopLossPercentage: (value: string) => set({ stopLossPercentage: value }),
+  setStopLossValue: (value: string) => set({ stopLossValue: value }),
+  setStopLossMode: (mode: 'percentage' | 'price') => set({ stopLossMode: mode }),
 
   // ========== Future Expansion Actions ==========
   setLimitPrice: (price: string) => set({ limitPrice: price }),
