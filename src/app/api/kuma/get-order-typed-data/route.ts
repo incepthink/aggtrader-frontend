@@ -20,6 +20,25 @@ function uuidToUint128(uuid: string): string {
   return uint128.toString();
 }
 
+/**
+ * Format and validate quantity according to Kuma API requirements
+ * - Must be a multiple of stepSize
+ * - Must meet minimum order size
+ * - Must be formatted as string with 8 decimals
+ */
+function formatQuantity(quantity: string, stepSize: number, minimum: number): string {
+  const value = parseFloat(quantity);
+
+  // Round to nearest stepSize increment
+  const rounded = Math.round(value / stepSize) * stepSize;
+
+  // Enforce minimum
+  const final = Math.max(rounded, minimum);
+
+  // Format to 8 decimals
+  return final.toFixed(8);
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -36,6 +55,40 @@ export async function POST(request: NextRequest) {
     // Get sandbox mode from environment
     const sandbox = process.env.NEXT_PUBLIC_KUMA_SANDBOX === 'true';
 
+    // Determine API base URL
+    const baseUrl = sandbox ? 'https://api.kuma.bid' : 'https://api.kuma.bid';
+
+    // Fetch market data to get stepSize and minimum order size
+    const marketResponse = await fetch(`${baseUrl}/v1/markets?market=${market}`);
+    if (!marketResponse.ok) {
+      return NextResponse.json(
+        { error: 'Failed to fetch market data' },
+        { status: 500 }
+      );
+    }
+
+    const marketData = await marketResponse.json();
+    if (!marketData || marketData.length === 0) {
+      return NextResponse.json(
+        { error: `Market ${market} not found` },
+        { status: 400 }
+      );
+    }
+
+    const marketInfo = marketData[0];
+    const stepSize = parseFloat(marketInfo.stepSize);
+    const minimumOrderSize = parseFloat(marketInfo.takerOrderMinimum);
+
+    // Format quantity according to market rules
+    const formattedQuantity = formatQuantity(quantity, stepSize, minimumOrderSize);
+
+    console.log('Typed data quantity formatting:', {
+      original: quantity,
+      stepSize,
+      minimumOrderSize,
+      formatted: formattedQuantity,
+    });
+
     // Generate nonce (UUID v1)
     const nonce = uuidv1();
 
@@ -48,7 +101,9 @@ export async function POST(request: NextRequest) {
     const chainId = sandbox ? 64002 : 94524;
 
     // Kuma's EIP-712 typed data structure for order submission
-    // Based on Kuma API documentation
+    // Based on Kuma SDK implementation (signatures.js)
+    const emptyPipString = '0.00000000';
+
     const typedData = {
       domain: {
         name: 'Kuma',
@@ -60,26 +115,49 @@ export async function POST(request: NextRequest) {
         Order: [
           { name: 'nonce', type: 'uint128' },
           { name: 'wallet', type: 'address' },
-          { name: 'market', type: 'string' },
-          { name: 'type', type: 'uint8' },
-          { name: 'side', type: 'uint8' },
+          { name: 'marketSymbol', type: 'string' }, // Note: marketSymbol not market
+          { name: 'orderType', type: 'uint8' }, // Note: orderType not type
+          { name: 'orderSide', type: 'uint8' }, // Note: orderSide not side
           { name: 'quantity', type: 'string' },
+          { name: 'limitPrice', type: 'string' },
+          { name: 'triggerPrice', type: 'string' },
+          { name: 'triggerType', type: 'uint8' },
+          { name: 'callbackRate', type: 'string' },
+          { name: 'conditionalOrderId', type: 'uint128' },
+          { name: 'isReduceOnly', type: 'bool' },
+          { name: 'timeInForce', type: 'uint8' },
+          { name: 'selfTradePrevention', type: 'uint8' },
+          { name: 'isLiquidationAcquisitionOnly', type: 'bool' },
+          { name: 'delegatedPublicKey', type: 'address' },
+          { name: 'clientOrderId', type: 'string' },
         ],
       },
       primaryType: 'Order',
       message: {
-        nonce: uuidToUint128(nonce), // Convert UUID to uint128
+        nonce: uuidToUint128(nonce),
         wallet: wallet.toLowerCase(),
-        market,
-        type,
-        side,
-        quantity,
+        marketSymbol: market, // marketSymbol in signature
+        orderType: type, // orderType in signature (same value as API type)
+        orderSide: side, // orderSide in signature (same value as API side)
+        quantity: formattedQuantity, // Use formatted quantity
+        limitPrice: emptyPipString, // Required even for market orders
+        triggerPrice: emptyPipString,
+        triggerType: 0, // 0 = none
+        callbackRate: emptyPipString,
+        conditionalOrderId: 0,
+        isReduceOnly: false,
+        timeInForce: 0, // 0 = GTC (Good Till Cancel)
+        selfTradePrevention: 0, // 0 = DC (Decrement and Cancel)
+        isLiquidationAcquisitionOnly: false,
+        delegatedPublicKey: '0x0000000000000000000000000000000000000000', // Zero address
+        clientOrderId: '',
       },
     };
 
     return NextResponse.json({
       nonce, // Return original UUID for API submission
       typedData,
+      formattedQuantity, // Return formatted quantity so client knows what will be used
     }, { status: 200 });
   } catch (error: any) {
     console.error('Error in get-order-typed-data API route:', error);

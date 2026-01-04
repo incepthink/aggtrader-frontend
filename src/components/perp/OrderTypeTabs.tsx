@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { Tabs, Tab } from '@mui/material';
-import { usePerpStore } from '@/store/perpStore';
+import { Tabs, Tab } from "@mui/material";
+import { usePerpStore } from "@/store/perpStore";
 
 const OrderTypeTabs = () => {
   const activeOrderType = usePerpStore((s) => s.activeOrderType);
@@ -16,25 +16,25 @@ const OrderTypeTabs = () => {
       value={activeOrderType}
       onChange={handleTabChange}
       sx={{
-        minHeight: '36px',
-        '& .MuiTabs-indicator': {
-          backgroundColor: '#00F5E0',
-          height: '2px',
+        py: 0.5,
+        minHeight: "36px",
+        "& .MuiTabs-indicator": {
+          display: "none", // ✅ no underline/indicator
         },
-        '& .MuiTab-root': {
-          minHeight: '36px',
-          minWidth: 'auto',
-          px: 2,
-          py: 0.5,
-          fontSize: '0.875rem',
+        "& .MuiTab-root": {
+          // minHeight: "26px",
+          minWidth: "auto",
+          // px: 2,
+          // py: 0.5,
+          fontSize: "0.875rem",
           fontWeight: 500,
-          textTransform: 'none',
-          color: 'rgba(255, 255, 255, 0.6)',
-          '&.Mui-selected': {
-            color: '#00F5E0',
+          textTransform: "none",
+          color: "rgba(255, 255, 255, 0.6)",
+          "&.Mui-selected": {
+            color: "#00F5E0", // ✅ only color change
           },
-          '&.Mui-disabled': {
-            color: 'rgba(255, 255, 255, 0.3)',
+          "&.Mui-disabled": {
+            color: "rgba(255, 255, 255, 0.3)",
           },
         },
       }}

@@ -27,6 +27,8 @@ interface PerpStore {
   setQuantity: (quantity: string) => void;
   quantityPercentage: number; // 0-100 for slider
   setQuantityPercentage: (percentage: number) => void;
+  quantityUnit: "BTC" | "USD"; // Unit for quantity input
+  setQuantityUnit: (unit: "BTC" | "USD") => void;
   orderSide: OrderSide;
   setOrderSide: (side: OrderSide) => void;
 
@@ -100,6 +102,7 @@ const initialState = {
   leverageModalOpen: false,
   quantity: "",
   quantityPercentage: 0,
+  quantityUnit: "BTC" as const,
   orderSide: DEFAULT_ORDER_SIDE,
   reduceOnly: false,
   tpSlEnabled: false,
@@ -142,6 +145,7 @@ export const usePerpStore = create<PerpStore>((set) => ({
   setQuantity: (quantity: string) => set({ quantity }),
   setQuantityPercentage: (percentage: number) =>
     set({ quantityPercentage: Math.max(0, Math.min(100, percentage)) }), // Clamp 0-100
+  setQuantityUnit: (unit: "BTC" | "USD") => set({ quantityUnit: unit }),
   setOrderSide: (side: OrderSide) => set({ orderSide: side }),
 
   // ========== Advanced Options Actions ==========

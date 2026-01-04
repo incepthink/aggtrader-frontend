@@ -26,10 +26,22 @@ function generateHmacSignature(apiSecret: string, body: string): string {
 }
 
 /**
- * Format quantity to 8 decimal precision as required by Kuma API
+ * Format and validate quantity according to Kuma API requirements
+ * - Must be a multiple of stepSize (0.00010000 for BTC-USD)
+ * - Must meet minimum order size (0.00050000 for BTC-USD)
+ * - Must be formatted as string with 8 decimals
  */
-function formatQuantity(quantity: string): string {
-  return parseFloat(quantity).toFixed(8);
+function formatQuantity(quantity: string, stepSize: number = 0.0001, minimum: number = 0.0005): string {
+  const value = parseFloat(quantity);
+
+  // Round to nearest stepSize increment
+  const rounded = Math.round(value / stepSize) * stepSize;
+
+  // Enforce minimum
+  const final = Math.max(rounded, minimum);
+
+  // Format to 8 decimals
+  return final.toFixed(8);
 }
 
 export async function POST(request: NextRequest) {
@@ -59,10 +71,42 @@ export async function POST(request: NextRequest) {
 
     // Determine API base URL
     const baseUrl = sandbox ? 'https://api.kuma.bid' : 'https://api.kuma.bid';
+
+    // Fetch market data to get stepSize and minimum order size
+    const marketResponse = await fetch(`${baseUrl}/v1/markets?market=${market}`);
+    if (!marketResponse.ok) {
+      return NextResponse.json(
+        { error: 'Failed to fetch market data' },
+        { status: 500 }
+      );
+    }
+
+    const marketData = await marketResponse.json();
+    if (!marketData || marketData.length === 0) {
+      return NextResponse.json(
+        { error: `Market ${market} not found` },
+        { status: 400 }
+      );
+    }
+
+    const marketInfo = marketData[0];
+    const stepSize = parseFloat(marketInfo.stepSize);
+    const minimumOrderSize = parseFloat(marketInfo.takerOrderMinimum);
+
     const path = '/v1/orders';
 
+    // Format quantity according to market rules
+    const formattedQuantity = formatQuantity(quantity, stepSize, minimumOrderSize);
+
+    console.log('Quantity formatting:', {
+      original: quantity,
+      stepSize,
+      minimumOrderSize,
+      formatted: formattedQuantity,
+    });
+
     // Prepare request body for Kuma API
-    // Per API docs: market orders must have limitPrice and triggerPrice set to "0.00000000"
+    // Per API docs: market orders must have limitPrice set to "0.00000000"
     const requestBody = {
       parameters: {
         nonce,
@@ -70,8 +114,9 @@ export async function POST(request: NextRequest) {
         market,
         type, // 0 for market order
         side, // 0 for buy, 1 for sell
-        quantity: formatQuantity(quantity), // 8 decimal precision
-        ...(reduceOnly !== undefined && { reduceOnly }),
+        quantity: formattedQuantity, // Formatted with stepSize and minimum
+        // limitPrice: "0.00000000", // Required for market orders per Kuma API
+        // ...(reduceOnly !== undefined && { isReduceOnly: reduceOnly }),
       },
       signature,
     };
@@ -86,9 +131,11 @@ export async function POST(request: NextRequest) {
       market,
       type,
       side,
-      quantity: formatQuantity(quantity),
+      quantity: formattedQuantity,
+      limitPrice: "0.00000000",
       nonce,
       bodyLength: bodyString.length,
+      fullBody: requestBody, // Log full request body for debugging
     });
 
     // Make request to Kuma API
@@ -115,11 +162,15 @@ export async function POST(request: NextRequest) {
       console.error('Kuma API error:', {
         status: response.status,
         statusText: response.statusText,
-        data,
+        responseData: data,
+        sentRequest: requestBody,
       });
 
       return NextResponse.json(
-        { error: data.message || data.error || 'Failed to create order' },
+        {
+          error: data.message || data.error || 'Failed to create order',
+          details: data, // Include full error details for debugging
+        },
         { status: response.status }
       );
     }

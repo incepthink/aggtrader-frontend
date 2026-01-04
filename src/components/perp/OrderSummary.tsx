@@ -1,36 +1,35 @@
 'use client';
 
 import { Box, Typography } from '@mui/material';
+import { MarketCalcOutput, formatDualDisplay, formatUsdValue } from '@/utils/perp/marketCalc';
 
 interface OrderSummaryProps {
-  quantity: string;
-  currentPrice?: number;
-  leverage: number;
+  marketMetrics: MarketCalcOutput;
 }
 
-const OrderSummary = ({ quantity, currentPrice, leverage }: OrderSummaryProps) => {
+const OrderSummary = ({ marketMetrics }: OrderSummaryProps) => {
   /**
-   * Calculate the initial margin requirement (cost to open position)
-   * Cost = (quantity * currentPrice) / leverage
+   * Format cost display (buy / sell)
+   * Both modes use orderbook-based buy/sell metrics
    */
-  const calculateCost = (): string => {
-    if (!quantity || !currentPrice || !leverage || parseFloat(quantity) === 0) {
-      return '- / -';
-    }
-    const cost = (parseFloat(quantity) * currentPrice) / leverage;
-    return `$${cost.toFixed(2)}`;
+  const displayCost = (): string => {
+    return formatDualDisplay(
+      marketMetrics.buyCostUsd,
+      marketMetrics.sellCostUsd,
+      formatUsdValue
+    );
   };
 
   /**
-   * Calculate the total position value
-   * Value = quantity * currentPrice
+   * Format value display (buy / sell)
+   * Both modes use orderbook-based buy/sell metrics
    */
-  const calculateValue = (): string => {
-    if (!quantity || !currentPrice || parseFloat(quantity) === 0) {
-      return '- / -';
-    }
-    const value = parseFloat(quantity) * currentPrice;
-    return `$${value.toFixed(2)}`;
+  const displayValue = (): string => {
+    return formatDualDisplay(
+      marketMetrics.buyValueUsd,
+      marketMetrics.sellValueUsd,
+      formatUsdValue
+    );
   };
 
   return (
@@ -63,7 +62,7 @@ const OrderSummary = ({ quantity, currentPrice, leverage }: OrderSummaryProps) =
             fontWeight: 500,
           }}
         >
-          {calculateCost()}
+          {displayCost()}
         </Typography>
       </Box>
 
@@ -86,7 +85,7 @@ const OrderSummary = ({ quantity, currentPrice, leverage }: OrderSummaryProps) =
             fontWeight: 500,
           }}
         >
-          {calculateValue()}
+          {displayValue()}
         </Typography>
       </Box>
 

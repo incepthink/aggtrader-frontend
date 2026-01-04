@@ -24,7 +24,9 @@ const PerpPage = () => {
   const { balance: accountBalance } = useKumaBalance();
 
   // Extract current price from ticker data
-  const currentPrice = tickerData?.close ? parseFloat(tickerData.close) : undefined;
+  const currentPrice = tickerData?.close
+    ? parseFloat(tickerData.close)
+    : undefined;
 
   // Check if wallet is on correct chain for perp trading
   const isOnXChain = chainId === XCHAIN_ID;
@@ -48,108 +50,123 @@ const PerpPage = () => {
         {/* Chain Switcher Banner - Shows when wallet is on wrong chain */}
         <XChainSwitcher />
 
-      {/* Error Display */}
-      {error && (
-        <Box sx={{ padding: 2, color: "#FF4444", textAlign: "center" }}>
-          Error: {error}
-        </Box>
-      )}
+        {/* Error Display */}
+        {error && (
+          <Box sx={{ padding: 2, color: "#FF4444", textAlign: "center" }}>
+            Error: {error}
+          </Box>
+        )}
 
-      {/* Main Trading Layout */}
-      <Box
-        sx={{
-          flex: 1,
-          display: "grid",
-          gridTemplateColumns: "1fr 280px 350px", // Chart | Orderbook | Trade Panel
-          gridTemplateRows: "auto 1fr 350px", // Header | Main | Bottom
-          gap: 1,
-          padding: 1,
-          overflow: "hidden",
-        }}
-      >
-        {/* ========== ROW 1: CHART HEADER ========== */}
-        <Box sx={{ gridColumn: "1 / 2", gridRow: "1 / 2" }}>
-          <GlowBox
-            sx={{
-              height: "100%",
-              background: "rgba(5, 12, 25, 0.8)",
-            }}
+        {/* Main Trading Layout */}
+        <Box
+          sx={{
+            flex: 1,
+            display: "grid",
+            gridTemplateColumns: "1fr 280px 350px", // Chart | Orderbook | Trade Panel
+            gridTemplateRows: "auto 1fr 350px", // Header | Main | Bottom
+            gap: 1,
+            padding: 1,
+            overflow: "hidden",
+          }}
+        >
+          {/* ========== ROW 1: CHART HEADER ========== */}
+          <Box sx={{ gridColumn: "1 / 2", gridRow: "1 / 2" }}>
+            <GlowBox
+              sx={{
+                height: "100%",
+                background: "rgba(5, 12, 25, 0.8)",
+              }}
+            >
+              <MarketHeader tickerData={tickerData} isConnected={isConnected} />
+            </GlowBox>
+          </Box>
+
+          {/* ========== ROW 2: MAIN CONTENT ========== */}
+
+          {/* Chart Body */}
+          <Box
+            sx={{ gridColumn: "1 / 2", gridRow: "2 / 3", overflow: "hidden" }}
           >
-            <MarketHeader tickerData={tickerData} isConnected={isConnected} />
-          </GlowBox>
-        </Box>
+            <GlowBox
+              sx={{
+                height: "100%",
+                background: "rgba(5, 12, 25, 0.6)",
+                p: 0,
+              }}
+            >
+              <KumaCandlestickChart
+                market="BTC-USD"
+                initialInterval={CandleInterval.FIVE_MINUTES}
+              />
+            </GlowBox>
+          </Box>
 
-        {/* ========== ROW 2: MAIN CONTENT ========== */}
-
-        {/* Chart Body */}
-        <Box sx={{ gridColumn: "1 / 2", gridRow: "2 / 3", overflow: "hidden" }}>
-          <GlowBox
-            sx={{
-              height: "100%",
-              background: "rgba(5, 12, 25, 0.6)",
-              p: 0,
-            }}
+          {/* Orderbook/Trades - Only spans chart body height */}
+          <Box
+            sx={{ gridColumn: "2 / 3", gridRow: "1 / 3", overflow: "hidden" }}
           >
-            <KumaCandlestickChart
-              market="BTC-USD"
-              initialInterval={CandleInterval.FIVE_MINUTES}
-            />
-          </GlowBox>
-        </Box>
+            <GlowBox
+              sx={{
+                height: "100%",
+                background: "rgba(5, 12, 25, 0.6)",
+                p: 0,
+              }}
+            >
+              <OrderbookTrades market="BTC-USD" />
+            </GlowBox>
+          </Box>
 
-        {/* Orderbook/Trades - Only spans chart body height */}
-        <Box sx={{ gridColumn: "2 / 3", gridRow: "1 / 3", overflow: "hidden" }}>
-          <GlowBox
-            sx={{
-              height: "100%",
-              background: "rgba(5, 12, 25, 0.6)",
-              p: 0,
-            }}
+          {/* Trade Panel / Order Form - Only spans chart body height */}
+          <Box
+            sx={{ gridColumn: "3 / 4", gridRow: "1 / 3", overflow: "hidden" }}
           >
-            <OrderbookTrades market="BTC-USD" />
-          </GlowBox>
-        </Box>
+            <GlowBox
+              padding={0}
+              sx={{
+                height: "100%",
+                background: "rgba(5, 12, 25, 0.6)",
+              }}
+            >
+              <OrderForm
+                market="BTC-USD"
+                currentPrice={currentPrice}
+                tickerData={tickerData}
+              />
+            </GlowBox>
+          </Box>
 
-        {/* Trade Panel / Order Form - Only spans chart body height */}
-        <Box sx={{ gridColumn: "3 / 4", gridRow: "1 / 3", overflow: "hidden" }}>
-          <GlowBox
-            sx={{
-              height: "100%",
-              background: "rgba(5, 12, 25, 0.6)",
-            }}
+          {/* ========== ROW 3: BOTTOM SECTION ========== */}
+
+          {/* Positions / Open Orders / History */}
+          <Box
+            sx={{ gridColumn: "1 / 3", gridRow: "3 / 4", overflow: "hidden" }}
           >
-            <OrderForm market="BTC-USD" currentPrice={currentPrice} tickerData={tickerData} />
-          </GlowBox>
-        </Box>
+            <GlowBox
+              sx={{
+                height: "100%",
+                background: "rgba(5, 12, 25, 0.6)",
+                p: 0,
+              }}
+            >
+              <PositionsPanel />
+            </GlowBox>
+          </Box>
 
-        {/* ========== ROW 3: BOTTOM SECTION ========== */}
-
-        {/* Positions / Open Orders / History */}
-        <Box sx={{ gridColumn: "1 / 3", gridRow: "3 / 4", overflow: "hidden" }}>
-          <GlowBox
-            sx={{
-              height: "100%",
-              background: "rgba(5, 12, 25, 0.6)",
-              p: 0,
-            }}
+          {/* Deposit / Withdraw */}
+          <Box
+            sx={{ gridColumn: "3 / 4", gridRow: "3 / 4", overflow: "hidden" }}
           >
-            <PositionsPanel />
-          </GlowBox>
+            <GlowBox
+              sx={{
+                height: "100%",
+                background: "rgba(5, 12, 25, 0.6)",
+                p: 0,
+              }}
+            >
+              <DepositWithdraw accountBalance={accountBalance} />
+            </GlowBox>
+          </Box>
         </Box>
-
-        {/* Deposit / Withdraw */}
-        <Box sx={{ gridColumn: "3 / 4", gridRow: "3 / 4", overflow: "hidden" }}>
-          <GlowBox
-            sx={{
-              height: "100%",
-              background: "rgba(5, 12, 25, 0.6)",
-              p: 0,
-            }}
-          >
-            <DepositWithdraw accountBalance={accountBalance} />
-          </GlowBox>
-        </Box>
-      </Box>
       </Box>
     </>
   );

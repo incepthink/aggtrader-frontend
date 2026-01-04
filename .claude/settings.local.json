@@ -22,7 +22,8 @@
       "Bash(npm install:*)",
       "Bash(rm:*)",
       "Bash(git add:*)",
-      "Bash(if exist .next rmdir /s /q .next)"
+      "Bash(if exist .next rmdir /s /q .next)",
+      "WebFetch(domain:docs.kuma.bid)"
     ],
     "deny": [],
     "ask": []

@@ -1,9 +1,17 @@
-'use client';
+"use client";
 
-import { useMemo, useCallback } from 'react';
-import { Box, Typography, TextField, InputAdornment, Stack, Button, Slider } from '@mui/material';
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
-import { usePerpStore } from '@/store/perpStore';
+import { useMemo, useCallback } from "react";
+import {
+  Box,
+  Typography,
+  TextField,
+  InputAdornment,
+  Stack,
+  Button,
+  Slider,
+} from "@mui/material";
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+import { usePerpStore } from "@/store/perpStore";
 
 interface QuantityInputProps {
   market: string;
@@ -12,25 +20,43 @@ interface QuantityInputProps {
   leverage: number;
 }
 
-const QuantityInput = ({ market, freeCollateral, currentPrice, leverage }: QuantityInputProps) => {
+const QuantityInput = ({
+  market,
+  freeCollateral,
+  currentPrice,
+  leverage,
+}: QuantityInputProps) => {
   const quantity = usePerpStore((s) => s.quantity);
   const quantityPercentage = usePerpStore((s) => s.quantityPercentage);
+  const quantityUnit = usePerpStore((s) => s.quantityUnit);
   const setQuantity = usePerpStore((s) => s.setQuantity);
   const setQuantityPercentage = usePerpStore((s) => s.setQuantityPercentage);
+  const setQuantityUnit = usePerpStore((s) => s.setQuantityUnit);
 
   // Extract asset symbol from market (e.g., "BTC" from "BTC-USD")
-  const assetSymbol = market.split('-')[0];
+  const assetSymbol = market.split("-")[0];
 
   /**
-   * Calculate maximum quantity based on free collateral, leverage, and current price
-   * maxQuantity = (freeCollateral * leverage) / currentPrice
+   * Calculate maximum quantity based on unit mode
+   * BTC mode: maxQuantity = (freeCollateral * leverage) / currentPrice
+   * USD mode: maxQuantity = freeCollateral * leverage
    */
   const maxQuantity = useMemo(() => {
-    if (!currentPrice || !freeCollateral || currentPrice === 0) {
+    if (!freeCollateral) {
       return 0;
     }
-    return (freeCollateral * leverage) / currentPrice;
-  }, [freeCollateral, leverage, currentPrice]);
+
+    if (quantityUnit === "USD") {
+      // USD mode: max is total buying power in USD
+      return freeCollateral * leverage;
+    } else {
+      // BTC mode: max is buying power converted to BTC
+      if (!currentPrice || currentPrice === 0) {
+        return 0;
+      }
+      return (freeCollateral * leverage) / currentPrice;
+    }
+  }, [freeCollateral, leverage, currentPrice, quantityUnit]);
 
   /**
    * Handle percentage button clicks
@@ -40,7 +66,7 @@ const QuantityInput = ({ market, freeCollateral, currentPrice, leverage }: Quant
     (percentage: number) => {
       setQuantityPercentage(percentage);
       const calculatedQuantity = (maxQuantity * percentage) / 100;
-      setQuantity(calculatedQuantity > 0 ? calculatedQuantity.toFixed(8) : '');
+      setQuantity(calculatedQuantity > 0 ? calculatedQuantity.toFixed(8) : "");
     },
     [maxQuantity, setQuantity, setQuantityPercentage]
   );
@@ -54,8 +80,8 @@ const QuantityInput = ({ market, freeCollateral, currentPrice, leverage }: Quant
       const value = e.target.value;
 
       // Allow empty input
-      if (value === '') {
-        setQuantity('');
+      if (value === "") {
+        setQuantity("");
         setQuantityPercentage(0);
         return;
       }
@@ -92,9 +118,9 @@ const QuantityInput = ({ market, freeCollateral, currentPrice, leverage }: Quant
   const percentageButtons = [25, 50, 75, 100];
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 0 }}>
       {/* Label with Asset Selector */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      {/* <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Typography
           variant="caption"
           sx={{
@@ -123,10 +149,10 @@ const QuantityInput = ({ market, freeCollateral, currentPrice, leverage }: Quant
         >
           {assetSymbol}
         </Button>
-      </Box>
+      </Box> */}
 
       {/* Input Field */}
-      <TextField
+      {/* <TextField
         value={quantity}
         onChange={handleQuantityChange}
         placeholder="- / -"
@@ -138,8 +164,8 @@ const QuantityInput = ({ market, freeCollateral, currentPrice, leverage }: Quant
               <Typography
                 variant="caption"
                 sx={{
-                  color: 'rgba(255, 255, 255, 0.6)',
-                  fontSize: '0.75rem',
+                  color: "rgba(255, 255, 255, 0.6)",
+                  fontSize: "0.75rem",
                 }}
               >
                 {assetSymbol}
@@ -147,41 +173,79 @@ const QuantityInput = ({ market, freeCollateral, currentPrice, leverage }: Quant
             </InputAdornment>
           ),
           inputProps: {
-            step: 'any',
+            step: "any",
             min: 0,
           },
         }}
         sx={{
-          '& .MuiOutlinedInput-root': {
-            backgroundColor: 'rgba(255, 255, 255, 0.02)',
-            fontSize: '0.875rem',
-            '& fieldset': {
-              borderColor: 'rgba(255, 255, 255, 0.1)',
+          "& .MuiOutlinedInput-root": {
+            backgroundColor: "rgba(255, 255, 255, 0.02)",
+            fontSize: "0.875rem",
+            "& fieldset": {
+              borderColor: "rgba(255, 255, 255, 0.1)",
             },
-            '&:hover fieldset': {
-              borderColor: 'rgba(255, 255, 255, 0.2)',
+            "&:hover fieldset": {
+              borderColor: "rgba(255, 255, 255, 0.2)",
             },
-            '&.Mui-focused fieldset': {
-              borderColor: '#00F5E0',
+            "&.Mui-focused fieldset": {
+              borderColor: "#00F5E0",
             },
           },
-          '& input': {
-            color: '#fff',
-            '&::placeholder': {
-              color: 'rgba(255, 255, 255, 0.3)',
+          "& input": {
+            color: "#fff",
+            "&::placeholder": {
+              color: "rgba(255, 255, 255, 0.3)",
               opacity: 1,
             },
           },
-          '& input[type=number]': {
-            MozAppearance: 'textfield',
+          "& input[type=number]": {
+            MozAppearance: "textfield",
           },
-          '& input[type=number]::-webkit-outer-spin-button, & input[type=number]::-webkit-inner-spin-button':
+          "& input[type=number]::-webkit-outer-spin-button, & input[type=number]::-webkit-inner-spin-button":
             {
-              WebkitAppearance: 'none',
+              WebkitAppearance: "none",
               margin: 0,
             },
         }}
-      />
+      /> */}
+
+      <div className="flex w-full items-center bg-[rgba(255,255,255,0.02)] border-2 border-[rgba(255,255,255,0.1)] mb-3">
+        <p className="p-3 text-sm text-white/80 shrink-0">Quantity</p>
+
+        <input
+          type="text"
+          value={quantity}
+          onChange={handleQuantityChange}
+          className="
+      flex-1 min-w-0
+      bg-transparent px-3 py-3 text-sm text-white
+      outline-none
+      focus:ring-0
+    "
+          placeholder="0.00"
+        />
+
+        <select
+          value={quantityUnit}
+          onChange={(e) => setQuantityUnit(e.target.value as "BTC" | "USD")}
+          className="
+      shrink-0
+      text-white text-sm
+      px-3 py-3
+      outline-none cursor-pointer
+      border-l border-[rgba(255,255,255,0.1)]
+      appearance-none
+      [&>option:checked]:bg-[#00F5E0]
+      [&>option:checked]:text-black
+      [&>option]:bg-black
+      [&>option]:text-white
+      [&>option:hovered]:bg-white/5
+    "
+        >
+          <option value="BTC">BTC</option>
+          <option value="USD">USD</option>
+        </select>
+      </div>
 
       {/* Percentage Buttons */}
       <Stack direction="row" spacing={1}>
@@ -190,28 +254,32 @@ const QuantityInput = ({ market, freeCollateral, currentPrice, leverage }: Quant
             key={percentage}
             onClick={() => handlePercentageClick(percentage)}
             size="small"
-            variant={Math.abs(quantityPercentage - percentage) < 0.1 ? 'contained' : 'outlined'}
+            variant={
+              Math.abs(quantityPercentage - percentage) < 0.1
+                ? "contained"
+                : "outlined"
+            }
             sx={{
               flex: 1,
-              fontSize: '0.75rem',
+              fontSize: "0.75rem",
               fontWeight: 500,
-              textTransform: 'none',
-              minWidth: 'auto',
+              textTransform: "none",
+              minWidth: "auto",
               py: 0.5,
               ...(Math.abs(quantityPercentage - percentage) < 0.1
                 ? {
-                    backgroundColor: '#00F5E0',
-                    color: '#000',
-                    '&:hover': {
-                      backgroundColor: '#00D4C0',
+                    backgroundColor: "#00F5E0",
+                    color: "#000",
+                    "&:hover": {
+                      backgroundColor: "#00D4C0",
                     },
                   }
                 : {
-                    color: 'rgba(255, 255, 255, 0.7)',
-                    borderColor: 'rgba(255, 255, 255, 0.2)',
-                    '&:hover': {
-                      backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                      borderColor: 'rgba(255, 255, 255, 0.3)',
+                    color: "rgba(255, 255, 255, 0.7)",
+                    borderColor: "rgba(255, 255, 255, 0.2)",
+                    "&:hover": {
+                      backgroundColor: "rgba(255, 255, 255, 0.05)",
+                      borderColor: "rgba(255, 255, 255, 0.3)",
                     },
                   }),
             }}
@@ -229,21 +297,21 @@ const QuantityInput = ({ market, freeCollateral, currentPrice, leverage }: Quant
         max={100}
         step={1}
         sx={{
-          color: '#00F5E0',
+          color: "#00F5E0",
           height: 4,
-          '& .MuiSlider-track': {
-            backgroundColor: '#00F5E0',
-            border: 'none',
+          "& .MuiSlider-track": {
+            backgroundColor: "#00F5E0",
+            border: "none",
           },
-          '& .MuiSlider-rail': {
-            backgroundColor: 'rgba(255, 255, 255, 0.1)',
+          "& .MuiSlider-rail": {
+            backgroundColor: "rgba(255, 255, 255, 0.1)",
           },
-          '& .MuiSlider-thumb': {
+          "& .MuiSlider-thumb": {
             width: 12,
             height: 12,
-            backgroundColor: '#00F5E0',
-            '&:hover, &.Mui-focusVisible': {
-              boxShadow: '0 0 0 8px rgba(0, 245, 224, 0.16)',
+            backgroundColor: "#00F5E0",
+            "&:hover, &.Mui-focusVisible": {
+              boxShadow: "0 0 0 8px rgba(0, 245, 224, 0.16)",
             },
           },
         }}
@@ -254,12 +322,12 @@ const QuantityInput = ({ market, freeCollateral, currentPrice, leverage }: Quant
         <Typography
           variant="caption"
           sx={{
-            color: 'rgba(255, 255, 255, 0.4)',
-            fontSize: '0.7rem',
-            textAlign: 'right',
+            color: "rgba(255, 255, 255, 0.4)",
+            fontSize: "0.7rem",
+            textAlign: "right",
           }}
         >
-          Max: {maxQuantity.toFixed(8)} {assetSymbol}
+          Max: {quantityUnit === "USD" ? `$${maxQuantity.toFixed(2)}` : `${maxQuantity.toFixed(8)} ${assetSymbol}`}
         </Typography>
       )}
     </Box>
