@@ -1,10 +1,9 @@
 import React from "react";
-import { Typography, Box, Stack, Divider, Chip } from "@mui/material";
+import { Typography, Box, Stack, Chip } from "@mui/material";
 import GlowBox from "@/components/common/ui/GlowBox";
 import { XpPreviewData } from "@/types/xp";
 import { formatXP } from "@/utils/xp/formatters";
 import { leagueColors } from "@/utils/xp/leagueConfig";
-import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 
 interface XpPreviewCardProps {
@@ -27,39 +26,37 @@ const XpPreviewCard: React.FC<XpPreviewCardProps> = ({ previewData }) => {
 
   return (
     <GlowBox padding={3}>
-      <Stack spacing={2.5}>
+      <Stack spacing={3}>
         {/* Header */}
-        <Box display="flex" alignItems="center" gap={1}>
-          <TrendingUpIcon sx={{ color: "#00F5E0" }} />
+        <Box display="flex" alignItems="center" justifyContent="space-between">
           <Typography
             variant="h5"
-            sx={{ fontWeight: 600, color: "white", flex: 1 }}
+            sx={{ fontWeight: 600, color: "white" }}
           >
             Expected This Week
           </Typography>
           <Chip
             label={previewData.league.toUpperCase()}
             sx={{
-              bgcolor: leagueColors[previewData.league] + "20",
-              color: leagueColors[previewData.league],
-              fontWeight: 600,
+              backgroundColor: leagueColors[previewData.league],
+              color: "#000",
+              fontWeight: 700,
               fontSize: "0.75rem",
+              px: 2,
             }}
           />
         </Box>
 
-        {/* Total Expected XP */}
-        <Box
-          sx={{
-            bgcolor: "rgba(0, 245, 224, 0.05)",
-            borderRadius: 2,
-            p: 2.5,
-            border: "1px solid rgba(0, 245, 224, 0.2)",
-          }}
-        >
+        {/* Projected XP */}
+        <Box>
           <Typography
-            variant="body2"
-            sx={{ color: "rgba(255,255,255,0.6)", mb: 0.5 }}
+            variant="caption"
+            sx={{
+              color: "rgba(255,255,255,0.5)",
+              textTransform: "uppercase",
+              letterSpacing: "0.5px",
+              fontSize: "0.7rem"
+            }}
           >
             Projected XP
           </Typography>
@@ -68,99 +65,176 @@ const XpPreviewCard: React.FC<XpPreviewCardProps> = ({ previewData }) => {
             sx={{
               fontWeight: 700,
               color: "#00F5E0",
-              fontSize: { xs: "2rem", sm: "2.5rem" },
+              fontSize: { xs: "2.5rem", sm: "3rem" },
+              mt: 0.5,
             }}
           >
             ~{formatXP(previewData.total_xp)}
           </Typography>
         </Box>
 
-        <Divider sx={{ borderColor: "rgba(255,255,255,0.1)" }} />
-
-        {/* Activity Breakdown */}
-        <Box>
-          <Typography
-            variant="body2"
+        {/* Activity Stats - Grid Layout */}
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: { xs: "1fr", sm: "repeat(3, 1fr)" },
+            gap: 2,
+          }}
+        >
+          {/* Volume */}
+          <Box
             sx={{
-              color: "rgba(255,255,255,0.7)",
-              fontWeight: 600,
-              mb: 2,
+              bgcolor: "rgba(255, 255, 255, 0.02)",
+              border: "1px solid rgba(255, 255, 255, 0.1)",
+              borderRadius: 2,
+              p: 2.5,
+              textAlign: "center",
             }}
           >
-            This Week&apos;s Activity
-          </Typography>
+            <Typography
+              variant="caption"
+              sx={{
+                color: "rgba(255,255,255,0.5)",
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
+                fontSize: "0.7rem"
+              }}
+            >
+              Volume
+            </Typography>
+            <Typography
+              variant="h5"
+              sx={{
+                fontWeight: 700,
+                color: "#00F5E0",
+                mt: 1,
+                fontSize: { xs: "1.5rem", sm: "1.75rem" },
+              }}
+            >
+              {formatVolume(previewData.eligible_volume)}
+            </Typography>
+          </Box>
 
-          <Stack spacing={1.5}>
-            {/* Volume */}
-            <Box display="flex" justifyContent="space-between">
-              <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.6)" }}>
-                Volume
-              </Typography>
-              <Typography variant="body2" sx={{ color: "white", fontWeight: 600 }}>
-                {formatVolume(previewData.eligible_volume)}
-              </Typography>
-            </Box>
+          {/* Swaps */}
+          <Box
+            sx={{
+              bgcolor: "rgba(255, 255, 255, 0.02)",
+              border: "1px solid rgba(255, 255, 255, 0.1)",
+              borderRadius: 2,
+              p: 2.5,
+              textAlign: "center",
+            }}
+          >
+            <Typography
+              variant="caption"
+              sx={{
+                color: "rgba(255,255,255,0.5)",
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
+                fontSize: "0.7rem"
+              }}
+            >
+              Swaps
+            </Typography>
+            <Typography
+              variant="h5"
+              sx={{
+                fontWeight: 700,
+                color: "#00F5E0",
+                mt: 1,
+                fontSize: { xs: "1.5rem", sm: "1.75rem" },
+              }}
+            >
+              {previewData.total_swaps}
+            </Typography>
+          </Box>
 
-            {/* Swaps */}
-            <Box display="flex" justifyContent="space-between">
-              <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.6)" }}>
-                Swaps
-              </Typography>
-              <Typography variant="body2" sx={{ color: "white", fontWeight: 600 }}>
-                {previewData.total_swaps}
-              </Typography>
-            </Box>
-
-            {/* Unique Pairs */}
-            <Box display="flex" justifyContent="space-between">
-              <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.6)" }}>
-                Unique Pairs
-              </Typography>
-              <Typography variant="body2" sx={{ color: "white", fontWeight: 600 }}>
-                {previewData.unique_pairs_count}
-              </Typography>
-            </Box>
-
-            {/* New Pairs Bonus */}
-            {previewData.new_pairs_count > 0 && (
-              <Box
-                display="flex"
-                justifyContent="space-between"
-                sx={{
-                  bgcolor: "rgba(0, 245, 224, 0.05)",
-                  p: 1.5,
-                  borderRadius: 1,
-                  mt: 1,
-                }}
-              >
-                <Typography
-                  variant="body2"
-                  sx={{ color: "#00F5E0", fontWeight: 600 }}
-                >
-                  New Pairs Bonus ({previewData.new_pairs_count} pairs)
-                </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{ color: "#00F5E0", fontWeight: 700 }}
-                >
-                  +{formatXP(previewData.pair_bonus_xp)} XP
-                </Typography>
-              </Box>
-            )}
-          </Stack>
+          {/* Unique Pairs */}
+          <Box
+            sx={{
+              bgcolor: "rgba(255, 255, 255, 0.02)",
+              border: "1px solid rgba(255, 255, 255, 0.1)",
+              borderRadius: 2,
+              p: 2.5,
+              textAlign: "center",
+            }}
+          >
+            <Typography
+              variant="caption"
+              sx={{
+                color: "rgba(255,255,255,0.5)",
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
+                fontSize: "0.7rem"
+              }}
+            >
+              Unique Pairs
+            </Typography>
+            <Typography
+              variant="h5"
+              sx={{
+                fontWeight: 700,
+                color: "#00F5E0",
+                mt: 1,
+                fontSize: { xs: "1.5rem", sm: "1.75rem" },
+              }}
+            >
+              {previewData.unique_pairs_count}
+            </Typography>
+          </Box>
         </Box>
 
-        <Divider sx={{ borderColor: "rgba(255,255,255,0.1)" }} />
+        {/* New Pairs Bonus */}
+        {previewData.new_pairs_count > 0 && (
+          <Box
+            display="flex"
+            justifyContent="space-between"
+            sx={{
+              bgcolor: "rgba(0, 245, 224, 0.05)",
+              p: 2,
+              borderRadius: 2,
+              border: "1px solid rgba(0, 245, 224, 0.2)",
+            }}
+          >
+            <Typography
+              variant="body2"
+              sx={{ color: "#00F5E0", fontWeight: 600 }}
+            >
+              New Pairs Bonus ({previewData.new_pairs_count} pairs)
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{ color: "#00F5E0", fontWeight: 700 }}
+            >
+              +{formatXP(previewData.pair_bonus_xp)} XP
+            </Typography>
+          </Box>
+        )}
 
         {/* Period Info */}
-        <Box>
+        <Box
+          sx={{
+            bgcolor: "rgba(255, 255, 255, 0.02)",
+            border: "1px solid rgba(255, 255, 255, 0.1)",
+            borderRadius: 2,
+            p: 2,
+          }}
+        >
           <Typography
-            variant="body2"
-            sx={{ color: "rgba(255,255,255,0.6)", mb: 0.5 }}
+            variant="caption"
+            sx={{
+              color: "rgba(255,255,255,0.5)",
+              textTransform: "uppercase",
+              letterSpacing: "0.5px",
+              fontSize: "0.7rem"
+            }}
           >
             Period
           </Typography>
-          <Typography variant="body2" sx={{ color: "white", fontWeight: 600 }}>
+          <Typography
+            variant="body1"
+            sx={{ color: "white", fontWeight: 600, mt: 0.5 }}
+          >
             {formatDate(previewData.week_start)} -{" "}
             {formatDate(previewData.week_end)}
           </Typography>
@@ -170,11 +244,12 @@ const XpPreviewCard: React.FC<XpPreviewCardProps> = ({ previewData }) => {
         <Box
           sx={{
             bgcolor: "rgba(255, 152, 0, 0.05)",
-            borderRadius: 1,
-            p: 1.5,
+            border: "1px solid rgba(255, 152, 0, 0.2)",
+            borderRadius: 2,
+            p: 2,
             display: "flex",
             alignItems: "center",
-            gap: 1,
+            gap: 1.5,
           }}
         >
           <WarningAmberIcon

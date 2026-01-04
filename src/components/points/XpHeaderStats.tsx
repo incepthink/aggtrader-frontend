@@ -18,10 +18,17 @@ const XpHeaderStats: React.FC<XpHeaderStatsProps> = ({ xpData }) => {
         <Grid size={{ xs: 12, sm: 6, lg: 4 }}>
           <GlowBox padding={3}>
             <Typography
-              variant="body2"
-              sx={{ color: "rgba(255,255,255,0.7)", mb: 1 }}
+              variant="caption"
+              sx={{
+                color: "rgba(255,255,255,0.5)",
+                mb: 2,
+                display: "block",
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
+                fontSize: "0.9rem",
+              }}
             >
-              Total XP
+              TOTAL XP
             </Typography>
             <Typography
               variant="h3"
@@ -29,9 +36,16 @@ const XpHeaderStats: React.FC<XpHeaderStatsProps> = ({ xpData }) => {
                 fontWeight: 700,
                 color: "#00F5E0",
                 fontSize: { xs: "2rem", sm: "2.5rem" },
+                mb: 1,
               }}
             >
               {formatXP(xpData.total_xp)}
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{ color: "rgba(255,255,255,0.5)", fontSize: "0.875rem" }}
+            >
+              Lifetime earnings
             </Typography>
           </GlowBox>
         </Grid>
@@ -39,10 +53,17 @@ const XpHeaderStats: React.FC<XpHeaderStatsProps> = ({ xpData }) => {
         <Grid size={{ xs: 12, sm: 6, lg: 4 }}>
           <GlowBox padding={3}>
             <Typography
-              variant="body2"
-              sx={{ color: "rgba(255,255,255,0.7)", mb: 1 }}
+              variant="caption"
+              sx={{
+                color: "rgba(255,255,255,0.5)",
+                mb: 2,
+                display: "block",
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
+                fontSize: "0.9rem",
+              }}
             >
-              Active Weeks
+              ACTIVE WEEKS
             </Typography>
             <Typography
               variant="h3"
@@ -50,9 +71,16 @@ const XpHeaderStats: React.FC<XpHeaderStatsProps> = ({ xpData }) => {
                 fontWeight: 700,
                 color: "white",
                 fontSize: { xs: "2rem", sm: "2.5rem" },
+                mb: 1,
               }}
             >
               {xpData.total_weeks}
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{ color: "rgba(255,255,255,0.5)", fontSize: "0.875rem" }}
+            >
+              Currently in season
             </Typography>
           </GlowBox>
         </Grid>
@@ -60,10 +88,17 @@ const XpHeaderStats: React.FC<XpHeaderStatsProps> = ({ xpData }) => {
         <Grid size={{ xs: 12, sm: 12, lg: 4 }}>
           <GlowBox padding={3}>
             <Typography
-              variant="body2"
-              sx={{ color: "rgba(255,255,255,0.7)", mb: 1 }}
+              variant="caption"
+              sx={{
+                color: "rgba(255,255,255,0.5)",
+                mb: 2,
+                display: "block",
+                textTransform: "uppercase",
+                letterSpacing: "0.5px",
+                fontSize: "0.9rem",
+              }}
             >
-              Current League
+              CURRENT LEAGUE
             </Typography>
             <Typography
               variant="h3"
@@ -71,9 +106,16 @@ const XpHeaderStats: React.FC<XpHeaderStatsProps> = ({ xpData }) => {
                 fontWeight: 700,
                 color: currentLeague ? leagueColors[currentLeague] : "white",
                 fontSize: { xs: "2rem", sm: "2.5rem" },
+                mb: 1,
               }}
             >
               {currentLeague ? currentLeague.toUpperCase() : "N/A"}
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{ color: "rgba(255,255,255,0.5)", fontSize: "0.875rem" }}
+            >
+              Tier badge
             </Typography>
           </GlowBox>
         </Grid>
