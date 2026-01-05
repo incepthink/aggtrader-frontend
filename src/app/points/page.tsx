@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useAccount } from "wagmi";
-import { Container, Box, Stack, Typography } from "@mui/material";
+import { Container, Box, Stack, Typography, useMediaQuery, useTheme } from "@mui/material";
 import { BACKEND_URL } from "@/utils/constants";
 import { XpDashboardData, ApiResponse, XpPreviewData } from "@/types/xp";
 import XpHeaderStats from "@/components/points/XpHeaderStats";
@@ -17,6 +17,8 @@ import {
 
 const PointsPage: React.FC = () => {
   const { address, isConnected } = useAccount();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const [xpData, setXpData] = useState<XpDashboardData | null>(null);
   const [previewData, setPreviewData] = useState<XpPreviewData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -112,13 +114,13 @@ const PointsPage: React.FC = () => {
       <Container maxWidth="xl" sx={{ py: { xs: 4, sm: 6, lg: 10 } }}>
         {/* Page Title */}
         <Typography
-          variant="h3"
+          variant="h5"
           component="h1"
-          gutterBottom
           sx={{
-            fontSize: { xs: "2rem", sm: "2.5rem", lg: "3rem" },
-            fontWeight: 700,
             color: "white",
+            fontWeight: 600,
+            fontSize: isMobile ? "1.75rem" : "2rem",
+            alignSelf: isMobile ? "flex-start" : "auto",
             mb: 4,
           }}
         >
@@ -143,9 +145,9 @@ const PointsPage: React.FC = () => {
               Welcome to XP! 🎉
             </Typography>
             <Typography variant="body1" sx={{ color: "rgba(255,255,255,0.8)" }}>
-              You&apos;ve started earning XP this week! Your points will be officially
-              distributed at the end of the week. Keep trading to maximize your
-              rewards!
+              You&apos;ve started earning XP this week! Your points will be
+              officially distributed at the end of the week. Keep trading to
+              maximize your rewards!
             </Typography>
           </Box>
         )}
@@ -157,12 +159,12 @@ const PointsPage: React.FC = () => {
         {previewData && (
           <Box mb={6}>
             <Typography
-              variant="h4"
-              gutterBottom
+              variant="h5"
               sx={{
-                fontSize: { xs: "1.5rem", sm: "2rem" },
-                fontWeight: 600,
                 color: "white",
+                fontWeight: 600,
+                fontSize: isMobile ? "1.75rem" : "2rem",
+                alignSelf: isMobile ? "flex-start" : "auto",
                 mb: 3,
               }}
             >
@@ -176,12 +178,12 @@ const PointsPage: React.FC = () => {
         {xpData && (
           <Box>
             <Typography
-              variant="h4"
-              gutterBottom
+              variant="h5"
               sx={{
-                fontSize: { xs: "1.5rem", sm: "2rem" },
-                fontWeight: 600,
                 color: "white",
+                fontWeight: 600,
+                fontSize: isMobile ? "1.75rem" : "2rem",
+                alignSelf: isMobile ? "flex-start" : "auto",
                 mb: 3,
               }}
             >
@@ -201,9 +203,7 @@ const PointsPage: React.FC = () => {
         )}
 
         {/* No data at all state */}
-        {!xpData && !previewData && (
-          <NoWeeklyDataState />
-        )}
+        {!xpData && !previewData && <NoWeeklyDataState />}
       </Container>
     </div>
   );

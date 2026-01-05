@@ -3,6 +3,7 @@
 import { ReferralResponse } from "@/hooks/useUserReferralData";
 import EnterCode from "./call-to-action/EnterCode";
 import ViewCode from "./call-to-action/ViewCode";
+import { Typography, useMediaQuery, useTheme } from "@mui/material";
 
 type headingProps = {
   data: ReferralResponse;
@@ -11,10 +12,24 @@ type headingProps = {
 };
 
 const Heading = ({ data, referralCode, tradersReffered }: headingProps) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+
   return (
     <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
       <div>
-        <h2 className="text-2xl md:text-4xl mb-1">Referral</h2>
+        <Typography
+          variant="h5"
+          sx={{
+            color: "white",
+            fontWeight: 600,
+            fontSize: isMobile ? "1.75rem" : "2rem",
+            alignSelf: isMobile ? "flex-start" : "auto",
+            mb: 0.5,
+          }}
+        >
+          Referral
+        </Typography>
         <p className="text-sm md:text-md text-gray-400">
           Traders Referred: {tradersReffered}
         </p>
