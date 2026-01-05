@@ -116,16 +116,16 @@ function ReferralsContent() {
           })}
         </div>
         <GlowBox spread={16} padding={1}>
-          {/* <GenericTable
+          <GenericTable
             columns={columns}
             data={referralData.referred}
             keyExtractor={(row, index) => `${row.address}-${index}`}
             emptyMessage="No Referrals Yet"
             hoverable={true}
-          /> */}
-          <div className="w-full h-[300px] flex justify-center items-center">
+          />
+          {/* <div className="w-full h-[300px] flex justify-center items-center">
             <p className="text-xl opacity-50">Coming Soon...</p>
-          </div>
+          </div> */}
         </GlowBox>
       </div>
     </Container>
