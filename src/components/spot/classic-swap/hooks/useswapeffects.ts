@@ -15,6 +15,7 @@ interface UseSwapEffectsProps {
   setTokenOneAmount: (amount: string) => void;
   setTokenTwoAmount: (amount: string) => void;
   setIsInitiatingSwap: (value: boolean) => void;
+  triggerPortfolioRefresh: () => void;
 }
 
 export function useSwapEffects({
@@ -27,7 +28,8 @@ export function useSwapEffects({
   setTokenTwoAmount,
   setIsInitiatingSwap,
   tokenOneAmount,
-  tokenTwoAmount
+  tokenTwoAmount,
+  triggerPortfolioRefresh,
 }: UseSwapEffectsProps) {
   const queryClient = useQueryClient(); // NEW
   const { quoteError, isDone, sendError, confirmError, txHash, quote } = useSushiClassic(); 
@@ -53,6 +55,25 @@ export function useSwapEffects({
   }, [isSending, isConfirming, showSnackbar, setIsInitiatingSwap]);
 
   // UPDATED: Add balance refresh
+  useEffect(() => {
+    if (isDone && txHash) {
+      console.log("✅ Swap completed successfully, refreshing portfolio...");
+      // Invalidate price queries
+      queryClient.invalidateQueries({
+        queryKey: ["sushiBatchTokenPrices"]
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["sushiTokenPrice"]
+      });
+
+      // Trigger portfolio balance refresh
+      setTimeout(() => {
+        triggerPortfolioRefresh();
+      }, 1000); // Small delay to allow chain to update
+
+      showSnackbar("✅ Swap completed! Refreshing balances...", "success");
+    }
+  }, [isDone, txHash, queryClient, showSnackbar, triggerPortfolioRefresh]);
 
   useEffect(() => {
     if (binancePriceError) {

@@ -7,15 +7,15 @@ import OrderbookTrades from "@/components/perp/OrderbookTrades";
 import PositionsPanel from "@/components/perp/PositionsPanel";
 import DepositWithdraw from "@/components/perp/DepositWithdraw";
 import OrderForm from "@/components/perp/OrderForm";
-import XChainSwitcher from "@/components/perp/XChainSwitcher";
+import BokutoSwitcher from "@/components/perp/BokutoSwitcher";
 import { KumaAuthWrapper } from "@/components/perp/KumaAuthWrapper";
 import { useKumaWebSocket } from "@/hooks/perp/useWebsocketClient";
 import { useKumaBalance } from "@/hooks/perp/useKumaBalance";
-import { CandleInterval } from "@kumabid/kuma-sdk";
+import { CandleInterval } from "@katanaperps/katana-perps-sdk";
 import GlowBox from "@/components/common/ui/GlowBox";
 import { useAccount, useChainId } from "wagmi";
 
-const XCHAIN_ID = 94524;
+const BOKUTO_CHAIN_ID = 737373;
 
 const PerpPage = () => {
   const { isConnected: isWalletConnected } = useAccount();
@@ -28,9 +28,9 @@ const PerpPage = () => {
     ? parseFloat(tickerData.close)
     : undefined;
 
-  // Check if wallet is on correct chain for perp trading
-  const isOnXChain = chainId === XCHAIN_ID;
-  const needsChainSwitch = isWalletConnected && !isOnXChain;
+  // Check if wallet is on correct chain for perp trading (Bokuto testnet during development)
+  const isOnBokuto = chainId === BOKUTO_CHAIN_ID;
+  const needsChainSwitch = isWalletConnected && !isOnBokuto;
 
   return (
     <>
@@ -48,14 +48,14 @@ const PerpPage = () => {
         }}
       >
         {/* Chain Switcher Banner - Shows when wallet is on wrong chain */}
-        <XChainSwitcher />
+        <BokutoSwitcher />
 
         {/* Error Display */}
-        {error && (
+        {/* {error && (
           <Box sx={{ padding: 2, color: "#FF4444", textAlign: "center" }}>
             Error: {error}
           </Box>
-        )}
+        )} */}
 
         {/* Main Trading Layout */}
         <Box
@@ -63,7 +63,7 @@ const PerpPage = () => {
             flex: 1,
             display: "grid",
             gridTemplateColumns: "1fr 280px 350px", // Chart | Orderbook | Trade Panel
-            gridTemplateRows: "auto 1fr 350px", // Header | Main | Bottom
+            gridTemplateRows: "auto 1fr 280px", // Header | Main | Bottom
             gap: 1,
             padding: 1,
             overflow: "hidden",

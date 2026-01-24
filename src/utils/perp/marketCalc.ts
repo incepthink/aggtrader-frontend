@@ -24,6 +24,12 @@ export interface MarketCalcInput {
   bids: OrderBookLevel[];
   fallbackPrice?: number;
   freeCollateral?: number; // Required for BTC mode effective/requested calculation
+  // Limit order specific
+  orderType?: "market" | "limit" | "stopMarket" | "stopLimit";
+  limitPrice?: string; // User's specified limit price
+  // Stop order specific
+  stopPrice?: string; // Stop trigger price for stopMarket and stopLimit
+  orderPrice?: string; // Limit price for stopLimit orders
 }
 
 export interface MarketCalcOutput {
@@ -42,13 +48,42 @@ export interface MarketCalcOutput {
  * Calculate market order metrics for both buy and sell sides
  */
 export function calculateMarketMetrics(input: MarketCalcInput): MarketCalcOutput {
-  const { quantity, quantityUnit, leverage, asks, bids, fallbackPrice, freeCollateral } = input;
+  const { quantity, quantityUnit, leverage, asks, bids, fallbackPrice, freeCollateral, orderType, limitPrice, stopPrice, orderPrice } = input;
 
   // Parse quantity
   const qtyValue = parseFloat(quantity);
 
   // Handle empty or invalid input
   if (!quantity || isNaN(qtyValue) || qtyValue <= 0) {
+    return {
+      buyQtyBtc: 0,
+      buyValueUsd: 0,
+      buyCostUsd: 0,
+      sellQtyBtc: 0,
+      sellValueUsd: 0,
+      sellCostUsd: 0,
+    };
+  }
+
+  // For limit orders, use fixed calculations based on limit price
+  if (orderType === "limit" && limitPrice) {
+    const limitPriceNum = parseFloat(limitPrice);
+    if (!isNaN(limitPriceNum) && limitPriceNum > 0) {
+      return calculateLimitOrderMetrics({
+        quantity: qtyValue,
+        quantityUnit,
+        leverage,
+        limitPrice: limitPriceNum,
+        asks,
+        bids,
+        fallbackPrice,
+      });
+    }
+  }
+
+  // For stop market and stop limit orders, return zeros (display as N/A / -)
+  // These order types don't show calculated values until triggered
+  if (orderType === "stopMarket" || orderType === "stopLimit") {
     return {
       buyQtyBtc: 0,
       buyValueUsd: 0,
@@ -240,11 +275,23 @@ export function formatBtcQuantity(qty: number): string {
 }
 
 /**
- * Format USD value for display
+ * Format USD value for display with comma separators
  */
 export function formatUsdValue(value: number): string {
   if (value === 0) return "-";
-  return `$${value.toFixed(2)}`;
+  return `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+/**
+ * Format fee rate for display (converts decimal to percentage)
+ * Example: 0.0004 -> "0.04%", -0.00005 -> "-0.005%"
+ */
+export function formatFeeRate(rate: string | number): string {
+  const numRate = typeof rate === 'string' ? parseFloat(rate) : rate;
+  if (isNaN(numRate)) return "-";
+  const percentage = numRate * 100;
+  // Use up to 3 decimal places for very small fees, remove trailing zeros
+  return `${percentage.toFixed(3).replace(/\.?0+$/, '')}%`;
 }
 
 /**
@@ -260,3 +307,64 @@ export function formatDualDisplay(
   }
   return `${formatter(buyValue)} / ${formatter(sellValue)}`;
 }
+
+/**
+ * Calculate limit order metrics
+ *
+ * For limit orders:
+ * - Quantity stays fixed at user input (same for both buy/sell display)
+ * - LHS (buyQty/buyValue/buyCost): Uses the user's limit price (constant)
+ * - RHS (sellQty/sellValue/sellCost): Uses the current market price (changes with market)
+ *
+ * Display format: "Limit Order Value / Market Reference Value"
+ */
+interface LimitOrderCalcInput {
+  quantity: number; // Already parsed quantity value
+  quantityUnit: "BTC" | "USD";
+  leverage: number;
+  limitPrice: number; // User's specified limit price
+  asks: OrderBookLevel[];
+  bids: OrderBookLevel[];
+  fallbackPrice?: number;
+}
+
+function calculateLimitOrderMetrics(input: LimitOrderCalcInput): MarketCalcOutput {
+  const { quantity, quantityUnit, leverage, limitPrice, asks, bids, fallbackPrice } = input;
+
+  // Determine the market price from orderbook (best ask/bid) or fallback
+  const bestAsk = asks && asks.length > 0 ? asks[0].price : fallbackPrice || 0;
+  const bestBid = bids && bids.length > 0 ? bids[0].price : fallbackPrice || 0;
+  // Use midpoint of best bid/ask as the market reference price, or fallback
+  const marketPrice = bestAsk > 0 && bestBid > 0
+    ? (bestAsk + bestBid) / 2
+    : (bestAsk || bestBid || fallbackPrice || 0);
+
+  // Calculate quantity in BTC based on unit
+  let qtyBtc: number;
+  if (quantityUnit === "BTC") {
+    qtyBtc = quantity;
+  } else {
+    // USD mode: convert USD to BTC using the limit price for consistency
+    qtyBtc = quantity / limitPrice;
+  }
+
+  // LHS: Limit order calculations (using limit price - remains constant)
+  const limitValue = qtyBtc * limitPrice;
+  const limitCost = limitValue / leverage;
+
+  // RHS: Market reference calculations (using current market price - changes)
+  const marketValue = marketPrice > 0 ? qtyBtc * marketPrice : 0;
+  const marketCost = marketPrice > 0 ? marketValue / leverage : 0;
+
+  return {
+    // For limit orders, buyQty/sellQty both show the fixed quantity
+    buyQtyBtc: qtyBtc,
+    sellQtyBtc: qtyBtc,
+    // LHS = limit order value, RHS = market reference value
+    buyValueUsd: limitValue,
+    sellValueUsd: marketValue,
+    buyCostUsd: limitCost,
+    sellCostUsd: marketCost,
+  };
+}
+

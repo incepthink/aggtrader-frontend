@@ -3,10 +3,10 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import {
   WebSocketClient,
-  KumaCandleEvent,
-  KumaCandleEventData,
+  KatanaPerpsCandleEvent,
+  KatanaPerpsCandleEventData,
   CandleInterval,
-} from '@kumabid/kuma-sdk';
+} from '@katanaperps/katana-perps-sdk';
 import { CandlestickData, UTCTimestamp } from 'lightweight-charts';
 
 export interface UseKumaCandleWebSocketOptions {
@@ -30,15 +30,15 @@ export function useKumaCandleWebSocket({
 }: UseKumaCandleWebSocketOptions) {
   const [isConnected, setIsConnected] = useState(false);
   const [candleData, setCandleData] = useState<CandlestickData[]>([]);
-  const [latestCandle, setLatestCandle] = useState<KumaCandleEventData | null>(null);
+  const [latestCandle, setLatestCandle] = useState<KatanaPerpsCandleEventData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const wsClientRef = useRef<WebSocketClient | null>(null);
   const candleMapRef = useRef<Map<number, CandlestickData>>(new Map());
-  const updateCandleDataRef = useRef<((data: KumaCandleEventData) => void) | null>(null);
+  const updateCandleDataRef = useRef<((data: KatanaPerpsCandleEventData) => void) | null>(null);
 
   // Transform Kuma candle to Lightweight Charts format
-  const transformCandle = useCallback((kumaCandleData: KumaCandleEventData): CandlestickData => {
+  const transformCandle = useCallback((kumaCandleData: KatanaPerpsCandleEventData): CandlestickData => {
     // Ensure timestamp is in seconds (Lightweight Charts uses seconds)
     let timestamp = kumaCandleData.start;
     if (timestamp > 10000000000) {
@@ -56,7 +56,7 @@ export function useKumaCandleWebSocket({
 
   // Update or add candle to the map
   const updateCandleData = useCallback(
-    (kumaCandleData: KumaCandleEventData) => {
+    (kumaCandleData: KatanaPerpsCandleEventData) => {
       const transformedCandle = transformCandle(kumaCandleData);
       const timestamp = kumaCandleData.start;
 
@@ -151,8 +151,8 @@ export function useKumaCandleWebSocket({
       return;
     }
 
-    // Create WebSocket client instance
-    const wsClient = new WebSocketClient();
+    // Create WebSocket client instance with sandbox mode for Bokuto testnet
+    const wsClient = new WebSocketClient({ sandbox: true });
     wsClientRef.current = wsClient;
 
     // Handle connection event
@@ -179,7 +179,7 @@ export function useKumaCandleWebSocket({
       }
 
       if (event.type === 'candles') {
-        const candleEvent = event as KumaCandleEvent;
+        const candleEvent = event as KatanaPerpsCandleEvent;
 
         // Only process candles for the subscribed market and interval
         if (

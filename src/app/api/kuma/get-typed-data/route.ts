@@ -5,14 +5,14 @@ import { v1 as uuidv1 } from 'uuid';
  * API Route: POST /api/kuma/get-typed-data
  *
  * Returns the EIP-712 typed data structure that the client should sign
- * for wallet association with Kuma API
+ * for wallet association with Katana Perps API
  *
- * This ensures the client signs exactly what Kuma expects
+ * This ensures the client signs exactly what Katana Perps expects
  */
 
 /**
- * Convert UUID v1 to uint128 format for Kuma signatures
- * Based on Kuma SDK implementation
+ * Convert UUID v1 to uint128 format for Katana Perps signatures
+ * Based on Katana Perps SDK implementation
  */
 function uuidToUint128(uuid: string): string {
   const hexString = `0x${uuid.replace(/-/g, '')}`;
@@ -33,24 +33,25 @@ export async function POST(request: NextRequest) {
     }
 
     // Get sandbox mode from environment
-    const sandbox = process.env.NEXT_PUBLIC_KUMA_SANDBOX === 'true';
+    const sandbox = process.env.NEXT_PUBLIC_KATANA_PERPS_SANDBOX === 'true';
 
     // Generate nonce (UUID v1)
     const nonce = uuidv1();
 
-    // Kuma exchange contract addresses and chain IDs
-    // Source: https://api-docs-v1.kuma.bid
+    // Katana Perps exchange contract addresses and chain IDs
+    // Sandbox (Bokuto Testnet): chainId 737373, contract 0xcE3765616b9e354E64530875f492dc4DfddF2118
+    // Production (Katana Mainnet): chainId 747474, contract 0x835Ba5b1B202773A94Daaa07168b26B22584637a
     const exchangeContractAddress = sandbox
-      ? '0x6332648a69e921A3F8b1C2aA632CaA79d0965c89' // Sandbox (XCHAIN Testnet)
-      : '0xB231947A9B2075BaF978eA321eC6512344071F7C'; // Production (XCHAIN Mainnet)
+      ? '0xcE3765616b9e354E64530875f492dc4DfddF2118' // Sandbox (Bokuto Testnet)
+      : '0x835Ba5b1B202773A94Daaa07168b26B22584637a'; // Production (Katana Mainnet)
 
-    const chainId = sandbox ? 64002 : 94524;
+    const chainId = sandbox ? 737373 : 747474;
 
-    // Kuma's EIP-712 typed data structure for wallet association
-    // Based on Kuma SDK source code
+    // Katana Perps EIP-712 typed data structure for wallet association
+    // Based on Katana Perps SDK constants (EIP_712_DOMAIN_NAME = 'KatanaPerps')
     const typedData = {
       domain: {
-        name: 'Kuma',
+        name: 'KatanaPerps',
         version: sandbox ? '1.0.0-sandbox' : '1.0.0',
         chainId,
         verifyingContract: exchangeContractAddress,

@@ -1,7 +1,7 @@
 'use client';
 
 import { Box, Typography } from '@mui/material';
-import { RestResponseGetOrderBookLevel2 } from '@kumabid/kuma-sdk';
+import { RestResponseGetOrderBookLevel2 } from '@katanaperps/katana-perps-sdk';
 import { useMemo, memo } from 'react';
 
 interface OrderbookDisplayProps {

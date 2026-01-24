@@ -4,20 +4,20 @@ import { Box, Button, Typography, Alert } from "@mui/material";
 import { useAccount, useChainId, useSwitchChain } from "wagmi";
 import { useState } from "react";
 
-const XCHAIN_ID = 94524;
+const BOKUTO_CHAIN_ID = 737373;
 
 /**
- * XChainSwitcher - Shows warning banner on perp page when wallet is on wrong chain
- * Only displayed when wallet is connected but not on XCHAIN
+ * BokutoSwitcher - Shows warning banner on perp page when wallet is on wrong chain
+ * Only displayed when wallet is connected but not on Bokuto testnet
  */
-const XChainSwitcher = () => {
+const BokutoSwitcher = () => {
   const { isConnected } = useAccount();
   const chainId = useChainId();
   const { switchChain, isPending } = useSwitchChain();
   const [error, setError] = useState<string | null>(null);
 
-  const isOnXChain = chainId === XCHAIN_ID;
-  const needsChainSwitch = isConnected && !isOnXChain;
+  const isOnBokuto = chainId === BOKUTO_CHAIN_ID;
+  const needsChainSwitch = isConnected && !isOnBokuto;
 
   // Don't show if wallet is not connected or already on correct chain
   if (!needsChainSwitch) {
@@ -27,7 +27,7 @@ const XChainSwitcher = () => {
   const handleSwitchChain = async () => {
     try {
       setError(null);
-      switchChain({ chainId: XCHAIN_ID });
+      switchChain({ chainId: BOKUTO_CHAIN_ID });
     } catch (err: any) {
       console.error("Failed to switch chain:", err);
       setError(err.message || "Failed to switch network");
@@ -39,7 +39,8 @@ const XChainSwitcher = () => {
       sx={{
         width: "100%",
         padding: 2,
-        background: "linear-gradient(135deg, rgba(255, 165, 0, 0.1), rgba(255, 69, 0, 0.1))",
+        background:
+          "linear-gradient(135deg, rgba(255, 165, 0, 0.1), rgba(255, 69, 0, 0.1))",
         borderBottom: "1px solid rgba(255, 165, 0, 0.3)",
       }}
     >
@@ -69,15 +70,18 @@ const XChainSwitcher = () => {
             }}
             variant="outlined"
           >
-            {isPending ? "Switching..." : "Switch to XCHAIN"}
+            {isPending ? "Switching..." : "Switch to Bokuto Testnet"}
           </Button>
         }
       >
         <Typography variant="body2" sx={{ fontWeight: 500 }}>
-          Please switch to XCHAIN network to trade perpetuals
+          Please switch to Bokuto testnet to trade perpetuals
         </Typography>
         {error && (
-          <Typography variant="caption" sx={{ display: "block", mt: 1, color: "#FF6B6B" }}>
+          <Typography
+            variant="caption"
+            sx={{ display: "block", mt: 1, color: "#FF6B6B" }}
+          >
             Error: {error}
           </Typography>
         )}
@@ -86,4 +90,4 @@ const XChainSwitcher = () => {
   );
 };
 
-export default XChainSwitcher;
+export default BokutoSwitcher;

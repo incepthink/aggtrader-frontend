@@ -4,21 +4,21 @@ import crypto from 'crypto';
 /**
  * API Route: POST /api/kuma/create-order
  *
- * Server-side proxy for Kuma order submission to avoid CORS issues
+ * Server-side proxy for Katana Perps order submission to avoid CORS issues
  *
  * This endpoint:
  * 1. Receives order parameters and signature from client
- * 2. Makes direct HTTP request to Kuma API with HMAC authentication
+ * 2. Makes direct HTTP request to Katana Perps API with HMAC authentication
  * 3. Returns the order result to the client
  *
- * Reference: https://api-docs-v1.kuma.bid/#orders-amp-trade-endpoints
+ * Reference: https://api-docs-v1-perps.katana.network
  * Endpoint: POST /v1/orders
  */
 
 /**
- * Generate HMAC signature for Kuma API authentication
+ * Generate HMAC signature for Katana Perps API authentication
  *
- * Per Kuma API docs: HMAC-SHA256(message: request body, key: API secret)
+ * Per Katana Perps API docs: HMAC-SHA256(message: request body, key: API secret)
  * For POST requests, the message is the stringified JSON body
  */
 function generateHmacSignature(apiSecret: string, body: string): string {
@@ -26,9 +26,9 @@ function generateHmacSignature(apiSecret: string, body: string): string {
 }
 
 /**
- * Format and validate quantity according to Kuma API requirements
- * - Must be a multiple of stepSize (0.00010000 for BTC-USD)
- * - Must meet minimum order size (0.00050000 for BTC-USD)
+ * Format and validate quantity according to Katana Perps API requirements
+ * - Must be a multiple of stepSize
+ * - Must meet minimum order size
  * - Must be formatted as string with 8 decimals
  */
 function formatQuantity(quantity: string, stepSize: number = 0.0001, minimum: number = 0.0005): string {
@@ -47,7 +47,7 @@ function formatQuantity(quantity: string, stepSize: number = 0.0001, minimum: nu
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { nonce, wallet, market, type, side, quantity, signature, reduceOnly } = body;
+    const { nonce, wallet, market, type, side, quantity, signature, reduceOnly, price, postOnly, triggerPrice, triggerType } = body;
 
     // Validate required fields
     if (!nonce || !wallet || !market || type === undefined || side === undefined || !quantity || !signature) {
@@ -57,20 +57,63 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get Kuma API credentials from environment
-    const apiKey = process.env.NEXT_PUBLIC_KUMA_API_KEY;
-    const apiSecret = process.env.NEXT_PUBLIC_KUMA_API_SECRET;
-    const sandbox = process.env.NEXT_PUBLIC_KUMA_SANDBOX === 'true';
+    // For limit orders, price is required
+    const isLimitOrder = type === 'limit';
+    if (isLimitOrder && (!price || parseFloat(price) <= 0)) {
+      return NextResponse.json(
+        { error: 'Price is required for limit orders' },
+        { status: 400 }
+      );
+    }
+
+    // For stop orders, triggerPrice and triggerType are required
+    const isStopOrder = ['stopLossMarket', 'stopLossLimit', 'takeProfitMarket', 'takeProfitLimit', 'trailingStopMarket'].includes(type);
+    // Stop limit orders (stopLossLimit, takeProfitLimit) require both triggerPrice AND price (limit price)
+    const isStopLimitOrder = ['stopLossLimit', 'takeProfitLimit'].includes(type);
+
+    if (isStopOrder && (!triggerPrice || parseFloat(triggerPrice) <= 0)) {
+      return NextResponse.json(
+        { error: 'Trigger price is required for stop orders' },
+        { status: 400 }
+      );
+    }
+    if (isStopOrder && !triggerType) {
+      return NextResponse.json(
+        { error: 'Trigger type is required for stop orders' },
+        { status: 400 }
+      );
+    }
+    // Stop limit orders also require a limit price
+    if (isStopLimitOrder && (!price || parseFloat(price) <= 0)) {
+      return NextResponse.json(
+        { error: 'Limit price is required for stop limit orders' },
+        { status: 400 }
+      );
+    }
+
+    // Get Katana Perps API credentials from environment
+    // Use testnet credentials for sandbox (Bokuto), mainnet for production
+    const sandbox = process.env.NEXT_PUBLIC_KATANA_PERPS_SANDBOX === 'true';
+    const apiKey = sandbox
+      ? process.env.NEXT_PUBLIC_KATANA_PERPS_API_KEY_TESTNET
+      : process.env.NEXT_PUBLIC_KATANA_PERPS_API_KEY;
+    const apiSecret = sandbox
+      ? process.env.NEXT_PUBLIC_KATANA_PERPS_API_SECRET_TESTNET
+      : process.env.NEXT_PUBLIC_KATANA_PERPS_API_SECRET;
 
     if (!apiKey || !apiSecret) {
       return NextResponse.json(
-        { error: 'Kuma API credentials not configured' },
+        { error: 'Katana Perps API credentials not configured' },
         { status: 500 }
       );
     }
 
     // Determine API base URL
-    const baseUrl = sandbox ? 'https://api.kuma.bid' : 'https://api.kuma.bid';
+    // Sandbox (Bokuto Testnet): https://api-perps-sandbox.katana.network
+    // Production (Katana Mainnet): https://api-perps.katana.network
+    const baseUrl = sandbox
+      ? 'https://api-perps-sandbox.katana.network'
+      : 'https://api-perps.katana.network';
 
     // Fetch market data to get stepSize and minimum order size
     const marketResponse = await fetch(`${baseUrl}/v1/markets?market=${market}`);
@@ -98,53 +141,97 @@ export async function POST(request: NextRequest) {
     // Format quantity according to market rules
     const formattedQuantity = formatQuantity(quantity, stepSize, minimumOrderSize);
 
-    console.log('Quantity formatting:', {
+    // Format price for limit orders AND stop limit orders (8 decimal places)
+    // Limit orders and stop limit orders both need a limit price
+    const needsLimitPrice = isLimitOrder || isStopLimitOrder;
+    const formattedPrice = needsLimitPrice ? parseFloat(price).toFixed(8) : undefined;
+
+    // Format trigger price for stop orders (8 decimal places)
+    const formattedTriggerPrice = isStopOrder ? parseFloat(triggerPrice).toFixed(8) : undefined;
+
+    console.log('Order formatting:', {
       original: quantity,
       stepSize,
       minimumOrderSize,
       formatted: formattedQuantity,
+      price: formattedPrice,
+      triggerPrice: formattedTriggerPrice,
+      triggerType,
+      isLimitOrder,
+      isStopOrder,
+      isStopLimitOrder,
+      postOnly,
     });
 
-    // Prepare request body for Kuma API
-    // Per API docs: market orders must have limitPrice set to "0.00000000"
+    // Prepare request body for Katana Perps API
+    // Build parameters object conditionally based on order type
+    const parameters: Record<string, any> = {
+      nonce,
+      wallet: wallet.toLowerCase(), // Normalize to lowercase
+      market,
+      type,
+      side,
+      quantity: formattedQuantity, // Formatted with stepSize and minimum
+    };
+
+    // Add price for limit orders AND stop limit orders
+    if (needsLimitPrice && formattedPrice) {
+      parameters.price = formattedPrice;
+    }
+
+    // Add postOnly for limit orders and stop limit orders (timeInForce: 'GTX' means post-only)
+    if ((isLimitOrder || isStopLimitOrder) && postOnly) {
+      parameters.timeInForce = 'gtx'; // GTX = Post-Only (Good Till Crossing)
+    }
+
+    // Add triggerPrice and triggerType for stop orders
+    if (isStopOrder && formattedTriggerPrice) {
+      parameters.triggerPrice = formattedTriggerPrice;
+      parameters.triggerType = triggerType; // "index" or "last"
+    }
+
+    // Add reduceOnly if specified
+    if (reduceOnly !== undefined) {
+      parameters.reduceOnly = reduceOnly;
+    }
+
     const requestBody = {
-      parameters: {
-        nonce,
-        wallet: wallet.toLowerCase(), // Normalize to lowercase
-        market,
-        type, // 0 for market order
-        side, // 0 for buy, 1 for sell
-        quantity: formattedQuantity, // Formatted with stepSize and minimum
-        // limitPrice: "0.00000000", // Required for market orders per Kuma API
-        // ...(reduceOnly !== undefined && { isReduceOnly: reduceOnly }),
-      },
+      parameters,
       signature,
     };
 
     const bodyString = JSON.stringify(requestBody);
 
-    // Generate HMAC signature (sign only the body per Kuma API docs)
+    // Generate HMAC signature (sign only the body per Katana Perps API docs)
     const hmacSignature = generateHmacSignature(apiSecret, bodyString);
 
-    console.log('Submitting order to Kuma API:', {
+    console.log('Submitting order to Katana Perps API:', {
       wallet: wallet.toLowerCase(),
       market,
       type,
       side,
       quantity: formattedQuantity,
-      limitPrice: "0.00000000",
+      price: formattedPrice,
+      triggerPrice: formattedTriggerPrice,
+      triggerType,
+      isLimitOrder,
+      isStopOrder,
+      isStopLimitOrder,
+      postOnly,
       nonce,
       bodyLength: bodyString.length,
+      sandbox,
       fullBody: requestBody, // Log full request body for debugging
     });
 
-    // Make request to Kuma API
+    // Make request to Katana Perps API
+    // Headers: kp-api-key, kp-hmac-signature (per SDK constants)
     const response = await fetch(`${baseUrl}${path}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'KUMA-API-KEY': apiKey,
-        'KUMA-HMAC-SIGNATURE': hmacSignature,
+        'kp-api-key': apiKey,
+        'kp-hmac-signature': hmacSignature,
       },
       body: bodyString,
     });
@@ -159,7 +246,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!response.ok) {
-      console.error('Kuma API error:', {
+      console.error('Katana Perps API error:', {
         status: response.status,
         statusText: response.statusText,
         responseData: data,

@@ -38,9 +38,6 @@ const DepositWithdraw = ({
     return `$${numValue.toFixed(2)}`;
   };
 
-  // Debug: Log accountBalance
-  console.log('[DepositWithdraw] accountBalance:', accountBalance);
-
   return (
     <Box
       sx={{

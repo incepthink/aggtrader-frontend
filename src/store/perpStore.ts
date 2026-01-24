@@ -1,7 +1,7 @@
 import { create } from "zustand";
 
 // Order type for extensibility (market orders only initially)
-type OrderType = "market" | "limit" | "stopMarket";
+type OrderType = "market" | "limit" | "stopMarket" | "stopLimit";
 
 // Order side matching Kuma SDK
 type OrderSide = "buy" | "sell";
@@ -35,6 +35,8 @@ interface PerpStore {
   // ========== Advanced Options ==========
   reduceOnly: boolean;
   setReduceOnly: (reduceOnly: boolean) => void;
+  postOnly: boolean;
+  setPostOnly: (postOnly: boolean) => void;
   tpSlEnabled: boolean;
   setTpSlEnabled: (enabled: boolean) => void;
 
@@ -81,6 +83,16 @@ interface PerpStore {
   timeInForce?: string; // For limit orders
   setTimeInForce: (tif: string) => void;
 
+  // ========== Stop Market Order Fields ==========
+  stopPrice: string; // Stop trigger price
+  setStopPrice: (price: string) => void;
+  stopPriceTriggerType: 'index' | 'last'; // Index or Last price trigger
+  setStopPriceTriggerType: (type: 'index' | 'last') => void;
+
+  // ========== Stop Limit Order Fields ==========
+  orderPrice: string; // Limit price for stop limit orders
+  setOrderPrice: (price: string) => void;
+
   // ========== Balance/Account Data ==========
   freeCollateral: number;
   setFreeCollateral: (amount: number) => void;
@@ -105,10 +117,14 @@ const initialState = {
   quantityUnit: "BTC" as const,
   orderSide: DEFAULT_ORDER_SIDE,
   reduceOnly: false,
+  postOnly: false,
   tpSlEnabled: false,
   limitPrice: undefined,
   triggerPrice: undefined,
   timeInForce: undefined,
+  stopPrice: "",
+  stopPriceTriggerType: "index" as const,
+  orderPrice: "",
   freeCollateral: 0,
   // TP/SL Modal & Settings
   tpSlModalOpen: false,
@@ -150,6 +166,7 @@ export const usePerpStore = create<PerpStore>((set) => ({
 
   // ========== Advanced Options Actions ==========
   setReduceOnly: (reduceOnly: boolean) => set({ reduceOnly }),
+  setPostOnly: (postOnly: boolean) => set({ postOnly }),
   setTpSlEnabled: (enabled: boolean) => set({ tpSlEnabled: enabled }),
 
   // ========== TP/SL Modal Actions ==========
@@ -176,6 +193,13 @@ export const usePerpStore = create<PerpStore>((set) => ({
   setLimitPrice: (price: string) => set({ limitPrice: price }),
   setTriggerPrice: (price: string) => set({ triggerPrice: price }),
   setTimeInForce: (tif: string) => set({ timeInForce: tif }),
+
+  // ========== Stop Market Order Actions ==========
+  setStopPrice: (price: string) => set({ stopPrice: price }),
+  setStopPriceTriggerType: (type: 'index' | 'last') => set({ stopPriceTriggerType: type }),
+
+  // ========== Stop Limit Order Actions ==========
+  setOrderPrice: (price: string) => set({ orderPrice: price }),
 
   // ========== Balance/Account Actions ==========
   setFreeCollateral: (amount: number) => set({ freeCollateral: amount }),

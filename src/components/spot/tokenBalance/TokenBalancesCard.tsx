@@ -1,6 +1,7 @@
 // components/spot/tokenBalance/TokenBalancesCard.tsx - Refactored
 "use client";
 
+import { useEffect } from "react";
 import { CircularProgress } from "@mui/material";
 import { usePortfolioData } from "@/hooks/usePortfolioData";
 import { getChainName } from "@/utils/portfolio/portfolioHelpers";
@@ -8,6 +9,7 @@ import { PortfolioHeader } from "./PortfolioHeader";
 import { PortfolioStats } from "./PortfolioStats";
 import { PortfolioContent } from "./PortfolioContent";
 import { useUserReferralData } from "@/hooks/useUserReferralData";
+import { usePortfolioRefresh } from "@/context/PortfolioRefreshContext";
 
 export default function TokenBalancesCard() {
   const {
@@ -39,8 +41,14 @@ export default function TokenBalancesCard() {
   } = usePortfolioData();
 
   const { data: referralData } = useUserReferralData(address);
+  const { registerRefreshHandler } = usePortfolioRefresh();
 
   const chainName = getChainName(chainId);
+
+  // Register the refresh handler so swap component can trigger refresh
+  useEffect(() => {
+    registerRefreshHandler(handleRefetch);
+  }, [registerRefreshHandler, handleRefetch]);
 
   // Wallet not connected state
   if (!address || !referralData) {

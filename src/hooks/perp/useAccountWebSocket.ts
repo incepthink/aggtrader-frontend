@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-// import { WebSocketClient } from '@kumabid/kuma-sdk';
+// import { WebSocketClient } from '@katanaperps/katana-perps-sdk';
 import { usePerpStore } from '@/store/perpStore';
 
 /**

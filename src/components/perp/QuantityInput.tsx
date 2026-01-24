@@ -18,6 +18,8 @@ interface QuantityInputProps {
   freeCollateral: number;
   currentPrice?: number;
   leverage: number;
+  hidePercentageControls?: boolean;
+  disableUsdUnit?: boolean;
 }
 
 const QuantityInput = ({
@@ -25,6 +27,8 @@ const QuantityInput = ({
   freeCollateral,
   currentPrice,
   leverage,
+  hidePercentageControls = false,
+  disableUsdUnit = false,
 }: QuantityInputProps) => {
   const quantity = usePerpStore((s) => s.quantity);
   const quantityPercentage = usePerpStore((s) => s.quantityPercentage);
@@ -225,97 +229,107 @@ const QuantityInput = ({
           placeholder="0.00"
         />
 
-        <select
-          value={quantityUnit}
-          onChange={(e) => setQuantityUnit(e.target.value as "BTC" | "USD")}
-          className="
-      shrink-0
-      text-white text-sm
-      px-3 py-3
-      outline-none cursor-pointer
-      border-l border-[rgba(255,255,255,0.1)]
-      appearance-none
-      [&>option:checked]:bg-[#00F5E0]
-      [&>option:checked]:text-black
-      [&>option]:bg-black
-      [&>option]:text-white
-      [&>option:hovered]:bg-white/5
-    "
-        >
-          <option value="BTC">BTC</option>
-          <option value="USD">USD</option>
-        </select>
+        {disableUsdUnit ? (
+          <span className="shrink-0 text-white text-sm px-3 py-3 border-l border-[rgba(255,255,255,0.1)]">
+            {assetSymbol}
+          </span>
+        ) : (
+          <select
+            value={quantityUnit}
+            onChange={(e) => setQuantityUnit(e.target.value as "BTC" | "USD")}
+            className="
+        shrink-0
+        text-white text-sm
+        px-3 py-3
+        outline-none cursor-pointer
+        border-l border-[rgba(255,255,255,0.1)]
+        appearance-none
+        [&>option:checked]:bg-[#00F5E0]
+        [&>option:checked]:text-black
+        [&>option]:bg-black
+        [&>option]:text-white
+        [&>option:hovered]:bg-white/5
+      "
+          >
+            <option value="BTC">{assetSymbol}</option>
+            <option value="USD">USD</option>
+          </select>
+        )}
       </div>
 
       {/* Percentage Buttons */}
-      <Stack direction="row" spacing={1}>
-        {percentageButtons.map((percentage) => (
-          <Button
-            key={percentage}
-            onClick={() => handlePercentageClick(percentage)}
-            size="small"
-            variant={
-              Math.abs(quantityPercentage - percentage) < 0.1
-                ? "contained"
-                : "outlined"
-            }
-            sx={{
-              flex: 1,
-              fontSize: "0.75rem",
-              fontWeight: 500,
-              textTransform: "none",
-              minWidth: "auto",
-              py: 0.5,
-              ...(Math.abs(quantityPercentage - percentage) < 0.1
-                ? {
-                    backgroundColor: "#00F5E0",
-                    color: "#000",
-                    "&:hover": {
-                      backgroundColor: "#00D4C0",
-                    },
-                  }
-                : {
-                    color: "rgba(255, 255, 255, 0.7)",
-                    borderColor: "rgba(255, 255, 255, 0.2)",
-                    "&:hover": {
-                      backgroundColor: "rgba(255, 255, 255, 0.05)",
-                      borderColor: "rgba(255, 255, 255, 0.3)",
-                    },
-                  }),
-            }}
-          >
-            {percentage}%
-          </Button>
-        ))}
-      </Stack>
+      {!hidePercentageControls && (
+        <Stack direction="row" spacing={1}>
+          {percentageButtons.map((percentage) => (
+            <Button
+              key={percentage}
+              onClick={() => handlePercentageClick(percentage)}
+              size="small"
+              variant={
+                Math.abs(quantityPercentage - percentage) < 0.1
+                  ? "contained"
+                  : "outlined"
+              }
+              sx={{
+                flex: 1,
+                fontSize: "0.75rem",
+                fontWeight: 500,
+                textTransform: "none",
+                minWidth: "auto",
+                py: 0.5,
+                ...(Math.abs(quantityPercentage - percentage) < 0.1
+                  ? {
+                      backgroundColor: "#00F5E0",
+                      color: "#000",
+                      "&:hover": {
+                        backgroundColor: "#00D4C0",
+                      },
+                    }
+                  : {
+                      color: "rgba(255, 255, 255, 0.7)",
+                      borderColor: "rgba(255, 255, 255, 0.2)",
+                      "&:hover": {
+                        backgroundColor: "rgba(255, 255, 255, 0.05)",
+                        borderColor: "rgba(255, 255, 255, 0.3)",
+                      },
+                    }),
+              }}
+            >
+              {percentage}%
+            </Button>
+          ))}
+        </Stack>
+      )}
 
       {/* Slider */}
-      <Slider
-        value={quantityPercentage}
-        onChange={handleSliderChange}
-        min={0}
-        max={100}
-        step={1}
-        sx={{
-          color: "#00F5E0",
-          height: 4,
-          "& .MuiSlider-track": {
-            backgroundColor: "#00F5E0",
-            border: "none",
-          },
-          "& .MuiSlider-rail": {
-            backgroundColor: "rgba(255, 255, 255, 0.1)",
-          },
-          "& .MuiSlider-thumb": {
-            width: 12,
-            height: 12,
-            backgroundColor: "#00F5E0",
-            "&:hover, &.Mui-focusVisible": {
-              boxShadow: "0 0 0 8px rgba(0, 245, 224, 0.16)",
+      {!hidePercentageControls && (
+        <Slider
+          value={quantityPercentage}
+          onChange={handleSliderChange}
+          min={0}
+          max={100}
+          step={1}
+          sx={{
+            color: "#00F5E0",
+            height: 4,
+            "& .MuiSlider-track": {
+              backgroundColor: "#00F5E0",
+              border: "none",
             },
-          },
-        }}
-      />
+            "& .MuiSlider-rail": {
+              backgroundColor: "rgba(255, 255, 255, 0.1)",
+            },
+            "& .MuiSlider-thumb": {
+              width: 12,
+              height: 12,
+              backgroundColor: "#00F5E0",
+              "&:hover, &.Mui-focusVisible": {
+                boxShadow: "0 0 0 8px rgba(0, 245, 224, 0.16)",
+              },
+            },
+          }}
+        />
+      )}
 
       {/* Max Quantity Info */}
       {maxQuantity > 0 && (

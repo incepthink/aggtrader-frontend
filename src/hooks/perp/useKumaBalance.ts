@@ -2,11 +2,10 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { useAccount } from 'wagmi';
-import { KumaAccountBalance } from './useKumaAuth';
-import { useEffect } from 'react';
+import { KatanaPerpsAccountBalance } from './useKumaAuth';
 
-interface UseKumaBalanceReturn {
-  balance: KumaAccountBalance | null;
+interface UseKatanaPerpsBalanceReturn {
+  balance: KatanaPerpsAccountBalance | null;
   isLoading: boolean;
   error: Error | null;
   refetch: () => void;
@@ -14,57 +13,46 @@ interface UseKumaBalanceReturn {
 }
 
 /**
- * Hook to fetch Kuma account balance
+ * Hook to fetch Katana Perps account balance
  *
  * This hook:
- * - Fetches account balance from Kuma API
+ * - Fetches account balance from Katana Perps API
  * - Auto-refreshes every 5 seconds when wallet is associated
  * - Only fetches when wallet is connected and associated
  */
-export const useKumaBalance = (): UseKumaBalanceReturn => {
+export const useKatanaPerpsBalance = (): UseKatanaPerpsBalanceReturn => {
   const { address, isConnected } = useAccount();
 
   // Check if wallet is associated (stored in session storage after signature)
+  // Check both old and new session storage keys for backwards compatibility
   const isAssociated = address
-    ? sessionStorage.getItem(`kuma_associated_${address}`) === 'true'
+    ? sessionStorage.getItem(`katana_perps_associated_${address}`) === 'true' ||
+      sessionStorage.getItem(`kuma_associated_${address}`) === 'true'
     : false;
 
-  useEffect(() => {
-    console.log('[useKumaBalance] State:', {
-      address,
-      isConnected,
-      isAssociated,
-      sessionStorageKey: address ? `kuma_associated_${address}` : 'N/A',
-      sessionStorageValue: address ? sessionStorage.getItem(`kuma_associated_${address}`) : 'N/A',
-    });
-  }, [address, isConnected, isAssociated]);
 
   const {
     data: balance,
     isLoading,
     error,
     refetch,
-  } = useQuery<KumaAccountBalance | null, Error>({
-    queryKey: ['kuma-balance', address],
+  } = useQuery<KatanaPerpsAccountBalance | null, Error>({
+    queryKey: ['katana-perps-balance', address],
     queryFn: async () => {
       if (!address || !isConnected || !isAssociated) {
-        console.log('[useKumaBalance] Query skipped - not ready:', { address, isConnected, isAssociated });
         return null;
       }
-
-      console.log('[useKumaBalance] Fetching balance from API...');
       const response = await fetch('/api/kuma/account-balance');
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('[useKumaBalance] API error:', errorData);
+        console.error('[useKatanaPerpsBalance] API error:', errorData);
         throw new Error(errorData.error || 'Failed to fetch balance');
       }
 
       const data = await response.json();
-      console.log('[useKumaBalance] Balance data received:', data);
 
-      // Map response to KumaAccountBalance interface
+      // Map response to KatanaPerpsAccountBalance interface
       return {
         equity: data.equity || '0',
         freeCollateral: data.freeCollateral || '0',
@@ -97,3 +85,6 @@ export const useKumaBalance = (): UseKumaBalanceReturn => {
     },
   };
 };
+
+// Keep the old name as an alias for backwards compatibility
+export const useKumaBalance = useKatanaPerpsBalance;

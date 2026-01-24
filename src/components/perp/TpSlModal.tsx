@@ -19,7 +19,7 @@ import {
 import { useState, useEffect } from "react";
 import GenericModal from "@/components/common/ui/GenericModal";
 import { usePerpStore } from "@/store/perpStore";
-import { KumaTicker } from "@kumabid/kuma-sdk";
+import { KatanaPerpsTicker } from "@katanaperps/katana-perps-sdk";
 import CloseIcon from "@mui/icons-material/Close";
 
 interface TabPanelProps {

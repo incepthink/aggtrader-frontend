@@ -21,6 +21,7 @@
     "@dydxprotocol/v4-client-js": "^2.1.1",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
+    "@katanaperps/katana-perps-sdk": "^1.0.0-beta.1",
     "@kumabid/kuma-sdk": "^1.2.0",
     "@lingui/macro": "^5.3.2",
     "@morpho-org/blue-sdk": "^4.4.0",

@@ -23,7 +23,10 @@
       "Bash(rm:*)",
       "Bash(git add:*)",
       "Bash(if exist .next rmdir /s /q .next)",
-      "WebFetch(domain:docs.kuma.bid)"
+      "WebFetch(domain:docs.kuma.bid)",
+      "WebFetch(domain:api-docs-v1-perps.katana.network)",
+      "WebFetch(domain:sdk-js-docs-v1-perps.katana.network)",
+      "Bash(npm run lint:*)"
     ],
     "deny": [],
     "ask": []

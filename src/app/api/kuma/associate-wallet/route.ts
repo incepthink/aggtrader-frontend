@@ -4,21 +4,21 @@ import crypto from 'crypto';
 /**
  * API Route: POST /api/kuma/associate-wallet
  *
- * Server-side proxy for Kuma wallet association to avoid CORS issues
+ * Server-side proxy for Katana Perps wallet association to avoid CORS issues
  *
  * This endpoint:
  * 1. Receives wallet address, nonce, and signature from client
- * 2. Makes direct HTTP request to Kuma API with HMAC authentication
+ * 2. Makes direct HTTP request to Katana Perps API with HMAC authentication
  * 3. Returns the result to the client
  *
- * Reference: https://api-docs-v1.kuma.bid
+ * Reference: https://api-docs-v1-perps.katana.network
  * Endpoint: POST /v1/wallets
  */
 
 /**
- * Generate HMAC signature for Kuma API authentication
+ * Generate HMAC signature for Katana Perps API authentication
  *
- * Per Kuma API docs: HMAC-SHA256(message: request body, key: API secret)
+ * Per Katana Perps API docs: HMAC-SHA256(message: request body, key: API secret)
  * For POST requests, the message is the stringified JSON body
  */
 function generateHmacSignature(apiSecret: string, body: string): string {
@@ -38,23 +38,32 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get Kuma API credentials from environment
-    const apiKey = process.env.NEXT_PUBLIC_KUMA_API_KEY;
-    const apiSecret = process.env.NEXT_PUBLIC_KUMA_API_SECRET;
-    const sandbox = process.env.NEXT_PUBLIC_KUMA_SANDBOX === 'true';
+    // Get Katana Perps API credentials from environment
+    // Use testnet credentials for sandbox (Bokuto), mainnet for production
+    const sandbox = process.env.NEXT_PUBLIC_KATANA_PERPS_SANDBOX === 'true';
+    const apiKey = sandbox
+      ? process.env.NEXT_PUBLIC_KATANA_PERPS_API_KEY_TESTNET
+      : process.env.NEXT_PUBLIC_KATANA_PERPS_API_KEY;
+    const apiSecret = sandbox
+      ? process.env.NEXT_PUBLIC_KATANA_PERPS_API_SECRET_TESTNET
+      : process.env.NEXT_PUBLIC_KATANA_PERPS_API_SECRET;
 
     if (!apiKey || !apiSecret) {
       return NextResponse.json(
-        { error: 'Kuma API credentials not configured' },
+        { error: 'Katana Perps API credentials not configured' },
         { status: 500 }
       );
     }
 
     // Determine API base URL
-    const baseUrl = sandbox ? 'https://api.kuma.bid' : 'https://api.kuma.bid';
+    // Sandbox (Bokuto Testnet): https://api-perps-sandbox.katana.network
+    // Production (Katana Mainnet): https://api-perps.katana.network
+    const baseUrl = sandbox
+      ? 'https://api-perps-sandbox.katana.network'
+      : 'https://api-perps.katana.network';
     const path = '/v1/wallets';
 
-    // Prepare request body for Kuma API
+    // Prepare request body for Katana Perps API
     const requestBody = {
       parameters: {
         nonce,
@@ -65,22 +74,24 @@ export async function POST(request: NextRequest) {
 
     const bodyString = JSON.stringify(requestBody);
 
-    // Generate HMAC signature (sign only the body per Kuma API docs)
+    // Generate HMAC signature (sign only the body per Katana Perps API docs)
     const hmacSignature = generateHmacSignature(apiSecret, bodyString);
 
-    console.log('Submitting wallet association to Kuma API:', {
+    console.log('Submitting wallet association to Katana Perps API:', {
       wallet: wallet.toLowerCase(),
       nonce,
       bodyLength: bodyString.length,
+      sandbox,
     });
 
-    // Make request to Kuma API
+    // Make request to Katana Perps API
+    // Headers: kp-api-key, kp-hmac-signature (per SDK constants)
     const response = await fetch(`${baseUrl}${path}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'KUMA-API-KEY': apiKey,
-        'KUMA-HMAC-SIGNATURE': hmacSignature,
+        'kp-api-key': apiKey,
+        'kp-hmac-signature': hmacSignature,
       },
       body: bodyString,
     });
@@ -95,7 +106,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!response.ok) {
-      console.error('Kuma API error:', {
+      console.error('Katana Perps API error:', {
         status: response.status,
         statusText: response.statusText,
         data,

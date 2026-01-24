@@ -16,7 +16,7 @@ import {
 import CloseIcon from '@mui/icons-material/Close';
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { useAccount } from 'wagmi';
-import { useKumaAuth } from '@/hooks/perp/useKumaAuth';
+import { useKatanaPerpsAuth } from '@/hooks/perp/useKumaAuth';
 import { useState } from 'react';
 
 interface UnlockWalletModalProps {
@@ -28,7 +28,7 @@ interface UnlockWalletModalProps {
 /**
  * Unlock Wallet Modal
  *
- * This modal handles the Kuma wallet association flow:
+ * This modal handles the Katana Perps wallet association flow:
  * 1. If wallet is not connected, shows RainbowKit connection options
  * 2. If wallet is connected but not associated, prompts for signature
  * 3. Optionally keeps user logged in for 30 days (stores in session)
@@ -46,7 +46,7 @@ const UnlockWalletModal = ({
     error,
     associateWallet,
     clearError,
-  } = useKumaAuth();
+  } = useKatanaPerpsAuth();
 
   const [stayLoggedIn, setStayLoggedIn] = useState(true);
 
@@ -64,7 +64,7 @@ const UnlockWalletModal = ({
           // Store in localStorage for 30 days
           const expiryDate = new Date();
           expiryDate.setDate(expiryDate.getDate() + 30);
-          localStorage.setItem('kuma_session_expiry', expiryDate.toISOString());
+          localStorage.setItem('katana_perps_session_expiry', expiryDate.toISOString());
         }
 
         // Call success callback and close modal
@@ -162,7 +162,7 @@ const UnlockWalletModal = ({
             }}
           >
             {!isConnected
-              ? 'Connect your wallet to start trading on Kuma'
+              ? 'Connect your wallet to start trading on Katana Perps'
               : 'Sign a message to unlock your wallet for trading'}
           </Typography>
         </Box>
@@ -249,7 +249,7 @@ const UnlockWalletModal = ({
               lineHeight: 1.6,
             }}
           >
-            By connecting your wallet, you agree to Kuma's Terms of Service.
+            By connecting your wallet, you agree to Katana Perps Terms of Service.
             Your wallet will be associated with your trading account via a
             secure signature.
           </Typography>

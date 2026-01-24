@@ -2,9 +2,13 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { useAccount, useWalletClient } from 'wagmi';
-import { RestAuthenticatedClient } from '@kumabid/kuma-sdk/clients';
+import { RestAuthenticatedClient } from '@katanaperps/katana-perps-sdk/clients';
 
-export interface KumaAccountBalance {
+/**
+ * Katana Perps account balance interface
+ * Based on KatanaPerpsWallet type from @katanaperps/katana-perps-sdk
+ */
+export interface KatanaPerpsAccountBalance {
   equity: string;
   freeCollateral: string;
   heldCollateral: string;
@@ -19,35 +23,44 @@ export interface KumaAccountBalance {
   positions: any[];
 }
 
-interface KumaAuthState {
+// Keep the old name as an alias for backwards compatibility
+export type KumaAccountBalance = KatanaPerpsAccountBalance;
+
+interface KatanaPerpsAuthState {
   isAssociated: boolean;
   isAssociating: boolean;
   error: string | null;
   client: RestAuthenticatedClient | null;
-  accountBalance: KumaAccountBalance | null;
+  accountBalance: KatanaPerpsAccountBalance | null;
 }
 
-interface UseKumaAuthReturn extends KumaAuthState {
+interface UseKatanaPerpsAuthReturn extends KatanaPerpsAuthState {
   associateWallet: () => Promise<boolean>;
   clearError: () => void;
   resetAuth: () => void;
 }
 
 /**
- * Hook to manage Kuma wallet association and authentication
+ * Hook to manage Katana Perps wallet association and authentication
  *
  * IMPORTANT: You need to set up environment variables:
- * - NEXT_PUBLIC_KUMA_API_KEY: Your Kuma API key
- * - NEXT_PUBLIC_KUMA_API_SECRET: Your Kuma API secret
- * - NEXT_PUBLIC_KUMA_SANDBOX: Set to 'true' for sandbox, 'false' for production
+ * For Testnet (Bokuto):
+ * - NEXT_PUBLIC_KATANA_PERPS_API_KEY_TESTNET: Your Katana Perps testnet API key
+ * - NEXT_PUBLIC_KATANA_PERPS_API_SECRET_TESTNET: Your Katana Perps testnet API secret
  *
- * Get these from: https://exchange.kuma.bid/settings/api
+ * For Mainnet (Katana):
+ * - NEXT_PUBLIC_KATANA_PERPS_API_KEY: Your Katana Perps mainnet API key
+ * - NEXT_PUBLIC_KATANA_PERPS_API_SECRET: Your Katana Perps mainnet API secret
+ *
+ * Set NEXT_PUBLIC_KATANA_PERPS_SANDBOX='true' for testnet, 'false' for mainnet
+ *
+ * Get API keys from: https://perps-sandbox.katana.network/ (testnet) or https://perps.katana.network/ (mainnet)
  */
-export const useKumaAuth = (): UseKumaAuthReturn => {
+export const useKatanaPerpsAuth = (): UseKatanaPerpsAuthReturn => {
   const { address, isConnected } = useAccount();
   const { data: walletClient } = useWalletClient();
 
-  const [state, setState] = useState<KumaAuthState>({
+  const [state, setState] = useState<KatanaPerpsAuthState>({
     isAssociated: false,
     isAssociating: false,
     error: null,
@@ -68,7 +81,7 @@ export const useKumaAuth = (): UseKumaAuthReturn => {
     }
 
     // Check if we have stored association status
-    const storedStatus = sessionStorage.getItem(`kuma_associated_${address}`);
+    const storedStatus = sessionStorage.getItem(`katana_perps_associated_${address}`);
     if (storedStatus === 'true') {
       setState((prev) => ({
         ...prev,
@@ -78,7 +91,7 @@ export const useKumaAuth = (): UseKumaAuthReturn => {
   }, [isConnected, address]);
 
   /**
-   * Associate the connected wallet with Kuma API
+   * Associate the connected wallet with Katana Perps API
    * This must be called before trading operations
    *
    * @returns true if association was successful, false otherwise
@@ -100,7 +113,7 @@ export const useKumaAuth = (): UseKumaAuthReturn => {
 
     try {
       // Step 1: Get the typed data structure from our API
-      // This ensures we sign exactly what Kuma expects
+      // This ensures we sign exactly what Katana Perps expects
       const typedDataResponse = await fetch('/api/kuma/get-typed-data', {
         method: 'POST',
         headers: {
@@ -145,20 +158,27 @@ export const useKumaAuth = (): UseKumaAuthReturn => {
         throw new Error(result.error || 'Failed to associate wallet');
       }
 
-      console.log('Wallet associated successfully:', result);
+      console.log('Wallet associated successfully with Katana Perps:', result);
 
       // Store association status in session storage
-      sessionStorage.setItem(`kuma_associated_${address}`, 'true');
+      sessionStorage.setItem(`katana_perps_associated_${address}`, 'true');
+
+      // Determine if using sandbox (Bokuto testnet) or mainnet
+      const sandbox = process.env.NEXT_PUBLIC_KATANA_PERPS_SANDBOX === 'true';
 
       // Create client instance for future use (optional, if needed)
       const client = new RestAuthenticatedClient({
-        apiKey: process.env.NEXT_PUBLIC_KUMA_API_KEY || '',
-        apiSecret: process.env.NEXT_PUBLIC_KUMA_API_SECRET || '',
-        sandbox: process.env.NEXT_PUBLIC_KUMA_SANDBOX === 'true',
+        apiKey: sandbox
+          ? process.env.NEXT_PUBLIC_KATANA_PERPS_API_KEY_TESTNET || ''
+          : process.env.NEXT_PUBLIC_KATANA_PERPS_API_KEY || '',
+        apiSecret: sandbox
+          ? process.env.NEXT_PUBLIC_KATANA_PERPS_API_SECRET_TESTNET || ''
+          : process.env.NEXT_PUBLIC_KATANA_PERPS_API_SECRET || '',
+        sandbox,
       });
 
       // Extract account balance from response
-      const accountBalance: KumaAccountBalance = {
+      const accountBalance: KatanaPerpsAccountBalance = {
         equity: result.equity || '0',
         freeCollateral: result.freeCollateral || '0',
         heldCollateral: result.heldCollateral || '0',
@@ -183,7 +203,7 @@ export const useKumaAuth = (): UseKumaAuthReturn => {
 
       return true;
     } catch (err: any) {
-      console.error('Failed to associate wallet:', err);
+      console.error('Failed to associate wallet with Katana Perps:', err);
 
       let errorMessage = 'Failed to associate wallet';
 
@@ -219,7 +239,7 @@ export const useKumaAuth = (): UseKumaAuthReturn => {
 
   const resetAuth = useCallback(() => {
     if (address) {
-      sessionStorage.removeItem(`kuma_associated_${address}`);
+      sessionStorage.removeItem(`katana_perps_associated_${address}`);
     }
     setState({
       isAssociated: false,
@@ -237,3 +257,6 @@ export const useKumaAuth = (): UseKumaAuthReturn => {
     resetAuth,
   };
 };
+
+// Keep the old name as an alias for backwards compatibility
+export const useKumaAuth = useKatanaPerpsAuth;

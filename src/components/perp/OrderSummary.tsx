@@ -1,13 +1,15 @@
 'use client';
 
 import { Box, Typography } from '@mui/material';
-import { MarketCalcOutput, formatDualDisplay, formatUsdValue } from '@/utils/perp/marketCalc';
+import { MarketCalcOutput, formatDualDisplay, formatUsdValue, formatFeeRate } from '@/utils/perp/marketCalc';
 
 interface OrderSummaryProps {
   marketMetrics: MarketCalcOutput;
+  takerFeeRate?: string;
+  makerFeeRate?: string;
 }
 
-const OrderSummary = ({ marketMetrics }: OrderSummaryProps) => {
+const OrderSummary = ({ marketMetrics, takerFeeRate, makerFeeRate }: OrderSummaryProps) => {
   /**
    * Format cost display (buy / sell)
    * Both modes use orderbook-based buy/sell metrics
@@ -108,7 +110,7 @@ const OrderSummary = ({ marketMetrics }: OrderSummaryProps) => {
             fontWeight: 500,
           }}
         >
-          0.03% / -0.005%
+          {formatFeeRate(takerFeeRate || '0')} / {formatFeeRate(makerFeeRate || '0')}
         </Typography>
       </Box>
     </Box>

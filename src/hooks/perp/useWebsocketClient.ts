@@ -1,17 +1,17 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { WebSocketClient, KumaTickerEvent, KumaTicker } from '@kumabid/kuma-sdk';
+import { WebSocketClient, KatanaPerpsTickerEvent, KatanaPerpsTicker } from '@katanaperps/katana-perps-sdk';
 
 export function useKumaWebSocket(market: string = 'BTC-USD') {
   const [isConnected, setIsConnected] = useState(false);
-  const [tickerData, setTickerData] = useState<KumaTicker | null>(null);
+  const [tickerData, setTickerData] = useState<KatanaPerpsTicker | null>(null);
   const [error, setError] = useState<string | null>(null);
   const wsClientRef = useRef<WebSocketClient | null>(null);
 
   useEffect(() => {
-    // Create WebSocket client instance
-    const wsClient = new WebSocketClient();
+    // Create WebSocket client instance with sandbox mode for Bokuto testnet
+    const wsClient = new WebSocketClient({ sandbox: true });
     wsClientRef.current = wsClient;
 
     // Handle connection event
@@ -29,7 +29,7 @@ export function useKumaWebSocket(market: string = 'BTC-USD') {
     // Handle incoming messages
     wsClient.onMessage((event) => {
       if (event.type === 'tickers') {
-        const tickerEvent = event as KumaTickerEvent;
+        const tickerEvent = event as KatanaPerpsTickerEvent;
         if (tickerEvent.data.market === market) {
           setTickerData(tickerEvent.data);
         }
@@ -43,7 +43,7 @@ export function useKumaWebSocket(market: string = 'BTC-USD') {
 
     // Handle errors
     wsClient.onError((err) => {
-      console.error('Kuma WebSocket error:', err);
+      console.error('Katana Perps WebSocket error:', err);
       setError(err.message || 'WebSocket error occurred');
       setIsConnected(false);
     });

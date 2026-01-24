@@ -1,11 +1,11 @@
 'use client';
 
 import { Box, Typography, Stack } from '@mui/material';
-import { KumaTicker } from '@kumabid/kuma-sdk';
+import { KatanaPerpsTicker } from '@katanaperps/katana-perps-sdk';
 import { useEffect, useState } from 'react';
 
 interface MarketHeaderProps {
-  tickerData: KumaTicker | null;
+  tickerData: KatanaPerpsTicker | null;
   isConnected: boolean;
 }
 

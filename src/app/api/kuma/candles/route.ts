@@ -7,13 +7,13 @@ export async function GET(request: NextRequest) {
     const interval = searchParams.get('interval') || '5m';
     const limit = searchParams.get('limit') || '100';
 
-    // Construct Kuma API URL
-    const kumaApiUrl = `https://api.kuma.bid/v1/candles?market=${market}&interval=${interval}&limit=${limit}`;
+    // Construct Katana Perps API URL (sandbox for Bokuto testnet)
+    const katanaApiUrl = `https://api-perps-sandbox.katana.network/v1/candles?market=${market}&interval=${interval}&limit=${limit}`;
 
-    console.log('[Kuma Proxy] Fetching candles:', kumaApiUrl);
+    console.log('[Katana Perps Proxy] Fetching candles:', katanaApiUrl);
 
-    // Fetch from Kuma API
-    const response = await fetch(kumaApiUrl, {
+    // Fetch from Katana Perps API
+    const response = await fetch(katanaApiUrl, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!response.ok) {
-      throw new Error(`Kuma API responded with status: ${response.status}`);
+      throw new Error(`Katana Perps API responded with status: ${response.status}`);
     }
 
     const data = await response.json();
@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('[Kuma Proxy] Error fetching candles:', error);
+    console.error('[Katana Perps Proxy] Error fetching candles:', error);
     return NextResponse.json(
       { error: 'Failed to fetch candles', message: String(error) },
       { status: 500 }

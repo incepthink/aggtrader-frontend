@@ -46,26 +46,24 @@ export const katana = {
   },
 } as const;
 
-// XCHAIN - for perpetual trading only (perp page)
-// Note: MetaMask requires nativeCurrency.decimals to be 18 for wallet_addEthereumChain
-// Even though XCHAIN uses USDC with 6 decimals, we must specify 18 for MetaMask compatibility
-export const xchain = {
-  id: 94524,
-  name: "XCHAIN",
+// Bokuto testnet - Katana testnet for perpetual trading development (perp page)
+export const bokuto = {
+  id: 737373,
+  name: "Bokuto",
   nativeCurrency: {
-    decimals: 18, // Required by MetaMask for EVM chains
-    name: "USDC",
-    symbol: "USDC",
+    decimals: 18,
+    name: "Ethereum",
+    symbol: "ETH",
   },
   rpcUrls: {
     default: {
-      http: ["https://xchain-rpc.kuma.bid/"],
+      http: ["https://rpc-bokuto.katanarpc.com"],
     },
   },
   blockExplorers: {
     default: {
-      name: "XCHAIN Explorer",
-      url: "https://xchain-explorer.kuma.bid",
+      name: "Bokuto Explorer",
+      url: "https://bokuto.katanascan.com",
     },
   },
 } as const;
@@ -105,11 +103,11 @@ const connectors = connectorsForWallets(
 
 export const config = createConfig({
   connectors,
-  // Support both Katana (spot/lending) and XCHAIN (perp trading)
-  chains: [katana, xchain],
+  // Support both Katana (spot/lending) and Bokuto testnet (perp trading development)
+  chains: [katana, bokuto],
   transports: {
     [katana.id]: http(),
-    [xchain.id]: http(),
+    [bokuto.id]: http(),
   },
   ssr: false, // Disabled for injected provider compatibility
 });

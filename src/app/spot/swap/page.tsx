@@ -14,6 +14,7 @@ import TokenBalancesCard from "@/components/spot/tokenBalance/TokenBalancesCard"
 import TokenSelect from "@/components/spot/TokenSelect";
 import { TokenSelectModal } from "@/components/spot/TokenSelectModal";
 import { TokenSelectModalProvider } from "@/context/TokenSelectModalContext";
+import { PortfolioRefreshProvider } from "@/context/PortfolioRefreshContext";
 import { Box, Container, Stack } from "@mui/material";
 import React, { useState } from "react";
 
@@ -21,7 +22,8 @@ const page = () => {
   const [activeTab, setActiveTab] = useState<"swap" | "limit">("swap");
 
   return (
-    <TokenSelectModalProvider>
+    <PortfolioRefreshProvider>
+      <TokenSelectModalProvider>
       <Container
         maxWidth="xl"
         sx={{
@@ -112,6 +114,7 @@ const page = () => {
         </Stack>
       </Container>
     </TokenSelectModalProvider>
+    </PortfolioRefreshProvider>
   );
 };
 

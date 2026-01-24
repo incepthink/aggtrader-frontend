@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Box, Typography } from '@mui/material';
-import { CandleInterval } from '@kumabid/kuma-sdk';
+import { CandleInterval } from '@katanaperps/katana-perps-sdk';
 import { useKumaCandleWebSocket } from '@/hooks/perp/useKumaCandleWebSocket';
 import ChartContainer from '@/components/spot/chart/ChartContainer';
 import TimeframeSelector, {

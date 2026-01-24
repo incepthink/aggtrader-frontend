@@ -1,10 +1,10 @@
 'use client';
 
 import { Box, Typography, Stack } from '@mui/material';
-import { KumaTradeEventData } from '@kumabid/kuma-sdk';
+import { KatanaPerpsTradeEventData } from '@katanaperps/katana-perps-sdk';
 
 interface TradesDisplayProps {
-  trades: KumaTradeEventData[];
+  trades: KatanaPerpsTradeEventData[];
 }
 
 const TradesDisplay = ({ trades }: TradesDisplayProps) => {

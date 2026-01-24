@@ -6,6 +6,7 @@ import { useAccount } from "wagmi";
 
 import { useSpotStore } from "@/store/spotStore";
 import { GradientConnectButton } from "@/components/common/navbar/Navbar";
+import { usePortfolioRefresh } from "@/context/PortfolioRefreshContext";
 
 import { SwapSettings } from "./components/SwapSettings";
 import { SwapInputSection } from "./components/Swapinputsection";
@@ -23,6 +24,7 @@ import "./styles/index.css";
 
 const SushiClassicSwap = memo(() => {
   const { address, isConnected } = useAccount();
+  const { triggerRefresh } = usePortfolioRefresh();
 
   const tokenOne = useSpotStore((s) => s.tokenOne);
   const tokenTwo = useSpotStore((s) => s.tokenTwo);
@@ -195,6 +197,7 @@ const SushiClassicSwap = memo(() => {
     setIsInitiatingSwap,
     tokenOneAmount,
     tokenTwoAmount,
+    triggerPortfolioRefresh: triggerRefresh,
   });
 
   const handleSlippageChange = useCallback(

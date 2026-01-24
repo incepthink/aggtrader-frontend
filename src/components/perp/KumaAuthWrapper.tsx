@@ -2,18 +2,18 @@
 
 import { useEffect, useState } from 'react';
 import { useAccount } from 'wagmi';
-import { useKumaAuth } from '@/hooks/perp/useKumaAuth';
+import { useKatanaPerpsAuth } from '@/hooks/perp/useKumaAuth';
 import UnlockWalletModal from './UnlockWalletModal';
 
 /**
- * Automatically triggers Kuma wallet association when user visits /perp page
+ * Automatically triggers Katana Perps wallet association when user visits /perp page
  * Works for both scenarios:
  * 1. User already connected wallet on Katana pages -> shows unlock modal on /perp visit
  * 2. User connects wallet while on /perp page -> shows unlock modal after connection
  */
-export const KumaAuthWrapper = () => {
+export const KatanaPerpsAuthWrapper = () => {
   const { address, isConnected } = useAccount();
-  const { isAssociated, isAssociating } = useKumaAuth();
+  const { isAssociated, isAssociating } = useKatanaPerpsAuth();
   const [hasAttempted, setHasAttempted] = useState(false);
   const [showModal, setShowModal] = useState(false);
 
@@ -54,3 +54,6 @@ export const KumaAuthWrapper = () => {
     />
   );
 };
+
+// Keep the old name as an alias for backwards compatibility
+export const KumaAuthWrapper = KatanaPerpsAuthWrapper;

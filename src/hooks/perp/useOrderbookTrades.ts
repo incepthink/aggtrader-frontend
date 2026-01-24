@@ -3,19 +3,19 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import {
   WebSocketClient,
-  KumaOrderBookLevel2Event,
-  KumaTradeEvent,
-  KumaTradeEventData,
+  KatanaPerpsOrderBookLevel2Event,
+  KatanaPerpsTradeEvent,
+  KatanaPerpsTradeEventData,
   RestResponseGetOrderBookLevel2,
   OrderBookPriceLevel,
   RestPublicClient,
-} from '@kumabid/kuma-sdk';
+} from '@katanaperps/katana-perps-sdk';
 
 export function useOrderbookTrades(market: string = 'BTC-USD') {
   const [isConnected, setIsConnected] = useState(false);
   const [orderbookData, setOrderbookData] =
     useState<RestResponseGetOrderBookLevel2 | null>(null);
-  const [trades, setTrades] = useState<KumaTradeEventData[]>([]);
+  const [trades, setTrades] = useState<KatanaPerpsTradeEventData[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const wsClientRef = useRef<WebSocketClient | null>(null);
@@ -26,10 +26,10 @@ export function useOrderbookTrades(market: string = 'BTC-USD') {
   const lastPriceRef = useRef<string | null>(null);
   const markPriceRef = useRef<string | null>(null);
   const indexPriceRef = useRef<string | null>(null);
-  const mergeOrderbookUpdateRef = useRef<((update: KumaOrderBookLevel2Event['data']) => void) | null>(null);
+  const mergeOrderbookUpdateRef = useRef<((update: KatanaPerpsOrderBookLevel2Event['data']) => void) | null>(null);
 
   // Merge orderbook updates
-  const mergeOrderbookUpdate = useCallback((update: KumaOrderBookLevel2Event['data']) => {
+  const mergeOrderbookUpdate = useCallback((update: KatanaPerpsOrderBookLevel2Event['data']) => {
     // Update price data
     if (update.lastPrice !== undefined) lastPriceRef.current = update.lastPrice;
     if (update.markPrice !== undefined) markPriceRef.current = update.markPrice;
@@ -118,10 +118,10 @@ export function useOrderbookTrades(market: string = 'BTC-USD') {
     setOrderbookData(null);
     setTrades([]); // Reset trades
 
-    // Fetch initial trades from REST API
+    // Fetch initial trades from REST API (sandbox mode for Bokuto testnet)
     const fetchInitialTrades = async () => {
       try {
-        const restClient = new RestPublicClient();
+        const restClient = new RestPublicClient({ sandbox: true });
         const tradesResponse = await restClient.getTrades({
           market,
           limit: 50, // Fetch last 50 trades
@@ -129,7 +129,7 @@ export function useOrderbookTrades(market: string = 'BTC-USD') {
 
         // Convert REST trades to WebSocket trade format
         // REST API doesn't include market in response, so we add it from the request param
-        const initialTrades: KumaTradeEventData[] = tradesResponse.map((trade, index) => ({
+        const initialTrades: KatanaPerpsTradeEventData[] = tradesResponse.map((trade, index) => ({
           ...trade,
           market, // Add market from the request parameter
         }));
@@ -146,8 +146,8 @@ export function useOrderbookTrades(market: string = 'BTC-USD') {
       fetchInitialTrades();
     }, 100);
 
-    // Create WebSocket client instance
-    const wsClient = new WebSocketClient();
+    // Create WebSocket client instance with sandbox mode for Bokuto testnet
+    const wsClient = new WebSocketClient({ sandbox: true });
     wsClientRef.current = wsClient;
 
     // Handle connection event
@@ -165,13 +165,13 @@ export function useOrderbookTrades(market: string = 'BTC-USD') {
     // Handle incoming messages
     wsClient.onMessage((event) => {
       if (event.type === 'l2orderbook') {
-        const orderbookEvent = event as KumaOrderBookLevel2Event;
+        const orderbookEvent = event as KatanaPerpsOrderBookLevel2Event;
         if (orderbookEvent.data.market === market) {
           // MEMORY LEAK FIX: Use ref to avoid WebSocket reconnections
           mergeOrderbookUpdateRef.current?.(orderbookEvent.data);
         }
       } else if (event.type === 'trades') {
-        const tradeEvent = event as KumaTradeEvent;
+        const tradeEvent = event as KatanaPerpsTradeEvent;
         if (tradeEvent.data.market === market) {
           // Add new trade to the beginning and keep last 100 trades
           // Check for duplicates based on fillId
