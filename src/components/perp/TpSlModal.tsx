@@ -46,7 +46,7 @@ function TabPanel(props: TabPanelProps) {
 
 interface TpSlModalProps {
   market: string;
-  tickerData: KumaTicker | null;
+  tickerData: KatanaPerpsTicker | null;
 }
 
 const TpSlModal = ({ market, tickerData }: TpSlModalProps) => {
