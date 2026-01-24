@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { v1 as uuidv1 } from 'uuid';
 
+// Force deployment to non-US regions to avoid Kuma geo-restrictions
+export const runtime = 'nodejs';
+export const preferredRegion = ['fra1', 'arn1', 'sin1']; // Frankfurt, Stockholm, Singapore
+
 /**
  * API Route: GET /api/kuma/account-balance
  *

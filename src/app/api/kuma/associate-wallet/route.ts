@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 
+// Force deployment to non-US regions to avoid Kuma geo-restrictions
+export const runtime = 'nodejs';
+export const preferredRegion = ['fra1', 'arn1', 'sin1']; // Frankfurt, Stockholm, Singapore
+
 /**
  * API Route: POST /api/kuma/associate-wallet
  *
