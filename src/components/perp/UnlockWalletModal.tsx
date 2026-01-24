@@ -15,9 +15,11 @@ import {
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import { useConnectModal } from '@rainbow-me/rainbowkit';
-import { useAccount } from 'wagmi';
+import { useAccount, useChainId, useSwitchChain } from 'wagmi';
 import { useKatanaPerpsAuth } from '@/hooks/perp/useKumaAuth';
 import { useState } from 'react';
+
+const BOKUTO_CHAIN_ID = 737373;
 
 interface UnlockWalletModalProps {
   open: boolean;
@@ -30,8 +32,9 @@ interface UnlockWalletModalProps {
  *
  * This modal handles the Katana Perps wallet association flow:
  * 1. If wallet is not connected, shows RainbowKit connection options
- * 2. If wallet is connected but not associated, prompts for signature
- * 3. Optionally keeps user logged in for 30 days (stores in session)
+ * 2. If wallet is connected but on wrong chain, triggers chain switch to Bokuto
+ * 3. If wallet is connected on correct chain, prompts for signature
+ * 4. Optionally keeps user logged in for 30 days (stores in session)
  */
 const UnlockWalletModal = ({
   open,
@@ -39,7 +42,9 @@ const UnlockWalletModal = ({
   onSuccess,
 }: UnlockWalletModalProps) => {
   const { isConnected } = useAccount();
+  const chainId = useChainId();
   const { openConnectModal } = useConnectModal();
+  const { switchChain, isPending: isSwitchingChain } = useSwitchChain();
   const {
     isAssociated,
     isAssociating,
@@ -49,13 +54,36 @@ const UnlockWalletModal = ({
   } = useKatanaPerpsAuth();
 
   const [stayLoggedIn, setStayLoggedIn] = useState(true);
+  const [chainSwitchError, setChainSwitchError] = useState<string | null>(null);
+
+  const isOnBokuto = chainId === BOKUTO_CHAIN_ID;
+  const needsChainSwitch = isConnected && !isOnBokuto;
 
   const handleConnect = async () => {
+    // Clear any previous chain switch error
+    setChainSwitchError(null);
+
     if (!isConnected) {
-      // Open RainbowKit modal
+      // Step 1: Open RainbowKit modal to connect wallet
       openConnectModal?.();
+    } else if (needsChainSwitch) {
+      // Step 2: Switch to Bokuto network
+      try {
+        switchChain(
+          { chainId: BOKUTO_CHAIN_ID },
+          {
+            onError: (err) => {
+              console.error('Failed to switch chain:', err);
+              setChainSwitchError(err.message || 'Failed to switch network');
+            },
+          }
+        );
+      } catch (err: any) {
+        console.error('Failed to switch chain:', err);
+        setChainSwitchError(err.message || 'Failed to switch network');
+      }
     } else {
-      // Wallet is connected, now associate it
+      // Step 3: Wallet is connected and on correct chain, associate it
       const success = await associateWallet();
 
       if (success) {
@@ -78,9 +106,50 @@ const UnlockWalletModal = ({
     }
   };
 
+  const displayError = error || chainSwitchError;
+
   const handleClose = () => {
     clearError();
+    setChainSwitchError(null);
     onClose();
+  };
+
+  // Determine button state
+  const isLoading = isAssociating || isSwitchingChain;
+  const getButtonText = () => {
+    if (isSwitchingChain) {
+      return (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <CircularProgress size={20} sx={{ color: '#050C19' }} />
+          <span>Switching network...</span>
+        </Box>
+      );
+    }
+    if (isAssociating) {
+      return (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <CircularProgress size={20} sx={{ color: '#050C19' }} />
+          <span>Waiting for signature...</span>
+        </Box>
+      );
+    }
+    if (!isConnected) {
+      return 'Connect Wallet';
+    }
+    if (needsChainSwitch) {
+      return 'Switch to Bokuto Testnet';
+    }
+    return 'Sign to Unlock';
+  };
+
+  const getInfoMessage = () => {
+    if (!isConnected) {
+      return 'Connect your wallet to start trading on Katana Perps';
+    }
+    if (needsChainSwitch) {
+      return 'Switch to Bokuto testnet to continue';
+    }
+    return 'Sign a message to unlock your wallet for trading';
   };
 
   return (
@@ -133,7 +202,7 @@ const UnlockWalletModal = ({
 
       <DialogContent sx={{ pt: 3 }}>
         {/* Error Display */}
-        {error && (
+        {displayError && (
           <Alert
             severity="error"
             sx={{
@@ -145,9 +214,12 @@ const UnlockWalletModal = ({
                 color: '#ff6b6b',
               },
             }}
-            onClose={clearError}
+            onClose={() => {
+              clearError();
+              setChainSwitchError(null);
+            }}
           >
-            {error}
+            {displayError}
           </Alert>
         )}
 
@@ -161,9 +233,7 @@ const UnlockWalletModal = ({
               mb: 2,
             }}
           >
-            {!isConnected
-              ? 'Connect your wallet to start trading on Katana Perps'
-              : 'Sign a message to unlock your wallet for trading'}
+            {getInfoMessage()}
           </Typography>
         </Box>
 
@@ -172,19 +242,25 @@ const UnlockWalletModal = ({
           fullWidth
           variant="contained"
           onClick={handleConnect}
-          disabled={isAssociating}
+          disabled={isLoading}
           sx={{
             py: 1.5,
             mb: 2,
-            background: 'linear-gradient(90deg, #00F5E0 0%, #00C9B8 100%)',
+            background: needsChainSwitch
+              ? 'linear-gradient(90deg, #FFA500 0%, #FF8C00 100%)'
+              : 'linear-gradient(90deg, #00F5E0 0%, #00C9B8 100%)',
             color: '#050C19',
             fontWeight: 600,
             fontSize: '1rem',
             textTransform: 'none',
             borderRadius: 1.5,
             '&:hover': {
-              background: 'linear-gradient(90deg, #00E5D0 0%, #00B9A8 100%)',
-              boxShadow: '0 4px 20px rgba(0, 245, 224, 0.4)',
+              background: needsChainSwitch
+                ? 'linear-gradient(90deg, #FFB520 0%, #FF9C10 100%)'
+                : 'linear-gradient(90deg, #00E5D0 0%, #00B9A8 100%)',
+              boxShadow: needsChainSwitch
+                ? '0 4px 20px rgba(255, 165, 0, 0.4)'
+                : '0 4px 20px rgba(0, 245, 224, 0.4)',
             },
             '&:disabled': {
               background: 'rgba(255, 255, 255, 0.1)',
@@ -192,16 +268,7 @@ const UnlockWalletModal = ({
             },
           }}
         >
-          {isAssociating ? (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <CircularProgress size={20} sx={{ color: '#050C19' }} />
-              <span>Waiting for signature...</span>
-            </Box>
-          ) : !isConnected ? (
-            'Connect Wallet'
-          ) : (
-            'Sign to Unlock'
-          )}
+          {getButtonText()}
         </Button>
 
         {/* Stay Logged In Checkbox */}
