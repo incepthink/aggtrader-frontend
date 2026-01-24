@@ -117,7 +117,44 @@ export function useOrderbookTrades(market: string = 'BTC-USD') {
     setOrderbookData(null);
     setTrades([]); // Reset trades
 
-    // Fetch initial trades via proxy to avoid CORS issues
+    // Fetch initial orderbook via proxy API (to avoid CORS issues)
+    const fetchInitialOrderbook = async () => {
+      try {
+        const response = await fetch(`/api/kuma/orderbook?market=${market}&limit=30`);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch orderbook: ${response.status}`);
+        }
+        const orderbookResponse: RestResponseGetOrderBookLevel2 = await response.json();
+
+        // Initialize the Maps with REST data
+        if (orderbookResponse.bids) {
+          orderbookResponse.bids.forEach((bid) => {
+            bidsMapRef.current.set(bid[0], bid);
+          });
+        }
+        if (orderbookResponse.asks) {
+          orderbookResponse.asks.forEach((ask) => {
+            asksMapRef.current.set(ask[0], ask);
+          });
+        }
+        if (orderbookResponse.lastPrice) {
+          lastPriceRef.current = orderbookResponse.lastPrice;
+        }
+        if (orderbookResponse.markPrice) {
+          markPriceRef.current = orderbookResponse.markPrice;
+        }
+        if (orderbookResponse.indexPrice) {
+          indexPriceRef.current = orderbookResponse.indexPrice;
+        }
+
+        setOrderbookData(orderbookResponse);
+      } catch (error) {
+        console.error('Failed to fetch initial orderbook:', error);
+        // Silently fail - orderbook will populate from WebSocket
+      }
+    };
+
+    // Fetch initial trades via proxy API (to avoid CORS issues)
     const fetchInitialTrades = async () => {
       try {
         const response = await fetch(`/api/kuma/trades?market=${market}&limit=50`);
@@ -135,13 +172,14 @@ export function useOrderbookTrades(market: string = 'BTC-USD') {
 
         setTrades(initialTrades);
       } catch (error) {
+        console.error('Failed to fetch initial trades:', error);
         // Silently fail - trades will populate from WebSocket
-        // Network errors are common on page load and don't affect functionality
       }
     };
 
-    // Fetch initial trades with slight delay to avoid race conditions
+    // Fetch initial data with slight delay to avoid race conditions
     const fetchTimer = setTimeout(() => {
+      fetchInitialOrderbook();
       fetchInitialTrades();
     }, 100);
 
