@@ -8,7 +8,6 @@ import {
   KatanaPerpsTradeEventData,
   RestResponseGetOrderBookLevel2,
   OrderBookPriceLevel,
-  RestPublicClient,
 } from '@katanaperps/katana-perps-sdk';
 
 export function useOrderbookTrades(market: string = 'BTC-USD') {
@@ -118,18 +117,18 @@ export function useOrderbookTrades(market: string = 'BTC-USD') {
     setOrderbookData(null);
     setTrades([]); // Reset trades
 
-    // Fetch initial trades from REST API (sandbox mode for Bokuto testnet)
+    // Fetch initial trades via proxy to avoid CORS issues
     const fetchInitialTrades = async () => {
       try {
-        const restClient = new RestPublicClient({ sandbox: true });
-        const tradesResponse = await restClient.getTrades({
-          market,
-          limit: 50, // Fetch last 50 trades
-        });
+        const response = await fetch(`/api/kuma/trades?market=${market}&limit=50`);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch trades: ${response.status}`);
+        }
+        const tradesResponse = await response.json();
 
         // Convert REST trades to WebSocket trade format
         // REST API doesn't include market in response, so we add it from the request param
-        const initialTrades: KatanaPerpsTradeEventData[] = tradesResponse.map((trade, index) => ({
+        const initialTrades: KatanaPerpsTradeEventData[] = tradesResponse.map((trade: any) => ({
           ...trade,
           market, // Add market from the request parameter
         }));
