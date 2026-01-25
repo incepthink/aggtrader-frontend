@@ -1,6 +1,7 @@
 "use client";
 
 import { Box, Stack, Typography } from "@mui/material";
+import { useState } from "react";
 import MarketHeader from "@/components/perp/MarketHeader";
 import KumaCandlestickChart from "@/components/perp/KumaCandlestickChart";
 import OrderbookTrades from "@/components/perp/OrderbookTrades";
@@ -20,7 +21,8 @@ const BOKUTO_CHAIN_ID = 737373;
 const PerpPage = () => {
   const { isConnected: isWalletConnected } = useAccount();
   const chainId = useChainId();
-  const { isConnected, tickerData, error } = useKumaWebSocket("BTC-USD");
+  const [selectedMarket, setSelectedMarket] = useState<string>("BTC-USD");
+  const { isConnected, tickerData, error } = useKumaWebSocket(selectedMarket);
   const { balance: accountBalance } = useKumaBalance();
 
   // Extract current price from ticker data
@@ -40,11 +42,11 @@ const PerpPage = () => {
       <Box
         sx={{
           width: "100%",
-          height: "100vh",
+          minHeight: "calc(100vh - 64px)",
           background: "#050C19",
           display: "flex",
           flexDirection: "column",
-          overflow: "hidden",
+          overflow: "auto",
         }}
       >
         {/* Chain Switcher Banner - Shows when wallet is on wrong chain */}
@@ -63,10 +65,9 @@ const PerpPage = () => {
             flex: 1,
             display: "grid",
             gridTemplateColumns: "1fr 280px 350px", // Chart | Orderbook | Trade Panel
-            gridTemplateRows: "auto 1fr 280px", // Header | Main | Bottom
+            gridTemplateRows: "auto minmax(500px, 1fr) 320px", // Header | Main | Bottom
             gap: 1,
             padding: 1,
-            overflow: "hidden",
           }}
         >
           {/* ========== ROW 1: CHART HEADER ========== */}
@@ -75,9 +76,15 @@ const PerpPage = () => {
               sx={{
                 height: "100%",
                 background: "rgba(5, 12, 25, 0.8)",
+                spread: 22,
               }}
             >
-              <MarketHeader tickerData={tickerData} isConnected={isConnected} />
+              <MarketHeader
+                tickerData={tickerData}
+                isConnected={isConnected}
+                selectedMarket={selectedMarket}
+                onMarketChange={setSelectedMarket}
+              />
             </GlowBox>
           </Box>
 
@@ -95,7 +102,7 @@ const PerpPage = () => {
               }}
             >
               <KumaCandlestickChart
-                market="BTC-USD"
+                market={selectedMarket}
                 initialInterval={CandleInterval.FIVE_MINUTES}
               />
             </GlowBox>
@@ -112,7 +119,7 @@ const PerpPage = () => {
                 p: 0,
               }}
             >
-              <OrderbookTrades market="BTC-USD" />
+              <OrderbookTrades market={selectedMarket} />
             </GlowBox>
           </Box>
 
@@ -128,7 +135,7 @@ const PerpPage = () => {
               }}
             >
               <OrderForm
-                market="BTC-USD"
+                market={selectedMarket}
                 currentPrice={currentPrice}
                 tickerData={tickerData}
               />

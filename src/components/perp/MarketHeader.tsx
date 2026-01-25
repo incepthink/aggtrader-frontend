@@ -1,16 +1,74 @@
-'use client';
+"use client";
 
-import { Box, Typography, Stack } from '@mui/material';
-import { KatanaPerpsTicker } from '@katanaperps/katana-perps-sdk';
-import { useEffect, useState } from 'react';
+import {
+  Box,
+  Typography,
+  Stack,
+  Chip,
+  Slide,
+  ClickAwayListener,
+} from "@mui/material";
+import { KatanaPerpsTicker } from "@katanaperps/katana-perps-sdk";
+import { useEffect, useState, useRef } from "react";
+import Image from "next/image";
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+
+interface Market {
+  id: string;
+  name: string;
+  symbol: string;
+  icon: string;
+  leverage: string;
+}
+
+const MARKETS: Market[] = [
+  {
+    id: "BTC-USD",
+    name: "BTC",
+    symbol: "BTC-USD",
+    icon: "/logos/perp/btc.png",
+    leverage: "50x",
+  },
+  {
+    id: "ETH-USD",
+    name: "ETH",
+    symbol: "ETH-USD",
+    icon: "/logos/perp/eth.png",
+    leverage: "50x",
+  },
+  {
+    id: "SOL-USD",
+    name: "SOL",
+    symbol: "SOL-USD",
+    icon: "/logos/perp/sol.svg",
+    leverage: "50x",
+  },
+];
 
 interface MarketHeaderProps {
   tickerData: KatanaPerpsTicker | null;
   isConnected: boolean;
+  selectedMarket?: string;
+  onMarketChange?: (market: string) => void;
 }
 
-export default function MarketHeader({ tickerData, isConnected }: MarketHeaderProps) {
-  const [countdown, setCountdown] = useState<string>('--:--:--');
+export default function MarketHeader({
+  tickerData,
+  isConnected,
+  selectedMarket = "BTC-USD",
+  onMarketChange,
+}: MarketHeaderProps) {
+  const [countdown, setCountdown] = useState<string>("--:--:--");
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const currentMarket =
+    MARKETS.find((m) => m.id === selectedMarket) || MARKETS[0];
+
+  const handleMarketSelect = (marketId: string) => {
+    onMarketChange?.(marketId);
+    setDropdownOpen(false);
+  };
 
   // Calculate countdown to next funding time
   useEffect(() => {
@@ -21,7 +79,7 @@ export default function MarketHeader({ tickerData, isConnected }: MarketHeaderPr
       const timeLeft = tickerData.nextFundingTime - now;
 
       if (timeLeft <= 0) {
-        setCountdown('00:00:00');
+        setCountdown("00:00:00");
         return;
       }
 
@@ -30,7 +88,7 @@ export default function MarketHeader({ tickerData, isConnected }: MarketHeaderPr
       const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
 
       setCountdown(
-        `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+        `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`,
       );
     }, 1000);
 
@@ -38,13 +96,16 @@ export default function MarketHeader({ tickerData, isConnected }: MarketHeaderPr
   }, [tickerData?.nextFundingTime]);
 
   const formatPrice = (price: string | null | undefined): string => {
-    if (!price) return '--';
+    if (!price) return "--";
     const num = parseFloat(price);
-    return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return num.toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
   };
 
   const formatVolume = (volume: string | undefined): string => {
-    if (!volume) return '--';
+    if (!volume) return "--";
     const num = parseFloat(volume);
     if (num >= 1_000_000) {
       return `$${(num / 1_000_000).toFixed(2)}M`;
@@ -56,205 +117,422 @@ export default function MarketHeader({ tickerData, isConnected }: MarketHeaderPr
   };
 
   const formatPercentage = (percent: string | null | undefined): string => {
-    if (!percent) return '--';
+    if (!percent) return "--";
     const num = parseFloat(percent);
-    return `${num >= 0 ? '+' : ''}${num.toFixed(2)}%`;
+    return `${num >= 0 ? "+" : ""}${num.toFixed(2)}%`;
   };
 
   const getChangeColor = (percent: string | null | undefined): string => {
-    if (!percent) return '#999';
+    if (!percent) return "#999";
     const num = parseFloat(percent);
-    return num >= 0 ? '#00F5E0' : '#FF4444';
+    return num >= 0 ? "#00F5E0" : "#FF4444";
   };
 
   return (
-    <Box
-      sx={{
-        padding: '16px 24px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 4,
-        flexWrap: 'wrap',
-      }}
-    >
-      {/* Market Symbol */}
-      <Stack direction="row" alignItems="center" spacing={1}>
-        <Typography
-          variant="h6"
-          sx={{
-            color: '#fff',
-            fontWeight: 600,
-            fontSize: '18px',
-          }}
-        >
-          {tickerData?.market || 'BTC-USD'}
-        </Typography>
+    <ClickAwayListener onClickAway={() => setDropdownOpen(false)}>
+      <Box
+        ref={containerRef}
+        sx={{
+          padding: "0px",
+          paddingRight: "12px",
+          display: "flex",
+          alignItems: "center",
+          gap: 4,
+          justifyContent: "space-between",
+          position: "relative",
+        }}
+      >
+        {/* Market Selector */}
         <Box
+          onClick={() => setDropdownOpen(!dropdownOpen)}
           sx={{
-            width: 8,
-            height: 8,
-            borderRadius: '50%',
-            backgroundColor: isConnected ? '#00F5E0' : '#666',
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+            cursor: "pointer",
+            padding: "8px 12px",
+            borderRadius: "8px",
+            backgroundColor: dropdownOpen
+              ? "rgba(255,255,255,0.05)"
+              : "transparent",
+            "&:hover": {
+              backgroundColor: "rgba(255,255,255,0.05)",
+            },
+            transition: "background-color 0.2s ease",
           }}
-        />
-      </Stack>
+        >
+          <Image
+            src={currentMarket.icon}
+            alt={currentMarket.name}
+            width={24}
+            height={24}
+            style={{ borderRadius: "50%" }}
+          />
+          <Typography
+            variant="h6"
+            sx={{
+              color: "#fff",
+              fontWeight: 600,
+              fontSize: "18px",
+            }}
+          >
+            {currentMarket.symbol}
+          </Typography>
+          <KeyboardArrowDownIcon
+            sx={{
+              color: "#999",
+              fontSize: "20px",
+              transform: dropdownOpen ? "rotate(180deg)" : "rotate(0deg)",
+              transition: "transform 0.2s ease",
+            }}
+          />
+        </Box>
 
-      {/* Price */}
-      <Stack spacing={0.5}>
-        <Typography
-          variant="caption"
-          sx={{
-            color: '#999',
-            fontSize: '11px',
-            textTransform: 'uppercase',
-          }}
-        >
-          Price
-        </Typography>
-        <Typography
-          variant="body1"
-          sx={{
-            color: '#fff',
-            fontWeight: 600,
-            fontSize: '16px',
-          }}
-        >
-          {formatPrice(tickerData?.close)}
-        </Typography>
-      </Stack>
+        {/* Dropdown Menu */}
+        <Slide direction="right" in={dropdownOpen} mountOnEnter unmountOnExit>
+          <Box
+            sx={{
+              position: "absolute",
+              top: "100%",
+              left: 0,
+              minWidth: "600px",
+              backgroundColor: "#0a1628",
+              border: "1px solid rgba(255,255,255,0.1)",
+              borderRadius: "12px",
+              zIndex: 1000,
+              overflow: "hidden",
+              boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
+            }}
+          >
+            {/* Dropdown Header */}
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: "180px 100px 100px 100px 120px 100px",
+                padding: "12px 16px",
+                borderBottom: "1px solid rgba(255,255,255,0.1)",
+                backgroundColor: "rgba(255,255,255,0.02)",
+              }}
+            >
+              <Typography
+                sx={{
+                  color: "#666",
+                  fontSize: "11px",
+                  textTransform: "uppercase",
+                }}
+              >
+                Market
+              </Typography>
+              <Typography
+                sx={{
+                  color: "#666",
+                  fontSize: "11px",
+                  textTransform: "uppercase",
+                }}
+              >
+                Price
+              </Typography>
+              <Typography
+                sx={{
+                  color: "#666",
+                  fontSize: "11px",
+                  textTransform: "uppercase",
+                }}
+              >
+                24h Change
+              </Typography>
+              <Typography
+                sx={{
+                  color: "#666",
+                  fontSize: "11px",
+                  textTransform: "uppercase",
+                }}
+              >
+                8h Funding
+              </Typography>
+              <Typography
+                sx={{
+                  color: "#666",
+                  fontSize: "11px",
+                  textTransform: "uppercase",
+                }}
+              >
+                24h Volume
+              </Typography>
+              <Typography
+                sx={{
+                  color: "#666",
+                  fontSize: "11px",
+                  textTransform: "uppercase",
+                }}
+              >
+                Open Interest
+              </Typography>
+            </Box>
 
-      {/* Index Price */}
-      <Stack spacing={0.5}>
-        <Typography
-          variant="caption"
-          sx={{
-            color: '#999',
-            fontSize: '11px',
-            textTransform: 'uppercase',
-          }}
-        >
-          Index
-        </Typography>
-        <Typography
-          variant="body1"
-          sx={{
-            color: '#fff',
-            fontWeight: 600,
-            fontSize: '16px',
-          }}
-        >
-          {formatPrice(tickerData?.indexPrice)}
-        </Typography>
-      </Stack>
+            {/* Market Options */}
+            {MARKETS.map((market) => (
+              <Box
+                key={market.id}
+                onClick={() => handleMarketSelect(market.id)}
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: "180px 100px 100px 100px 120px 100px",
+                  padding: "12px 16px",
+                  cursor: "pointer",
+                  backgroundColor:
+                    selectedMarket === market.id
+                      ? "rgba(0,245,224,0.05)"
+                      : "transparent",
+                  "&:hover": {
+                    backgroundColor: "rgba(255,255,255,0.05)",
+                  },
+                  transition: "background-color 0.15s ease",
+                }}
+              >
+                {/* Market with Icon and Leverage */}
+                <Stack direction="row" alignItems="center" spacing={1.5}>
+                  <Image
+                    src={market.icon}
+                    alt={market.name}
+                    width={24}
+                    height={24}
+                    style={{ borderRadius: "50%" }}
+                  />
+                  <Typography
+                    sx={{ color: "#fff", fontSize: "14px", fontWeight: 500 }}
+                  >
+                    {market.symbol}
+                  </Typography>
+                  <Chip
+                    label={market.leverage}
+                    size="small"
+                    sx={{
+                      height: "20px",
+                      fontSize: "11px",
+                      fontWeight: 600,
+                      backgroundColor: "rgba(255,255,255,0.1)",
+                      color: "#fff",
+                      "& .MuiChip-label": {
+                        padding: "0 6px",
+                      },
+                    }}
+                  />
+                </Stack>
 
-      {/* 24h Change */}
-      <Stack spacing={0.5}>
-        <Typography
-          variant="caption"
-          sx={{
-            color: '#999',
-            fontSize: '11px',
-            textTransform: 'uppercase',
-          }}
-        >
-          24h Change
-        </Typography>
-        <Typography
-          variant="body1"
-          sx={{
-            color: getChangeColor(tickerData?.percentChange),
-            fontWeight: 600,
-            fontSize: '16px',
-          }}
-        >
-          {formatPercentage(tickerData?.percentChange)}
-        </Typography>
-      </Stack>
+                {/* Price */}
+                <Typography sx={{ color: "#fff", fontSize: "14px" }}>
+                  {market.id === selectedMarket
+                    ? formatPrice(tickerData?.close)
+                    : "--"}
+                </Typography>
 
-      {/* Funding / Countdown */}
-      <Stack spacing={0.5}>
-        <Typography
-          variant="caption"
-          sx={{
-            color: '#999',
-            fontSize: '11px',
-            textTransform: 'uppercase',
-          }}
-        >
-          Funding / Countdown
-        </Typography>
-        <Stack direction="row" spacing={1} alignItems="center">
+                {/* 24h Change */}
+                <Typography
+                  sx={{
+                    color:
+                      market.id === selectedMarket
+                        ? getChangeColor(tickerData?.percentChange)
+                        : "#00F5E0",
+                    fontSize: "14px",
+                  }}
+                >
+                  {market.id === selectedMarket
+                    ? formatPercentage(tickerData?.percentChange)
+                    : "+0.00%"}
+                </Typography>
+
+                {/* 8h Funding */}
+                <Typography
+                  sx={{
+                    color:
+                      market.id === selectedMarket
+                        ? getChangeColor(tickerData?.currentFundingRate)
+                        : "#fff",
+                    fontSize: "14px",
+                  }}
+                >
+                  {market.id === selectedMarket &&
+                  tickerData?.currentFundingRate
+                    ? `${(parseFloat(tickerData.currentFundingRate) * 100).toFixed(4)}%`
+                    : "0.0000%"}
+                </Typography>
+
+                {/* 24h Volume */}
+                <Typography sx={{ color: "#fff", fontSize: "14px" }}>
+                  {market.id === selectedMarket
+                    ? formatVolume(tickerData?.quoteVolume)
+                    : "$0.00"}
+                </Typography>
+
+                {/* Open Interest */}
+                <Typography sx={{ color: "#fff", fontSize: "14px" }}>
+                  {market.id === selectedMarket
+                    ? formatVolume(tickerData?.openInterest)
+                    : "$0.00"}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
+        </Slide>
+
+        {/* Price */}
+        <Stack spacing={0.5}>
+          <Typography
+            variant="caption"
+            sx={{
+              color: "#999",
+              fontSize: "11px",
+              textTransform: "uppercase",
+            }}
+          >
+            Price
+          </Typography>
           <Typography
             variant="body1"
             sx={{
-              color: getChangeColor(tickerData?.currentFundingRate),
+              color: "#fff",
               fontWeight: 600,
-              fontSize: '14px',
+              fontSize: "16px",
             }}
           >
-            {tickerData?.currentFundingRate
-              ? `${(parseFloat(tickerData.currentFundingRate) * 100).toFixed(4)}%`
-              : '--'}
-          </Typography>
-          <Typography
-            variant="body2"
-            sx={{
-              color: '#00F5E0',
-              fontSize: '14px',
-            }}
-          >
-            / {countdown}
+            {formatPrice(tickerData?.close)}
           </Typography>
         </Stack>
-      </Stack>
 
-      {/* Open Interest */}
-      <Stack spacing={0.5}>
-        <Typography
-          variant="caption"
-          sx={{
-            color: '#999',
-            fontSize: '11px',
-            textTransform: 'uppercase',
-          }}
-        >
-          Open Interest
-        </Typography>
-        <Typography
-          variant="body1"
-          sx={{
-            color: '#fff',
-            fontWeight: 600,
-            fontSize: '16px',
-          }}
-        >
-          {formatVolume(tickerData?.openInterest)}
-        </Typography>
-      </Stack>
+        {/* Index Price */}
+        <Stack spacing={0.5}>
+          <Typography
+            variant="caption"
+            sx={{
+              color: "#999",
+              fontSize: "11px",
+              textTransform: "uppercase",
+            }}
+          >
+            Index
+          </Typography>
+          <Typography
+            variant="body1"
+            sx={{
+              color: "#fff",
+              fontWeight: 600,
+              fontSize: "16px",
+            }}
+          >
+            {formatPrice(tickerData?.indexPrice)}
+          </Typography>
+        </Stack>
 
-      {/* 24h Volume */}
-      <Stack spacing={0.5}>
-        <Typography
-          variant="caption"
-          sx={{
-            color: '#999',
-            fontSize: '11px',
-            textTransform: 'uppercase',
-          }}
-        >
-          24h Volume
-        </Typography>
-        <Typography
-          variant="body1"
-          sx={{
-            color: '#fff',
-            fontWeight: 600,
-            fontSize: '16px',
-          }}
-        >
-          {formatVolume(tickerData?.quoteVolume)}
-        </Typography>
-      </Stack>
-    </Box>
+        {/* 24h Change */}
+        <Stack spacing={0.5}>
+          <Typography
+            variant="caption"
+            sx={{
+              color: "#999",
+              fontSize: "11px",
+              textTransform: "uppercase",
+            }}
+          >
+            24h Change
+          </Typography>
+          <Typography
+            variant="body1"
+            sx={{
+              color: getChangeColor(tickerData?.percentChange),
+              fontWeight: 600,
+              fontSize: "16px",
+            }}
+          >
+            {formatPercentage(tickerData?.percentChange)}
+          </Typography>
+        </Stack>
+
+        {/* Funding / Countdown */}
+        <Stack spacing={0.5}>
+          <Typography
+            variant="caption"
+            sx={{
+              color: "#999",
+              fontSize: "11px",
+              textTransform: "uppercase",
+            }}
+          >
+            Funding / Countdown
+          </Typography>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Typography
+              variant="body1"
+              sx={{
+                color: getChangeColor(tickerData?.currentFundingRate),
+                fontWeight: 600,
+                fontSize: "14px",
+              }}
+            >
+              {tickerData?.currentFundingRate
+                ? `${(parseFloat(tickerData.currentFundingRate) * 100).toFixed(4)}%`
+                : "--"}
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{
+                color: "#00F5E0",
+                fontSize: "14px",
+              }}
+            >
+              / {countdown}
+            </Typography>
+          </Stack>
+        </Stack>
+
+        {/* Open Interest */}
+        <Stack spacing={0.5}>
+          <Typography
+            variant="caption"
+            sx={{
+              color: "#999",
+              fontSize: "11px",
+              textTransform: "uppercase",
+            }}
+          >
+            Open Interest
+          </Typography>
+          <Typography
+            variant="body1"
+            sx={{
+              color: "#fff",
+              fontWeight: 600,
+              fontSize: "16px",
+            }}
+          >
+            {formatVolume(tickerData?.openInterest)}
+          </Typography>
+        </Stack>
+
+        {/* 24h Volume */}
+        <Stack spacing={0.5}>
+          <Typography
+            variant="caption"
+            sx={{
+              color: "#999",
+              fontSize: "11px",
+              textTransform: "uppercase",
+            }}
+          >
+            24h Volume
+          </Typography>
+          <Typography
+            variant="body1"
+            sx={{
+              color: "#fff",
+              fontWeight: 600,
+              fontSize: "16px",
+            }}
+          >
+            {formatVolume(tickerData?.quoteVolume)}
+          </Typography>
+        </Stack>
+      </Box>
+    </ClickAwayListener>
   );
 }
