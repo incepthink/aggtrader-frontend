@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { v1 as uuidv1 } from 'uuid';
+import { generateUUID } from '../utils';
 
-// Force deployment to non-US regions to avoid Kuma geo-restrictions
-export const runtime = 'nodejs';
-export const preferredRegion = ['fra1', 'arn1', 'sin1']; // Frankfurt, Stockholm, Singapore
+// Use Edge Runtime for better global distribution and non-US deployment
+export const runtime = 'edge';
+export const preferredRegion = ['fra1', 'arn1', 'sin1', 'hnd1', 'syd1'];
 
 /**
  * API Route: POST /api/kuma/get-typed-data
@@ -39,8 +39,8 @@ export async function POST(request: NextRequest) {
     // Get sandbox mode from environment
     const sandbox = process.env.NEXT_PUBLIC_KATANA_PERPS_SANDBOX === 'true';
 
-    // Generate nonce (UUID v1)
-    const nonce = uuidv1();
+    // Generate nonce (UUID v4 - compatible with Edge runtime)
+    const nonce = generateUUID();
 
     // Katana Perps exchange contract addresses and chain IDs
     // Sandbox (Bokuto Testnet): chainId 737373, contract 0xcE3765616b9e354E64530875f492dc4DfddF2118
@@ -73,14 +73,17 @@ export async function POST(request: NextRequest) {
       },
     };
 
-    return NextResponse.json({
-      nonce, // Return original UUID for API submission
-      typedData,
-    }, { status: 200 });
-  } catch (error: any) {
+    return NextResponse.json(
+      {
+        nonce, // Return original UUID for API submission
+        typedData,
+      },
+      { status: 200 }
+    );
+  } catch (error: unknown) {
     console.error('Error in get-typed-data API route:', error);
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
+      { error: error instanceof Error ? error.message : 'Internal server error' },
       { status: 500 }
     );
   }

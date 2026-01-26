@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import crypto from 'crypto';
+import { generateHmacSignature, getKumaConfig } from '../utils';
 
-// Force deployment to non-US regions to avoid Kuma geo-restrictions
-export const runtime = 'nodejs';
-export const preferredRegion = ['fra1', 'arn1', 'sin1']; // Frankfurt, Stockholm, Singapore
+// Use Edge Runtime for better global distribution and non-US deployment
+export const runtime = 'edge';
+export const preferredRegion = ['fra1', 'arn1', 'sin1', 'hnd1', 'syd1'];
 
 /**
  * API Route: POST /api/kuma/associate-wallet
  *
- * Server-side proxy for Katana Perps wallet association to avoid CORS issues
+ * Server-side proxy for Katana Perps wallet association to avoid CORS and geo-restrictions
  *
  * This endpoint:
  * 1. Receives wallet address, nonce, and signature from client
@@ -18,16 +18,6 @@ export const preferredRegion = ['fra1', 'arn1', 'sin1']; // Frankfurt, Stockholm
  * Reference: https://api-docs-v1-perps.katana.network
  * Endpoint: POST /v1/wallets
  */
-
-/**
- * Generate HMAC signature for Katana Perps API authentication
- *
- * Per Katana Perps API docs: HMAC-SHA256(message: request body, key: API secret)
- * For POST requests, the message is the stringified JSON body
- */
-function generateHmacSignature(apiSecret: string, body: string): string {
-  return crypto.createHmac('sha256', apiSecret).update(body).digest('hex');
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -43,14 +33,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get Katana Perps API credentials from environment
-    // Use testnet credentials for sandbox (Bokuto), mainnet for production
-    const sandbox = process.env.NEXT_PUBLIC_KATANA_PERPS_SANDBOX === 'true';
-    const apiKey = sandbox
-      ? process.env.NEXT_PUBLIC_KATANA_PERPS_API_KEY_TESTNET
-      : process.env.NEXT_PUBLIC_KATANA_PERPS_API_KEY;
-    const apiSecret = sandbox
-      ? process.env.NEXT_PUBLIC_KATANA_PERPS_API_SECRET_TESTNET
-      : process.env.NEXT_PUBLIC_KATANA_PERPS_API_SECRET;
+    const { apiKey, apiSecret, baseUrl, sandbox } = getKumaConfig();
 
     if (!apiKey || !apiSecret) {
       return NextResponse.json(
@@ -59,12 +42,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Determine API base URL
-    // Sandbox (Bokuto Testnet): https://api-perps-sandbox.katana.network
-    // Production (Katana Mainnet): https://api-perps.katana.network
-    const baseUrl = sandbox
-      ? 'https://api-perps-sandbox.katana.network'
-      : 'https://api-perps.katana.network';
     const path = '/v1/wallets';
 
     // Prepare request body for Katana Perps API
@@ -79,7 +56,7 @@ export async function POST(request: NextRequest) {
     const bodyString = JSON.stringify(requestBody);
 
     // Generate HMAC signature (sign only the body per Katana Perps API docs)
-    const hmacSignature = generateHmacSignature(apiSecret, bodyString);
+    const hmacSignature = await generateHmacSignature(apiSecret, bodyString);
 
     console.log('Submitting wallet association to Katana Perps API:', {
       wallet: wallet.toLowerCase(),
@@ -125,24 +102,16 @@ export async function POST(request: NextRequest) {
     console.log('Wallet associated successfully (server-side):', data);
 
     return NextResponse.json(data, { status: 200 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error in associate-wallet API route:', error);
 
     let errorMessage = 'Failed to associate wallet';
-    let statusCode = 500;
+    const statusCode = 500;
 
-    if (error.message) {
+    if (error instanceof Error) {
       errorMessage = error.message;
     }
 
-    if (error.response?.data?.message) {
-      errorMessage = error.response.data.message;
-      statusCode = error.response.status || 500;
-    }
-
-    return NextResponse.json(
-      { error: errorMessage },
-      { status: statusCode }
-    );
+    return NextResponse.json({ error: errorMessage }, { status: statusCode });
   }
 }

@@ -1,0 +1,10 @@
+{
+  "functions": {
+    "src/app/api/kuma/**/*.ts": {
+      "memory": 1024,
+      "maxDuration": 30,
+      "regions": ["bom1"]
+    }
+  },
+  "regions": ["fra1", "arn1", "sin1", "hnd1", "syd1"]
+}

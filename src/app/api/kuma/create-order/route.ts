@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import crypto from 'crypto';
+import { generateHmacSignature, getKumaConfig } from '../utils';
 
-// Force deployment to non-US regions to avoid Kuma geo-restrictions
-export const runtime = 'nodejs';
-export const preferredRegion = ['fra1', 'arn1', 'sin1']; // Frankfurt, Stockholm, Singapore
+// Use Edge Runtime for better global distribution and non-US deployment
+export const runtime = 'edge';
+export const preferredRegion = ['fra1', 'arn1', 'sin1', 'hnd1', 'syd1'];
 
 /**
  * API Route: POST /api/kuma/create-order
  *
- * Server-side proxy for Katana Perps order submission to avoid CORS issues
+ * Server-side proxy for Katana Perps order submission to avoid CORS and geo-restrictions
  *
  * This endpoint:
  * 1. Receives order parameters and signature from client
@@ -20,41 +20,47 @@ export const preferredRegion = ['fra1', 'arn1', 'sin1']; // Frankfurt, Stockholm
  */
 
 /**
- * Generate HMAC signature for Katana Perps API authentication
- *
- * Per Katana Perps API docs: HMAC-SHA256(message: request body, key: API secret)
- * For POST requests, the message is the stringified JSON body
- */
-function generateHmacSignature(apiSecret: string, body: string): string {
-  return crypto.createHmac('sha256', apiSecret).update(body).digest('hex');
-}
-
-/**
  * Format and validate quantity according to Katana Perps API requirements
- * - Must be a multiple of stepSize
- * - Must meet minimum order size
- * - Must be formatted as string with 8 decimals
  */
-function formatQuantity(quantity: string, stepSize: number = 0.0001, minimum: number = 0.0005): string {
+function formatQuantity(
+  quantity: string,
+  stepSize: number = 0.0001,
+  minimum: number = 0.0005
+): string {
   const value = parseFloat(quantity);
-
-  // Round to nearest stepSize increment
   const rounded = Math.round(value / stepSize) * stepSize;
-
-  // Enforce minimum
   const final = Math.max(rounded, minimum);
-
-  // Format to 8 decimals
   return final.toFixed(8);
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { nonce, wallet, market, type, side, quantity, signature, reduceOnly, price, postOnly, triggerPrice, triggerType } = body;
+    const {
+      nonce,
+      wallet,
+      market,
+      type,
+      side,
+      quantity,
+      signature,
+      reduceOnly,
+      price,
+      postOnly,
+      triggerPrice,
+      triggerType,
+    } = body;
 
     // Validate required fields
-    if (!nonce || !wallet || !market || type === undefined || side === undefined || !quantity || !signature) {
+    if (
+      !nonce ||
+      !wallet ||
+      !market ||
+      type === undefined ||
+      side === undefined ||
+      !quantity ||
+      !signature
+    ) {
       return NextResponse.json(
         { error: 'Missing required fields: nonce, wallet, market, type, side, quantity, signature' },
         { status: 400 }
@@ -64,15 +70,17 @@ export async function POST(request: NextRequest) {
     // For limit orders, price is required
     const isLimitOrder = type === 'limit';
     if (isLimitOrder && (!price || parseFloat(price) <= 0)) {
-      return NextResponse.json(
-        { error: 'Price is required for limit orders' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Price is required for limit orders' }, { status: 400 });
     }
 
     // For stop orders, triggerPrice and triggerType are required
-    const isStopOrder = ['stopLossMarket', 'stopLossLimit', 'takeProfitMarket', 'takeProfitLimit', 'trailingStopMarket'].includes(type);
-    // Stop limit orders (stopLossLimit, takeProfitLimit) require both triggerPrice AND price (limit price)
+    const isStopOrder = [
+      'stopLossMarket',
+      'stopLossLimit',
+      'takeProfitMarket',
+      'takeProfitLimit',
+      'trailingStopMarket',
+    ].includes(type);
     const isStopLimitOrder = ['stopLossLimit', 'takeProfitLimit'].includes(type);
 
     if (isStopOrder && (!triggerPrice || parseFloat(triggerPrice) <= 0)) {
@@ -87,7 +95,6 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    // Stop limit orders also require a limit price
     if (isStopLimitOrder && (!price || parseFloat(price) <= 0)) {
       return NextResponse.json(
         { error: 'Limit price is required for stop limit orders' },
@@ -96,14 +103,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get Katana Perps API credentials from environment
-    // Use testnet credentials for sandbox (Bokuto), mainnet for production
-    const sandbox = process.env.NEXT_PUBLIC_KATANA_PERPS_SANDBOX === 'true';
-    const apiKey = sandbox
-      ? process.env.NEXT_PUBLIC_KATANA_PERPS_API_KEY_TESTNET
-      : process.env.NEXT_PUBLIC_KATANA_PERPS_API_KEY;
-    const apiSecret = sandbox
-      ? process.env.NEXT_PUBLIC_KATANA_PERPS_API_SECRET_TESTNET
-      : process.env.NEXT_PUBLIC_KATANA_PERPS_API_SECRET;
+    const { apiKey, apiSecret, baseUrl, sandbox } = getKumaConfig();
 
     if (!apiKey || !apiSecret) {
       return NextResponse.json(
@@ -112,28 +112,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Determine API base URL
-    // Sandbox (Bokuto Testnet): https://api-perps-sandbox.katana.network
-    // Production (Katana Mainnet): https://api-perps.katana.network
-    const baseUrl = sandbox
-      ? 'https://api-perps-sandbox.katana.network'
-      : 'https://api-perps.katana.network';
-
     // Fetch market data to get stepSize and minimum order size
     const marketResponse = await fetch(`${baseUrl}/v1/markets?market=${market}`);
     if (!marketResponse.ok) {
-      return NextResponse.json(
-        { error: 'Failed to fetch market data' },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: 'Failed to fetch market data' }, { status: 500 });
     }
 
     const marketData = await marketResponse.json();
     if (!marketData || marketData.length === 0) {
-      return NextResponse.json(
-        { error: `Market ${market} not found` },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: `Market ${market} not found` }, { status: 400 });
     }
 
     const marketInfo = marketData[0];
@@ -145,12 +132,11 @@ export async function POST(request: NextRequest) {
     // Format quantity according to market rules
     const formattedQuantity = formatQuantity(quantity, stepSize, minimumOrderSize);
 
-    // Format price for limit orders AND stop limit orders (8 decimal places)
-    // Limit orders and stop limit orders both need a limit price
+    // Format price for limit orders AND stop limit orders
     const needsLimitPrice = isLimitOrder || isStopLimitOrder;
     const formattedPrice = needsLimitPrice ? parseFloat(price).toFixed(8) : undefined;
 
-    // Format trigger price for stop orders (8 decimal places)
+    // Format trigger price for stop orders
     const formattedTriggerPrice = isStopOrder ? parseFloat(triggerPrice).toFixed(8) : undefined;
 
     console.log('Order formatting:', {
@@ -167,15 +153,14 @@ export async function POST(request: NextRequest) {
       postOnly,
     });
 
-    // Prepare request body for Katana Perps API
     // Build parameters object conditionally based on order type
-    const parameters: Record<string, any> = {
+    const parameters: Record<string, unknown> = {
       nonce,
-      wallet: wallet.toLowerCase(), // Normalize to lowercase
+      wallet: wallet.toLowerCase(),
       market,
       type,
       side,
-      quantity: formattedQuantity, // Formatted with stepSize and minimum
+      quantity: formattedQuantity,
     };
 
     // Add price for limit orders AND stop limit orders
@@ -206,8 +191,8 @@ export async function POST(request: NextRequest) {
 
     const bodyString = JSON.stringify(requestBody);
 
-    // Generate HMAC signature (sign only the body per Katana Perps API docs)
-    const hmacSignature = generateHmacSignature(apiSecret, bodyString);
+    // Generate HMAC signature
+    const hmacSignature = await generateHmacSignature(apiSecret, bodyString);
 
     console.log('Submitting order to Katana Perps API:', {
       wallet: wallet.toLowerCase(),
@@ -225,11 +210,10 @@ export async function POST(request: NextRequest) {
       nonce,
       bodyLength: bodyString.length,
       sandbox,
-      fullBody: requestBody, // Log full request body for debugging
+      fullBody: requestBody,
     });
 
     // Make request to Katana Perps API
-    // Headers: kp-api-key, kp-hmac-signature (per SDK constants)
     const response = await fetch(`${baseUrl}${path}`, {
       method: 'POST',
       headers: {
@@ -260,7 +244,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error: data.message || data.error || 'Failed to create order',
-          details: data, // Include full error details for debugging
+          details: data,
         },
         { status: response.status }
       );
@@ -269,24 +253,16 @@ export async function POST(request: NextRequest) {
     console.log('Order created successfully (server-side):', data);
 
     return NextResponse.json(data, { status: 200 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error in create-order API route:', error);
 
     let errorMessage = 'Failed to create order';
-    let statusCode = 500;
+    const statusCode = 500;
 
-    if (error.message) {
+    if (error instanceof Error) {
       errorMessage = error.message;
     }
 
-    if (error.response?.data?.message) {
-      errorMessage = error.response.data.message;
-      statusCode = error.response.status || 500;
-    }
-
-    return NextResponse.json(
-      { error: errorMessage },
-      { status: statusCode }
-    );
+    return NextResponse.json({ error: errorMessage }, { status: statusCode });
   }
 }

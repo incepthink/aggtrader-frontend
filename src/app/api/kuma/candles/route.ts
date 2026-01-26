@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getKumaConfig } from '../utils';
 
-// Force deployment to non-US regions to avoid Kuma geo-restrictions
-export const runtime = 'nodejs';
-export const preferredRegion = ['fra1', 'arn1', 'sin1']; // Frankfurt, Stockholm, Singapore
+// Use Edge Runtime for better global distribution and non-US deployment
+export const runtime = 'edge';
+export const preferredRegion = ['fra1', 'arn1', 'sin1', 'hnd1', 'syd1'];
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,8 +12,11 @@ export async function GET(request: NextRequest) {
     const interval = searchParams.get('interval') || '5m';
     const limit = searchParams.get('limit') || '100';
 
-    // Construct Katana Perps API URL (sandbox for Bokuto testnet)
-    const katanaApiUrl = `https://api-perps-sandbox.katana.network/v1/candles?market=${market}&interval=${interval}&limit=${limit}`;
+    // Get API base URL from config
+    const { baseUrl } = getKumaConfig();
+
+    // Construct Katana Perps API URL
+    const katanaApiUrl = `${baseUrl}/v1/candles?market=${market}&interval=${interval}&limit=${limit}`;
 
     console.log('[Katana Perps Proxy] Fetching candles:', katanaApiUrl);
 

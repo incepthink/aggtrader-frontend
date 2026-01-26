@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import crypto from 'crypto';
-import { v1 as uuidv1 } from 'uuid';
+import { generateHmacSignature, generateUUID, getKumaConfig } from '../utils';
 
-// Force deployment to non-US regions to avoid Kuma geo-restrictions
-export const runtime = 'nodejs';
-export const preferredRegion = ['fra1', 'arn1', 'sin1']; // Frankfurt, Stockholm, Singapore
+// Use Edge Runtime for better global distribution and non-US deployment
+export const runtime = 'edge';
+export const preferredRegion = ['fra1', 'arn1', 'sin1', 'hnd1', 'syd1'];
 
 /**
  * API Route: GET /api/kuma/account-balance
@@ -19,24 +18,13 @@ export const preferredRegion = ['fra1', 'arn1', 'sin1']; // Frankfurt, Stockholm
  * Endpoint: GET /v1/wallets
  */
 
-/**
- * Generate HMAC signature for Katana Perps API authentication
- */
-function generateHmacSignature(apiSecret: string, message: string): string {
-  return crypto.createHmac('sha256', apiSecret).update(message).digest('hex');
-}
-
 export async function GET(request: NextRequest) {
+  // Suppress unused variable warning - request is part of Next.js API route signature
+  void request;
+
   try {
     // Get Katana Perps API credentials from environment
-    // Use testnet credentials for sandbox (Bokuto), mainnet for production
-    const sandbox = process.env.NEXT_PUBLIC_KATANA_PERPS_SANDBOX === 'true';
-    const apiKey = sandbox
-      ? process.env.NEXT_PUBLIC_KATANA_PERPS_API_KEY_TESTNET
-      : process.env.NEXT_PUBLIC_KATANA_PERPS_API_KEY;
-    const apiSecret = sandbox
-      ? process.env.NEXT_PUBLIC_KATANA_PERPS_API_SECRET_TESTNET
-      : process.env.NEXT_PUBLIC_KATANA_PERPS_API_SECRET;
+    const { apiKey, apiSecret, baseUrl, sandbox } = getKumaConfig();
 
     if (!apiKey || !apiSecret) {
       return NextResponse.json(
@@ -45,20 +33,14 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Determine API base URL
-    // Sandbox (Bokuto Testnet): https://api-perps-sandbox.katana.network
-    // Production (Katana Mainnet): https://api-perps.katana.network
-    const baseUrl = sandbox
-      ? 'https://api-perps-sandbox.katana.network'
-      : 'https://api-perps.katana.network';
     const path = '/v1/wallets';
 
-    // Generate nonce for authenticated GET request (UUID v1 required by Katana Perps)
-    const nonce = uuidv1();
+    // Generate nonce for authenticated GET request
+    const nonce = generateUUID();
 
     // For GET requests, the HMAC message is the query string
     const queryString = `nonce=${nonce}`;
-    const hmacSignature = generateHmacSignature(apiSecret, queryString);
+    const hmacSignature = await generateHmacSignature(apiSecret, queryString);
 
     console.log('Fetching account balance from Katana Perps API (GET /v1/wallets)', {
       nonce,
@@ -67,7 +49,6 @@ export async function GET(request: NextRequest) {
     });
 
     // Make request to Katana Perps API with query string
-    // Headers: kp-api-key, kp-hmac-signature (per SDK constants)
     const response = await fetch(`${baseUrl}${path}?${queryString}`, {
       method: 'GET',
       headers: {
@@ -108,24 +89,16 @@ export async function GET(request: NextRequest) {
     console.log('Account balance (processed):', walletData);
 
     return NextResponse.json(walletData, { status: 200 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error in account-balance API route:', error);
 
     let errorMessage = 'Failed to fetch account balance';
-    let statusCode = 500;
+    const statusCode = 500;
 
-    if (error.message) {
+    if (error instanceof Error) {
       errorMessage = error.message;
     }
 
-    if (error.response?.data?.message) {
-      errorMessage = error.response.data.message;
-      statusCode = error.response.status || 500;
-    }
-
-    return NextResponse.json(
-      { error: errorMessage },
-      { status: statusCode }
-    );
+    return NextResponse.json({ error: errorMessage }, { status: statusCode });
   }
 }
