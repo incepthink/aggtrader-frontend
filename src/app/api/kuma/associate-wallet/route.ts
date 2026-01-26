@@ -3,7 +3,7 @@ import { generateHmacSignature, getKumaConfig } from '../utils';
 
 // Use Edge Runtime for better global distribution and non-US deployment
 export const runtime = 'edge';
-export const preferredRegion = ['fra1', 'arn1', 'sin1', 'hnd1', 'syd1'];
+export const preferredRegion = 'bom1';
 
 /**
  * API Route: POST /api/kuma/associate-wallet
