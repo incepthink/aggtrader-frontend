@@ -7,7 +7,7 @@ import KumaCandlestickChart from "@/components/perp/KumaCandlestickChart";
 import OrderbookTrades from "@/components/perp/OrderbookTrades";
 import PositionsPanel from "@/components/perp/positionsPanel/PositionsPanel";
 import DepositWithdraw from "@/components/perp/DepositWithdraw";
-import OrderForm from "@/components/perp/OrderForm";
+import OrderForm from "@/components/perp/orderForm/OrderForm";
 import BokutoSwitcher from "@/components/perp/BokutoSwitcher";
 import { KumaAuthWrapper } from "@/components/perp/KumaAuthWrapper";
 import { useKumaWebSocket } from "@/hooks/perp/useWebsocketClient";
@@ -24,7 +24,8 @@ const PerpPage = () => {
   const chainId = useChainId();
   const [selectedMarket, setSelectedMarket] = useState<string>("BTC-USD");
   const { isConnected, tickerData } = useKumaWebSocket(selectedMarket);
-  const { balance: accountBalance, isLoading: isBalanceLoading } = useKumaBalance();
+  const { balance: accountBalance, isLoading: isBalanceLoading } =
+    useKumaBalance();
   const setAccountBalance = usePerpBalanceStore(
     (state) => state.setAccountBalance,
   );
@@ -181,7 +182,10 @@ const PerpPage = () => {
                 p: 0,
               }}
             >
-              <DepositWithdraw accountBalance={accountBalance} isLoading={isBalanceLoading} />
+              <DepositWithdraw
+                accountBalance={accountBalance}
+                isLoading={isBalanceLoading}
+              />
             </GlowBox>
           </Box>
         </Box>

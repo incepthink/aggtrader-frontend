@@ -75,6 +75,32 @@ interface PerpStore {
   stopLossMode: 'percentage' | 'price';
   setStopLossMode: (mode: 'percentage' | 'price') => void;
 
+  // ========== Configured TP/SL for Order Submission ==========
+  // Long position TP/SL
+  longTakeProfitPrice: string;
+  setLongTakeProfitPrice: (price: string) => void;
+  longTakeProfitTriggerType: 'index' | 'last';
+  setLongTakeProfitTriggerType: (type: 'index' | 'last') => void;
+  longStopLossPrice: string;
+  setLongStopLossPrice: (price: string) => void;
+  longStopLossTriggerType: 'index' | 'last';
+  setLongStopLossTriggerType: (type: 'index' | 'last') => void;
+
+  // Short position TP/SL
+  shortTakeProfitPrice: string;
+  setShortTakeProfitPrice: (price: string) => void;
+  shortTakeProfitTriggerType: 'index' | 'last';
+  setShortTakeProfitTriggerType: (type: 'index' | 'last') => void;
+  shortStopLossPrice: string;
+  setShortStopLossPrice: (price: string) => void;
+  shortStopLossTriggerType: 'index' | 'last';
+  setShortStopLossTriggerType: (type: 'index' | 'last') => void;
+
+  // Clear TP/SL configurations
+  clearLongTpSl: () => void;
+  clearShortTpSl: () => void;
+  clearAllTpSl: () => void;
+
   // ========== Future Expansion Fields (Initially Unused) ==========
   limitPrice?: string; // For limit orders
   setLimitPrice: (price: string) => void;
@@ -140,6 +166,15 @@ const initialState = {
   stopLossPercentage: "",
   stopLossValue: "",
   stopLossMode: "percentage" as const,
+  // Configured TP/SL for order submission
+  longTakeProfitPrice: "",
+  longTakeProfitTriggerType: "index" as const,
+  longStopLossPrice: "",
+  longStopLossTriggerType: "index" as const,
+  shortTakeProfitPrice: "",
+  shortTakeProfitTriggerType: "index" as const,
+  shortStopLossPrice: "",
+  shortStopLossTriggerType: "index" as const,
 };
 
 export const usePerpStore = create<PerpStore>((set) => ({
@@ -188,6 +223,44 @@ export const usePerpStore = create<PerpStore>((set) => ({
   setStopLossPercentage: (value: string) => set({ stopLossPercentage: value }),
   setStopLossValue: (value: string) => set({ stopLossValue: value }),
   setStopLossMode: (mode: 'percentage' | 'price') => set({ stopLossMode: mode }),
+
+  // ========== Configured TP/SL Actions ==========
+  // Long position TP/SL
+  setLongTakeProfitPrice: (price: string) => set({ longTakeProfitPrice: price }),
+  setLongTakeProfitTriggerType: (type: 'index' | 'last') => set({ longTakeProfitTriggerType: type }),
+  setLongStopLossPrice: (price: string) => set({ longStopLossPrice: price }),
+  setLongStopLossTriggerType: (type: 'index' | 'last') => set({ longStopLossTriggerType: type }),
+
+  // Short position TP/SL
+  setShortTakeProfitPrice: (price: string) => set({ shortTakeProfitPrice: price }),
+  setShortTakeProfitTriggerType: (type: 'index' | 'last') => set({ shortTakeProfitTriggerType: type }),
+  setShortStopLossPrice: (price: string) => set({ shortStopLossPrice: price }),
+  setShortStopLossTriggerType: (type: 'index' | 'last') => set({ shortStopLossTriggerType: type }),
+
+  // Clear functions
+  clearLongTpSl: () => set({
+    longTakeProfitPrice: "",
+    longTakeProfitTriggerType: "index",
+    longStopLossPrice: "",
+    longStopLossTriggerType: "index",
+  }),
+  clearShortTpSl: () => set({
+    shortTakeProfitPrice: "",
+    shortTakeProfitTriggerType: "index",
+    shortStopLossPrice: "",
+    shortStopLossTriggerType: "index",
+  }),
+  clearAllTpSl: () => set({
+    tpSlEnabled: false,
+    longTakeProfitPrice: "",
+    longTakeProfitTriggerType: "index",
+    longStopLossPrice: "",
+    longStopLossTriggerType: "index",
+    shortTakeProfitPrice: "",
+    shortTakeProfitTriggerType: "index",
+    shortStopLossPrice: "",
+    shortStopLossTriggerType: "index",
+  }),
 
   // ========== Future Expansion Actions ==========
   setLimitPrice: (price: string) => set({ limitPrice: price }),

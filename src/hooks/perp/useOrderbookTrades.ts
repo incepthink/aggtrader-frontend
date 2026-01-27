@@ -184,19 +184,16 @@ export function useOrderbookTrades(market: string = 'BTC-USD') {
     }, 100);
 
     // Create WebSocket client instance with sandbox mode for Bokuto testnet
-    const wsClient = new WebSocketClient({ sandbox: true });
+    const sandbox = process.env.NEXT_PUBLIC_KATANA_PERPS_SANDBOX === 'true';
+    const wsClient = new WebSocketClient({ sandbox });
     wsClientRef.current = wsClient;
+
+    let isCancelled = false;
 
     // Handle connection event
     wsClient.onConnect(() => {
       setIsConnected(true);
       setError(null);
-
-      // Subscribe to level 2 orderbook and trades
-      wsClient.subscribePublic(
-        [{ name: 'l2orderbook' }, { name: 'trades' }],
-        [market]
-      );
     });
 
     // Handle incoming messages
@@ -237,11 +234,33 @@ export function useOrderbookTrades(market: string = 'BTC-USD') {
       setIsConnected(false);
     });
 
-    // Connect to WebSocket
-    wsClient.connect();
+    // Connect to WebSocket and then subscribe
+    // IMPORTANT: subscribePublic must be called AFTER connect() resolves
+    const connectAndSubscribe = async () => {
+      try {
+        await wsClient.connect();
+
+        if (isCancelled) return;
+
+        // Subscribe to level 2 orderbook and trades
+        wsClient.subscribePublic(
+          [{ name: 'l2orderbook' }, { name: 'trades' }],
+          [market]
+        );
+      } catch (err: any) {
+        if (!isCancelled) {
+          console.error('Kuma WebSocket connection failed:', err);
+          setError(err.message || 'WebSocket connection failed');
+          setIsConnected(false);
+        }
+      }
+    };
+
+    connectAndSubscribe();
 
     // Cleanup on unmount
     return () => {
+      isCancelled = true;
       clearTimeout(fetchTimer);
       if (wsClient.isConnected) {
         wsClient.disconnect();

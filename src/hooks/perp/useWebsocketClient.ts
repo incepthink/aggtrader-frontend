@@ -11,19 +11,16 @@ export function useKumaWebSocket(market: string = 'BTC-USD') {
 
   useEffect(() => {
     // Create WebSocket client instance with sandbox mode for Bokuto testnet
-    const wsClient = new WebSocketClient({ sandbox: true });
+    const sandbox = process.env.NEXT_PUBLIC_KATANA_PERPS_SANDBOX === 'true';
+    const wsClient = new WebSocketClient({ sandbox });
     wsClientRef.current = wsClient;
+
+    let isCancelled = false;
 
     // Handle connection event
     wsClient.onConnect(() => {
       setIsConnected(true);
       setError(null);
-
-      // Subscribe to ticker data for the specified market
-      wsClient.subscribePublic(
-        [{ name: 'tickers' }],
-        [market]
-      );
     });
 
     // Handle incoming messages
@@ -48,11 +45,33 @@ export function useKumaWebSocket(market: string = 'BTC-USD') {
       setIsConnected(false);
     });
 
-    // Connect to WebSocket
-    wsClient.connect();
+    // Connect to WebSocket and then subscribe
+    // IMPORTANT: subscribePublic must be called AFTER connect() resolves
+    const connectAndSubscribe = async () => {
+      try {
+        await wsClient.connect();
+
+        if (isCancelled) return;
+
+        // Subscribe to ticker data for the specified market
+        wsClient.subscribePublic(
+          [{ name: 'tickers' }],
+          [market]
+        );
+      } catch (err: any) {
+        if (!isCancelled) {
+          console.error('Katana Perps WebSocket connection failed:', err);
+          setError(err.message || 'WebSocket connection failed');
+          setIsConnected(false);
+        }
+      }
+    };
+
+    connectAndSubscribe();
 
     // Cleanup on unmount
     return () => {
+      isCancelled = true;
       if (wsClient.isConnected) {
         wsClient.disconnect();
       }
