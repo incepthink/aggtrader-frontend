@@ -13,6 +13,7 @@ import { DerivedStateTwapProvider } from "@/store/limit-order/derivedstate-twap-
 import { VaultProviders } from "@/lib/yearnfi/lib/contexts/Providers";
 import Script from "next/script";
 import { ConditionalSpotNavbar } from "@/components/common/navbar/ConditionalSpotNavbar";
+import { ConditionalPerpNavbar } from "@/components/common/navbar/ConditionalPerpNavbar";
 import { AttestationWrapper } from "@/components/providers/AttestationWrapper";
 
 const geistSans = Geist({
@@ -78,6 +79,7 @@ export default function RootLayout({
                   <Navbar />
                   <ConditionalMorphoNavbar />
                   <ConditionalSpotNavbar />
+                  <ConditionalPerpNavbar />
                   {children}
                 </VaultProviders>
               </DerivedStateTwapProvider>

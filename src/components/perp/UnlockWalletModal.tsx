@@ -17,7 +17,8 @@ import CloseIcon from '@mui/icons-material/Close';
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { useAccount, useChainId, useSwitchChain } from 'wagmi';
 import { useKatanaPerpsAuth } from '@/hooks/perp/useKumaAuth';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
+import { createSessionKey } from '@/utils/perp/sessionKeyStorage';
 
 const BOKUTO_CHAIN_ID = 737373;
 
@@ -41,7 +42,7 @@ const UnlockWalletModal = ({
   onClose,
   onSuccess,
 }: UnlockWalletModalProps) => {
-  const { isConnected } = useAccount();
+  const { address, isConnected } = useAccount();
   const chainId = useChainId();
   const { openConnectModal } = useConnectModal();
   const { switchChain, isPending: isSwitchingChain } = useSwitchChain();
@@ -55,6 +56,8 @@ const UnlockWalletModal = ({
 
   const [stayLoggedIn, setStayLoggedIn] = useState(true);
   const [chainSwitchError, setChainSwitchError] = useState<string | null>(null);
+  const stayLoggedInRef = useRef(stayLoggedIn);
+  stayLoggedInRef.current = stayLoggedIn;
 
   const isOnBokuto = chainId === BOKUTO_CHAIN_ID;
   const needsChainSwitch = isConnected && !isOnBokuto;
@@ -86,13 +89,18 @@ const UnlockWalletModal = ({
       // Step 3: Wallet is connected and on correct chain, associate it
       const success = await associateWallet();
 
-      if (success) {
-        // Store long-term session if enabled
-        if (stayLoggedIn) {
-          // Store in localStorage for 30 days
-          const expiryDate = new Date();
-          expiryDate.setDate(expiryDate.getDate() + 30);
-          localStorage.setItem('katana_perps_session_expiry', expiryDate.toISOString());
+      if (success && address) {
+        // Store session key in localStorage if "stay logged in" is enabled
+        if (stayLoggedInRef.current) {
+          // Create session key for 30 days
+          const sessionSignature = `session_${Date.now()}_${address.slice(2, 10)}`;
+          createSessionKey(address, sessionSignature, 30);
+          console.log('Session key created for 30 days');
+        } else {
+          // Create session key for 1 day (browser session equivalent)
+          const sessionSignature = `session_${Date.now()}_${address.slice(2, 10)}`;
+          createSessionKey(address, sessionSignature, 1);
+          console.log('Session key created for 1 day');
         }
 
         // Call success callback and close modal
@@ -100,7 +108,7 @@ const UnlockWalletModal = ({
         onClose();
 
         // Log success message for user feedback
-        console.log('✅ Wallet unlocked successfully! You can now trade perpetuals.');
+        console.log('Wallet unlocked successfully! You can now trade perpetuals.');
       }
       // If not successful, error will be displayed via the error state from useKumaAuth
     }

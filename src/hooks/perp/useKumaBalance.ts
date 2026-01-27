@@ -1,8 +1,10 @@
 'use client';
 
+import { useEffect, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAccount } from 'wagmi';
 import { KatanaPerpsAccountBalance } from './useKumaAuth';
+import { usePerpBalanceStore } from '@/store/perpBalanceStore';
 
 interface UseKatanaPerpsBalanceReturn {
   balance: KatanaPerpsAccountBalance | null;
@@ -17,19 +19,47 @@ interface UseKatanaPerpsBalanceReturn {
  *
  * This hook:
  * - Fetches account balance from Katana Perps API
- * - Auto-refreshes every 5 seconds when wallet is associated
- * - Only fetches when wallet is connected and associated
+ * - Auto-refreshes every 5 seconds when wallet is connected
+ * - Only requires wallet to be connected (no association/signature needed)
+ * - Uses global store for isAssociated to share state across components
  */
 export const useKatanaPerpsBalance = (): UseKatanaPerpsBalanceReturn => {
   const { address, isConnected } = useAccount();
 
-  // Check if wallet is associated (stored in session storage after signature)
-  // Check both old and new session storage keys for backwards compatibility
-  const isAssociated = address
-    ? sessionStorage.getItem(`katana_perps_associated_${address}`) === 'true' ||
-      sessionStorage.getItem(`kuma_associated_${address}`) === 'true'
-    : false;
+  // Use global store for isAssociated to share state across all components
+  const isAssociated = usePerpBalanceStore((state) => state.isAssociated);
+  const setIsAssociated = usePerpBalanceStore((state) => state.setIsAssociated);
 
+  // Check sessionStorage after mount and sync to global store
+  useEffect(() => {
+    if (!address) {
+      setIsAssociated(false);
+      return;
+    }
+
+    // Check both old and new session storage keys for backwards compatibility
+    const katanaKey = `katana_perps_associated_${address}`;
+    const kumaKey = `kuma_associated_${address}`;
+    const katanaValue = sessionStorage.getItem(katanaKey);
+    const kumaValue = sessionStorage.getItem(kumaKey);
+
+    const associated = katanaValue === 'true' || kumaValue === 'true';
+    setIsAssociated(associated);
+
+    // Set up storage event listener to detect changes from other tabs/windows
+    const handleStorageChange = () => {
+      const newAssociated =
+        sessionStorage.getItem(`katana_perps_associated_${address}`) === 'true' ||
+        sessionStorage.getItem(`kuma_associated_${address}`) === 'true';
+      setIsAssociated(newAssociated);
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [address, setIsAssociated]);
+
+  // Always fetch balance when wallet is connected (no association required)
+  const queryEnabled = isConnected && !!address;
 
   const {
     data: balance,
@@ -39,14 +69,13 @@ export const useKatanaPerpsBalance = (): UseKatanaPerpsBalanceReturn => {
   } = useQuery<KatanaPerpsAccountBalance | null, Error>({
     queryKey: ['katana-perps-balance', address],
     queryFn: async () => {
-      if (!address || !isConnected || !isAssociated) {
+      if (!address || !isConnected) {
         return null;
       }
-      const response = await fetch('/api/kuma/account-balance');
+      const response = await fetch(`/api/kuma/account-balance?wallet=${address}`);
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('[useKatanaPerpsBalance] API error:', errorData);
         throw new Error(errorData.error || 'Failed to fetch balance');
       }
 
@@ -68,21 +97,23 @@ export const useKatanaPerpsBalance = (): UseKatanaPerpsBalanceReturn => {
         positions: data.positions || [],
       };
     },
-    enabled: isConnected && isAssociated && !!address,
+    enabled: queryEnabled,
     refetchInterval: 5000, // Refresh every 5 seconds
     staleTime: 3000, // Consider data stale after 3 seconds
     retry: 3,
     retryDelay: 1000,
   });
 
+  const handleRefetch = useCallback(() => {
+    refetch();
+  }, [refetch]);
+
   return {
     balance: balance || null,
     isLoading,
     error: error || null,
     isAssociated,
-    refetch: () => {
-      refetch();
-    },
+    refetch: handleRefetch,
   };
 };
 

@@ -6,15 +6,22 @@ import { KumaAccountBalance } from '@/hooks/perp/useKumaAuth';
 
 interface DepositWithdrawProps {
   accountBalance?: KumaAccountBalance | null;
+  isLoading?: boolean;
   onDeposit?: () => void;
   onWithdraw?: () => void;
 }
 
+const LoadingSpinner = () => (
+  <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+);
+
 const DepositWithdraw = ({
   accountBalance,
+  isLoading = false,
   onDeposit,
   onWithdraw,
 }: DepositWithdrawProps) => {
+  const showLoading = isLoading && !accountBalance;
   const handleDeposit = () => {
     if (onDeposit) {
       onDeposit();
@@ -78,7 +85,7 @@ const DepositWithdraw = ({
               fontWeight: 500,
             }}
           >
-            {accountBalance ? formatCurrency(accountBalance.equity) : '$0.00'}
+            {showLoading ? <LoadingSpinner /> : accountBalance ? formatCurrency(accountBalance.equity) : '$0.00'}
           </Typography>
         </Box>
 
@@ -110,7 +117,7 @@ const DepositWithdraw = ({
               fontWeight: 500,
             }}
           >
-            {accountBalance ? formatCurrency(accountBalance.freeCollateral) : '$0.00'}
+            {showLoading ? <LoadingSpinner /> : accountBalance ? formatCurrency(accountBalance.freeCollateral) : '$0.00'}
           </Typography>
         </Box>
 
@@ -142,7 +149,7 @@ const DepositWithdraw = ({
               fontWeight: 500,
             }}
           >
-            {accountBalance ? formatCurrency(accountBalance.availableCollateral) : '$0.00'}
+            {showLoading ? <LoadingSpinner /> : accountBalance ? formatCurrency(accountBalance.availableCollateral) : '$0.00'}
           </Typography>
         </Box>
 
@@ -168,7 +175,7 @@ const DepositWithdraw = ({
               fontWeight: 500,
             }}
           >
-            {accountBalance ? formatCurrency(accountBalance.unrealizedPnL) : '$0.00'}
+            {showLoading ? <LoadingSpinner /> : accountBalance ? formatCurrency(accountBalance.unrealizedPnL) : '$0.00'}
           </Typography>
         </Box>
       </Box>

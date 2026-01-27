@@ -3,6 +3,12 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useAccount, useWalletClient } from 'wagmi';
 import { RestAuthenticatedClient } from '@katanaperps/katana-perps-sdk/clients';
+import { usePerpBalanceStore } from '@/store/perpBalanceStore';
+import {
+  hasValidSessionKey,
+  removeSessionKeysForWallet,
+  cleanupExpiredKeys,
+} from '@/utils/perp/sessionKeyStorage';
 
 /**
  * Katana Perps account balance interface
@@ -60,6 +66,9 @@ export const useKatanaPerpsAuth = (): UseKatanaPerpsAuthReturn => {
   const { address, isConnected } = useAccount();
   const { data: walletClient } = useWalletClient();
 
+  // Use global store for isAssociated to share state across components
+  const setGlobalIsAssociated = usePerpBalanceStore((state) => state.setIsAssociated);
+
   const [state, setState] = useState<KatanaPerpsAuthState>({
     isAssociated: false,
     isAssociating: false,
@@ -77,18 +86,22 @@ export const useKatanaPerpsAuth = (): UseKatanaPerpsAuthReturn => {
         client: null,
         accountBalance: null,
       }));
+      setGlobalIsAssociated(false);
       return;
     }
 
-    // Check if we have stored association status
-    const storedStatus = sessionStorage.getItem(`katana_perps_associated_${address}`);
-    if (storedStatus === 'true') {
+    // Cleanup expired session keys on load
+    cleanupExpiredKeys();
+
+    // Check if we have a valid session key in localStorage
+    if (hasValidSessionKey(address)) {
       setState((prev) => ({
         ...prev,
         isAssociated: true,
       }));
+      setGlobalIsAssociated(true);
     }
-  }, [isConnected, address]);
+  }, [isConnected, address, setGlobalIsAssociated]);
 
   /**
    * Associate the connected wallet with Katana Perps API
@@ -160,8 +173,9 @@ export const useKatanaPerpsAuth = (): UseKatanaPerpsAuthReturn => {
 
       console.log('Wallet associated successfully with Katana Perps:', result);
 
-      // Store association status in session storage
-      sessionStorage.setItem(`katana_perps_associated_${address}`, 'true');
+      // Store session key in localStorage (session key will be created by the modal based on user preference)
+      // For now just sync to global store - the actual session key is created in UnlockWalletModal
+      setGlobalIsAssociated(true);
 
       // Determine if using sandbox (Bokuto testnet) or mainnet
       const sandbox = process.env.NEXT_PUBLIC_KATANA_PERPS_SANDBOX === 'true';
@@ -239,7 +253,8 @@ export const useKatanaPerpsAuth = (): UseKatanaPerpsAuthReturn => {
 
   const resetAuth = useCallback(() => {
     if (address) {
-      sessionStorage.removeItem(`katana_perps_associated_${address}`);
+      // Remove session keys from localStorage
+      removeSessionKeysForWallet(address);
     }
     setState({
       isAssociated: false,
@@ -248,7 +263,8 @@ export const useKatanaPerpsAuth = (): UseKatanaPerpsAuthReturn => {
       client: null,
       accountBalance: null,
     });
-  }, [address]);
+    setGlobalIsAssociated(false);
+  }, [address, setGlobalIsAssociated]);
 
   return {
     ...state,

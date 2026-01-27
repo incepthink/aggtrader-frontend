@@ -6,23 +6,26 @@ export const runtime = 'edge';
 export const preferredRegion = 'bom1';
 
 /**
- * API Route: GET /api/kuma/account-balance
+ * API Route: GET /api/kuma/orders
  *
- * Server-side proxy to fetch Katana Perps account balance
+ * Server-side proxy to fetch Katana Perps user orders
  *
  * This endpoint:
- * 1. Makes authenticated request to Katana Perps API to get account data
- * 2. Returns account balance, collateral, and positions
+ * 1. Makes authenticated request to Katana Perps API to get user orders
+ * 2. Returns array of orders with all relevant data
  *
  * Reference: https://api-docs-v1-perps.katana.network
- * Endpoint: GET /v1/wallets
+ * Endpoint: GET /v1/orders
  */
 
 export async function GET(request: NextRequest) {
   try {
-    // Get wallet address from query parameters
+    // Get parameters from query params
     const { searchParams } = new URL(request.url);
     const wallet = searchParams.get('wallet');
+    const closed = searchParams.get('closed') === 'true';
+    const market = searchParams.get('market');
+    const limit = searchParams.get('limit');
 
     if (!wallet) {
       return NextResponse.json(
@@ -41,24 +44,37 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const path = '/v1/wallets';
+    const path = '/v1/orders';
 
     // Generate nonce for authenticated GET request
     const nonce = generateUUID();
 
-    // For GET requests, the HMAC message is the query string
-    // Include wallet parameter to get specific wallet's balance
-    const queryString = `nonce=${nonce}&wallet=${wallet}`;
+    // Build query string with required and optional parameters
+    let queryString = `nonce=${nonce}&wallet=${wallet}`;
+
+    if (closed) {
+      queryString += `&closed=true`;
+    }
+
+    if (market) {
+      queryString += `&market=${market}`;
+    }
+
+    if (limit) {
+      queryString += `&limit=${limit}`;
+    }
+
     const hmacSignature = await generateHmacSignature(apiSecret, queryString);
 
-    console.log('Fetching account balance from Katana Perps API (GET /v1/wallets)', {
-      nonce,
+    console.log('Fetching orders from Katana Perps API (GET /v1/orders)', {
       wallet,
-      queryString,
+      nonce,
       sandbox,
+      closed,
+      market,
     });
 
-    // Make request to Katana Perps API with query string
+    // Make request to Katana Perps API
     const response = await fetch(`${baseUrl}${path}?${queryString}`, {
       method: 'GET',
       headers: {
@@ -85,24 +101,19 @@ export async function GET(request: NextRequest) {
       });
 
       return NextResponse.json(
-        { error: data.message || data.error || 'Failed to fetch account balance' },
+        { error: data.message || data.error || 'Failed to fetch orders' },
         { status: response.status }
       );
     }
 
-    console.log('Account balance fetched successfully (raw):', data);
+    console.log('Orders fetched successfully:', data);
 
-    // GET /v1/wallets might return an array or single object
-    // If it's an array, take the first wallet
-    const walletData = Array.isArray(data) ? data[0] : data;
-
-    console.log('Account balance (processed):', walletData);
-
-    return NextResponse.json(walletData, { status: 200 });
+    // Return orders array (API returns KatanaPerpsOrder[])
+    return NextResponse.json(data, { status: 200 });
   } catch (error: unknown) {
-    console.error('Error in account-balance API route:', error);
+    console.error('Error in orders API route:', error);
 
-    let errorMessage = 'Failed to fetch account balance';
+    let errorMessage = 'Failed to fetch orders';
     const statusCode = 500;
 
     if (error instanceof Error) {

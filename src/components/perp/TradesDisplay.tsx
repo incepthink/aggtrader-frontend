@@ -42,6 +42,7 @@ const TradesDisplay = ({ trades }: TradesDisplayProps) => {
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
+        minHeight: 0,
       }}
     >
       {/* Header */}
@@ -53,6 +54,7 @@ const TradesDisplay = ({ trades }: TradesDisplayProps) => {
           px: 1,
           py: 1,
           borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+          flexShrink: 0,
         }}
       >
         <Typography
@@ -86,6 +88,7 @@ const TradesDisplay = ({ trades }: TradesDisplayProps) => {
       <Box
         sx={{
           flex: 1,
+          minHeight: 0,
           overflowY: 'auto',
           overflowX: 'hidden',
           '&::-webkit-scrollbar': {

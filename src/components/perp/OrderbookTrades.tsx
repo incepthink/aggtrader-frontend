@@ -36,6 +36,7 @@ const OrderbookTrades = ({ market = 'BTC-USD' }: OrderbookTradesProps) => {
             py: 1,
             bgcolor: 'rgba(255, 68, 68, 0.1)',
             borderBottom: '1px solid #FF4444',
+            flexShrink: 0,
           }}
         >
           <Typography sx={{ color: '#FF4444', fontSize: '0.75rem' }}>
@@ -49,6 +50,7 @@ const OrderbookTrades = ({ market = 'BTC-USD' }: OrderbookTradesProps) => {
         sx={{
           borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
           bgcolor: 'rgba(0, 0, 0, 0.3)',
+          flexShrink: 0,
         }}
       >
         <Tabs
@@ -87,6 +89,7 @@ const OrderbookTrades = ({ market = 'BTC-USD' }: OrderbookTradesProps) => {
             py: 1,
             bgcolor: 'rgba(255, 165, 0, 0.1)',
             borderBottom: '1px solid rgba(255, 165, 0, 0.3)',
+            flexShrink: 0,
           }}
         >
           <Typography sx={{ color: '#FFA500', fontSize: '0.75rem' }}>
@@ -96,9 +99,11 @@ const OrderbookTrades = ({ market = 'BTC-USD' }: OrderbookTradesProps) => {
       )}
 
       {/* Content */}
-      <Box sx={{ flex: 1, overflow: 'hidden' }}>
-        {activeTab === 0 && <OrderbookDisplay orderbookData={orderbookData} />}
-        {activeTab === 1 && <TradesDisplay trades={trades} />}
+      <Box sx={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+        <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden' }}>
+          {activeTab === 0 && <OrderbookDisplay orderbookData={orderbookData} />}
+          {activeTab === 1 && <TradesDisplay trades={trades} />}
+        </Box>
       </Box>
     </Box>
   );

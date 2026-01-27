@@ -1,11 +1,11 @@
 "use client";
 
-import { Box, Stack, Typography } from "@mui/material";
-import { useState } from "react";
+import { Box } from "@mui/material";
+import { useState, useEffect } from "react";
 import MarketHeader from "@/components/perp/MarketHeader";
 import KumaCandlestickChart from "@/components/perp/KumaCandlestickChart";
 import OrderbookTrades from "@/components/perp/OrderbookTrades";
-import PositionsPanel from "@/components/perp/PositionsPanel";
+import PositionsPanel from "@/components/perp/positionsPanel/PositionsPanel";
 import DepositWithdraw from "@/components/perp/DepositWithdraw";
 import OrderForm from "@/components/perp/OrderForm";
 import BokutoSwitcher from "@/components/perp/BokutoSwitcher";
@@ -15,6 +15,7 @@ import { useKumaBalance } from "@/hooks/perp/useKumaBalance";
 import { CandleInterval } from "@katanaperps/katana-perps-sdk";
 import GlowBox from "@/components/common/ui/GlowBox";
 import { useAccount, useChainId } from "wagmi";
+import { usePerpBalanceStore } from "@/store/perpBalanceStore";
 
 const BOKUTO_CHAIN_ID = 737373;
 
@@ -22,8 +23,15 @@ const PerpPage = () => {
   const { isConnected: isWalletConnected } = useAccount();
   const chainId = useChainId();
   const [selectedMarket, setSelectedMarket] = useState<string>("BTC-USD");
-  const { isConnected, tickerData, error } = useKumaWebSocket(selectedMarket);
-  const { balance: accountBalance } = useKumaBalance();
+  const { isConnected, tickerData } = useKumaWebSocket(selectedMarket);
+  const { balance: accountBalance, isLoading: isBalanceLoading } = useKumaBalance();
+  const setAccountBalance = usePerpBalanceStore(
+    (state) => state.setAccountBalance,
+  );
+  // Sync balance to global store
+  useEffect(() => {
+    setAccountBalance(accountBalance);
+  }, [accountBalance, setAccountBalance]);
 
   // Extract current price from ticker data
   const currentPrice = tickerData?.close
@@ -117,6 +125,9 @@ const PerpPage = () => {
                 height: "100%",
                 background: "rgba(5, 12, 25, 0.6)",
                 p: 0,
+                display: "flex",
+                flexDirection: "column",
+                overflow: "hidden",
               }}
             >
               <OrderbookTrades market={selectedMarket} />
@@ -170,7 +181,7 @@ const PerpPage = () => {
                 p: 0,
               }}
             >
-              <DepositWithdraw accountBalance={accountBalance} />
+              <DepositWithdraw accountBalance={accountBalance} isLoading={isBalanceLoading} />
             </GlowBox>
           </Box>
         </Box>
