@@ -16,6 +16,14 @@ import { CandleInterval } from "@katanaperps/katana-perps-sdk";
 import GlowBox from "@/components/common/ui/GlowBox";
 import { useAccount, useChainId } from "wagmi";
 import { usePerpBalanceStore } from "@/store/perpBalanceStore";
+import { usePerpMobile } from "@/hooks/perp/usePerpResponsive";
+import {
+  MobileMarketHeader,
+  MobilePositionsPanel,
+  MobileActionButtons,
+  MobileBottomNavbar,
+  MobileChartTabs,
+} from "@/components/perp/mobile";
 
 const BOKUTO_CHAIN_ID = 737373;
 
@@ -29,6 +37,9 @@ const PerpPage = () => {
   const setAccountBalance = usePerpBalanceStore(
     (state) => state.setAccountBalance,
   );
+  const isMobile = usePerpMobile();
+  const [mobileChartTab, setMobileChartTab] = useState<'chart' | 'depth' | 'orderbook' | 'trades'>('chart');
+
   // Sync balance to global store
   useEffect(() => {
     setAccountBalance(accountBalance);
@@ -43,6 +54,83 @@ const PerpPage = () => {
   const isOnBokuto = chainId === BOKUTO_CHAIN_ID;
   const needsChainSwitch = isWalletConnected && !isOnBokuto;
 
+  // Mobile Layout
+  if (isMobile) {
+    return (
+      <>
+        <KumaAuthWrapper />
+        <Box
+          sx={{
+            width: "100%",
+            minHeight: "100vh",
+            maxHeight: "100vh",
+            background: "#050C19",
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+            pb: "60px", // Space for bottom navbar
+          }}
+        >
+          {/* Chain Switcher Banner */}
+          <BokutoSwitcher />
+
+          {/* Mobile Market Header */}
+          <MobileMarketHeader
+            tickerData={tickerData}
+            isConnected={isConnected}
+            selectedMarket={selectedMarket}
+            onMarketChange={setSelectedMarket}
+          />
+
+          {/* Chart Tabs */}
+          <MobileChartTabs
+            activeTab={mobileChartTab}
+            onTabChange={setMobileChartTab}
+          />
+
+          {/* Chart / Orderbook / Depth / Trades */}
+          <Box
+            sx={{
+              flex: 1,
+              minHeight: 0,
+              overflow: "hidden",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+            {mobileChartTab === 'chart' && (
+              <Box sx={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
+                <KumaCandlestickChart
+                  market={selectedMarket}
+                  initialInterval={CandleInterval.FIVE_MINUTES}
+                />
+              </Box>
+            )}
+            {(mobileChartTab === 'orderbook' || mobileChartTab === 'trades' || mobileChartTab === 'depth') && (
+              <Box sx={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
+                <OrderbookTrades market={selectedMarket} />
+              </Box>
+            )}
+          </Box>
+
+          {/* Positions Panel */}
+          <Box sx={{ flexShrink: 0, px: 1.5, py: 1 }}>
+            <MobilePositionsPanel />
+          </Box>
+
+          {/* Action Buttons */}
+          <Box sx={{ flexShrink: 0, px: 0.5 }}>
+            <MobileActionButtons disabled={!isWalletConnected || needsChainSwitch} />
+          </Box>
+
+          {/* Mobile Bottom Navbar */}
+          <MobileBottomNavbar />
+        </Box>
+      </>
+    );
+  }
+
+  // Desktop Layout
   return (
     <>
       {/* Kuma Auth - Triggers unlock modal on page load if wallet connected */}
@@ -52,40 +140,37 @@ const PerpPage = () => {
         sx={{
           width: "100%",
           minHeight: "calc(100vh - 64px)",
+          maxWidth: "100vw",
           background: "#050C19",
           display: "flex",
           flexDirection: "column",
-          overflow: "auto",
+          overflow: "hidden",
         }}
       >
         {/* Chain Switcher Banner - Shows when wallet is on wrong chain */}
         <BokutoSwitcher />
-
-        {/* Error Display */}
-        {/* {error && (
-          <Box sx={{ padding: 2, color: "#FF4444", textAlign: "center" }}>
-            Error: {error}
-          </Box>
-        )} */}
 
         {/* Main Trading Layout */}
         <Box
           sx={{
             flex: 1,
             display: "grid",
-            gridTemplateColumns: "1fr 280px 350px", // Chart | Orderbook | Trade Panel
-            gridTemplateRows: "auto minmax(500px, 1fr) 320px", // Header | Main | Bottom
+            gridTemplateColumns: "minmax(0, 1fr) 280px 350px", // Chart | Orderbook | Trade Panel
+            gridTemplateRows: "auto minmax(400px, 1fr) 320px", // Header | Main | Bottom
             gap: 1,
             padding: 1,
+            overflow: "hidden",
+            maxWidth: "100%",
           }}
         >
           {/* ========== ROW 1: CHART HEADER ========== */}
-          <Box sx={{ gridColumn: "1 / 2", gridRow: "1 / 2" }}>
+          <Box sx={{ gridColumn: "1 / 2", gridRow: "1 / 2", overflow: "hidden" }}>
             <GlowBox
               sx={{
                 height: "100%",
                 background: "rgba(5, 12, 25, 0.8)",
                 spread: 22,
+                overflow: "hidden",
               }}
             >
               <MarketHeader
@@ -101,13 +186,14 @@ const PerpPage = () => {
 
           {/* Chart Body */}
           <Box
-            sx={{ gridColumn: "1 / 2", gridRow: "2 / 3", overflow: "hidden" }}
+            sx={{ gridColumn: "1 / 2", gridRow: "2 / 3", overflow: "hidden", minWidth: 0 }}
           >
             <GlowBox
               sx={{
                 height: "100%",
                 background: "rgba(5, 12, 25, 0.6)",
                 p: 0,
+                overflow: "hidden",
               }}
             >
               <KumaCandlestickChart
@@ -144,6 +230,7 @@ const PerpPage = () => {
               sx={{
                 height: "100%",
                 background: "rgba(5, 12, 25, 0.6)",
+                overflow: "hidden",
               }}
             >
               <OrderForm
@@ -165,6 +252,7 @@ const PerpPage = () => {
                 height: "100%",
                 background: "rgba(5, 12, 25, 0.6)",
                 p: 0,
+                overflow: "hidden",
               }}
             >
               <PositionsPanel />
@@ -180,6 +268,7 @@ const PerpPage = () => {
                 height: "100%",
                 background: "rgba(5, 12, 25, 0.6)",
                 p: 0,
+                overflow: "hidden",
               }}
             >
               <DepositWithdraw

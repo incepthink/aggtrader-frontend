@@ -134,12 +134,15 @@ export default function MarketHeader({
         ref={containerRef}
         sx={{
           padding: "0px",
-          paddingRight: "12px",
+          paddingRight: { xs: "8px", lg: "12px" },
           display: "flex",
           alignItems: "center",
-          gap: 4,
+          gap: { xs: 1.5, sm: 2, md: 2.5, lg: 4 },
           justifyContent: "space-between",
           position: "relative",
+          overflow: "hidden",
+          width: "100%",
+          flexWrap: "nowrap",
         }}
       >
         {/* Market Selector */}
@@ -148,9 +151,9 @@ export default function MarketHeader({
           sx={{
             display: "flex",
             alignItems: "center",
-            gap: 1,
+            gap: { xs: 0.5, lg: 1 },
             cursor: "pointer",
-            padding: "8px 12px",
+            padding: { xs: "4px 8px", lg: "8px 12px" },
             borderRadius: "8px",
             backgroundColor: dropdownOpen
               ? "rgba(255,255,255,0.05)"
@@ -159,6 +162,7 @@ export default function MarketHeader({
               backgroundColor: "rgba(255,255,255,0.05)",
             },
             transition: "background-color 0.2s ease",
+            flexShrink: 0,
           }}
         >
           <Image
@@ -173,7 +177,7 @@ export default function MarketHeader({
             sx={{
               color: "#fff",
               fontWeight: 600,
-              fontSize: "18px",
+              fontSize: { xs: "13px", lg: "18px" },
             }}
           >
             {currentMarket.symbol}
@@ -181,7 +185,7 @@ export default function MarketHeader({
           <KeyboardArrowDownIcon
             sx={{
               color: "#999",
-              fontSize: "20px",
+              fontSize: { xs: "16px", lg: "20px" },
               transform: dropdownOpen ? "rotate(180deg)" : "rotate(0deg)",
               transition: "transform 0.2s ease",
             }}
@@ -195,7 +199,8 @@ export default function MarketHeader({
               position: "absolute",
               top: "100%",
               left: 0,
-              minWidth: "600px",
+              minWidth: "min(600px, calc(100vw - 32px))",
+              maxWidth: "calc(100vw - 32px)",
               backgroundColor: "#0a1628",
               border: "1px solid rgba(255,255,255,0.1)",
               borderRadius: "12px",
@@ -377,13 +382,15 @@ export default function MarketHeader({
         </Slide>
 
         {/* Price */}
-        <Stack spacing={0.5}>
+        <Stack spacing={{ xs: 0, lg: 0.5 }} sx={{ minWidth: 0, flexShrink: 1 }}>
           <Typography
             variant="caption"
             sx={{
-              color: "#999",
-              fontSize: "11px",
+              color: "#666",
+              fontSize: { xs: "10px", lg: "11px" },
               textTransform: "uppercase",
+              whiteSpace: "nowrap",
+              lineHeight: 1.2,
             }}
           >
             Price
@@ -392,8 +399,10 @@ export default function MarketHeader({
             variant="body1"
             sx={{
               color: "#fff",
-              fontWeight: 600,
-              fontSize: "16px",
+              fontWeight: 500,
+              fontSize: { xs: "12px", lg: "16px" },
+              whiteSpace: "nowrap",
+              lineHeight: 1.3,
             }}
           >
             {formatPrice(tickerData?.close)}
@@ -401,13 +410,15 @@ export default function MarketHeader({
         </Stack>
 
         {/* Index Price */}
-        <Stack spacing={0.5}>
+        <Stack spacing={{ xs: 0, lg: 0.5 }} sx={{ minWidth: 0, flexShrink: 1 }}>
           <Typography
             variant="caption"
             sx={{
-              color: "#999",
-              fontSize: "11px",
+              color: "#666",
+              fontSize: { xs: "10px", lg: "11px" },
               textTransform: "uppercase",
+              whiteSpace: "nowrap",
+              lineHeight: 1.2,
             }}
           >
             Index
@@ -416,8 +427,10 @@ export default function MarketHeader({
             variant="body1"
             sx={{
               color: "#fff",
-              fontWeight: 600,
-              fontSize: "16px",
+              fontWeight: 500,
+              fontSize: { xs: "12px", lg: "16px" },
+              whiteSpace: "nowrap",
+              lineHeight: 1.3,
             }}
           >
             {formatPrice(tickerData?.indexPrice)}
@@ -425,13 +438,15 @@ export default function MarketHeader({
         </Stack>
 
         {/* 24h Change */}
-        <Stack spacing={0.5}>
+        <Stack spacing={{ xs: 0, lg: 0.5 }} sx={{ minWidth: 0, flexShrink: 1 }}>
           <Typography
             variant="caption"
             sx={{
-              color: "#999",
-              fontSize: "11px",
+              color: "#666",
+              fontSize: { xs: "10px", lg: "11px" },
               textTransform: "uppercase",
+              whiteSpace: "nowrap",
+              lineHeight: 1.2,
             }}
           >
             24h Change
@@ -440,8 +455,10 @@ export default function MarketHeader({
             variant="body1"
             sx={{
               color: getChangeColor(tickerData?.percentChange),
-              fontWeight: 600,
-              fontSize: "16px",
+              fontWeight: 500,
+              fontSize: { xs: "12px", lg: "16px" },
+              whiteSpace: "nowrap",
+              lineHeight: 1.3,
             }}
           >
             {formatPercentage(tickerData?.percentChange)}
@@ -449,24 +466,30 @@ export default function MarketHeader({
         </Stack>
 
         {/* Funding / Countdown */}
-        <Stack spacing={0.5}>
+        <Stack spacing={{ xs: 0, lg: 0.5 }} sx={{ minWidth: 0, flexShrink: 1 }}>
           <Typography
             variant="caption"
             sx={{
-              color: "#999",
-              fontSize: "11px",
+              color: "#666",
+              fontSize: { xs: "10px", lg: "11px" },
               textTransform: "uppercase",
+              whiteSpace: "nowrap",
+              lineHeight: 1.2,
             }}
           >
-            Funding / Countdown
+            <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>Funding</Box>
+            <Box component="span" sx={{ display: { xs: "inline", sm: "none" } }}>Fund.</Box>
+            {" / "}Countdown
           </Typography>
-          <Stack direction="row" spacing={1} alignItems="center">
+          <Stack direction="row" spacing={{ xs: 0.5, lg: 1 }} alignItems="center" sx={{ flexWrap: "nowrap" }}>
             <Typography
               variant="body1"
               sx={{
                 color: getChangeColor(tickerData?.currentFundingRate),
-                fontWeight: 600,
-                fontSize: "14px",
+                fontWeight: 500,
+                fontSize: { xs: "12px", lg: "14px" },
+                whiteSpace: "nowrap",
+                lineHeight: 1.3,
               }}
             >
               {tickerData?.currentFundingRate
@@ -477,7 +500,9 @@ export default function MarketHeader({
               variant="body2"
               sx={{
                 color: "#00F5E0",
-                fontSize: "14px",
+                fontSize: { xs: "12px", lg: "14px" },
+                whiteSpace: "nowrap",
+                lineHeight: 1.3,
               }}
             >
               / {countdown}
@@ -486,13 +511,15 @@ export default function MarketHeader({
         </Stack>
 
         {/* Open Interest */}
-        <Stack spacing={0.5}>
+        <Stack spacing={{ xs: 0, lg: 0.5 }} sx={{ minWidth: 0, flexShrink: 1 }}>
           <Typography
             variant="caption"
             sx={{
-              color: "#999",
-              fontSize: "11px",
+              color: "#666",
+              fontSize: { xs: "10px", lg: "11px" },
               textTransform: "uppercase",
+              whiteSpace: "nowrap",
+              lineHeight: 1.2,
             }}
           >
             Open Interest
@@ -501,8 +528,10 @@ export default function MarketHeader({
             variant="body1"
             sx={{
               color: "#fff",
-              fontWeight: 600,
-              fontSize: "16px",
+              fontWeight: 500,
+              fontSize: { xs: "12px", lg: "16px" },
+              whiteSpace: "nowrap",
+              lineHeight: 1.3,
             }}
           >
             {formatVolume(tickerData?.openInterest)}
@@ -510,13 +539,15 @@ export default function MarketHeader({
         </Stack>
 
         {/* 24h Volume */}
-        <Stack spacing={0.5}>
+        <Stack spacing={{ xs: 0, lg: 0.5 }} sx={{ minWidth: 0, flexShrink: 1 }}>
           <Typography
             variant="caption"
             sx={{
-              color: "#999",
-              fontSize: "11px",
+              color: "#666",
+              fontSize: { xs: "10px", lg: "11px" },
               textTransform: "uppercase",
+              whiteSpace: "nowrap",
+              lineHeight: 1.2,
             }}
           >
             24h Volume
@@ -525,8 +556,10 @@ export default function MarketHeader({
             variant="body1"
             sx={{
               color: "#fff",
-              fontWeight: 600,
-              fontSize: "16px",
+              fontWeight: 500,
+              fontSize: { xs: "12px", lg: "16px" },
+              whiteSpace: "nowrap",
+              lineHeight: 1.3,
             }}
           >
             {formatVolume(tickerData?.quoteVolume)}
