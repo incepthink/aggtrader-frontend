@@ -15,8 +15,11 @@ interface PositionsTableProps {
   positions: KatanaPerpsPosition[];
   isLoading: boolean;
   error: Error | null;
-  onClosePosition: (market: string) => void;
+  onClosePosition: (position: KatanaPerpsPosition) => void;
   onRefresh: () => void;
+  closingMarket: string | null;
+  closeError: string | null;
+  onClearError: () => void;
 }
 
 export const PositionsTable = ({
@@ -25,6 +28,9 @@ export const PositionsTable = ({
   error,
   onClosePosition,
   onRefresh,
+  closingMarket,
+  closeError,
+  onClearError,
 }: PositionsTableProps) => {
   if (isLoading) {
     return (
@@ -80,6 +86,31 @@ export const PositionsTable = ({
 
   return (
     <div style={{ width: '100%', overflowX: 'auto' }}>
+      {/* Close Error Banner */}
+      {closeError && (
+        <Box
+          sx={{
+            px: 2,
+            py: 1,
+            bgcolor: 'rgba(255, 68, 68, 0.1)',
+            borderBottom: '1px solid rgba(255, 68, 68, 0.3)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <Typography sx={{ color: '#FF4444', fontSize: '0.75rem' }}>
+            {closeError}
+          </Typography>
+          <IconButton
+            size="small"
+            onClick={onClearError}
+            sx={{ color: '#FF4444', p: 0.5 }}
+          >
+            <CloseIcon sx={{ fontSize: 14 }} />
+          </IconButton>
+        </Box>
+      )}
       <table style={tableStyles.table}>
         <thead>
           <tr style={{ background: 'rgba(5, 12, 25, 0.95)' }}>
@@ -224,20 +255,30 @@ export const PositionsTable = ({
 
                   {/* Close Button */}
                   <td style={{ ...tableStyles.td, textAlign: 'center' }}>
-                    <Tooltip title="Close Position">
-                      <IconButton
-                        size="small"
-                        onClick={() => onClosePosition(position.market)}
-                        sx={{
-                          color: 'rgba(255, 255, 255, 0.5)',
-                          '&:hover': {
-                            color: '#FF4444',
-                            bgcolor: 'rgba(255, 68, 68, 0.1)',
-                          },
-                        }}
-                      >
-                        <CloseIcon sx={{ fontSize: 16 }} />
-                      </IconButton>
+                    <Tooltip title={closingMarket === position.market ? 'Closing...' : 'Close Position'}>
+                      <span>
+                        <IconButton
+                          size="small"
+                          onClick={() => onClosePosition(position)}
+                          disabled={closingMarket !== null}
+                          sx={{
+                            color: closingMarket === position.market ? '#00F5E0' : 'rgba(255, 255, 255, 0.5)',
+                            '&:hover': {
+                              color: '#FF4444',
+                              bgcolor: 'rgba(255, 68, 68, 0.1)',
+                            },
+                            '&.Mui-disabled': {
+                              color: 'rgba(255, 255, 255, 0.2)',
+                            },
+                          }}
+                        >
+                          {closingMarket === position.market ? (
+                            <CircularProgress size={14} sx={{ color: '#00F5E0' }} />
+                          ) : (
+                            <CloseIcon sx={{ fontSize: 16 }} />
+                          )}
+                        </IconButton>
+                      </span>
                     </Tooltip>
                   </td>
                 </tr>

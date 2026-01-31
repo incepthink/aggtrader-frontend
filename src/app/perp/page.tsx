@@ -27,6 +27,10 @@ import {
 
 const BOKUTO_CHAIN_ID = 737373;
 
+// Desktop layout widths (in pixels)
+const ORDERBOOK_WIDTH = 266;
+const ORDER_FORM_WIDTH = 266;
+
 const PerpPage = () => {
   const { isConnected: isWalletConnected } = useAccount();
   const chainId = useChainId();
@@ -38,7 +42,9 @@ const PerpPage = () => {
     (state) => state.setAccountBalance,
   );
   const isMobile = usePerpMobile();
-  const [mobileChartTab, setMobileChartTab] = useState<'chart' | 'depth' | 'orderbook' | 'trades'>('chart');
+  const [mobileChartTab, setMobileChartTab] = useState<
+    "chart" | "depth" | "orderbook" | "trades"
+  >("chart");
 
   // Sync balance to global store
   useEffect(() => {
@@ -98,7 +104,7 @@ const PerpPage = () => {
               flexDirection: "column",
             }}
           >
-            {mobileChartTab === 'chart' && (
+            {mobileChartTab === "chart" && (
               <Box sx={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
                 <KumaCandlestickChart
                   market={selectedMarket}
@@ -106,7 +112,9 @@ const PerpPage = () => {
                 />
               </Box>
             )}
-            {(mobileChartTab === 'orderbook' || mobileChartTab === 'trades' || mobileChartTab === 'depth') && (
+            {(mobileChartTab === "orderbook" ||
+              mobileChartTab === "trades" ||
+              mobileChartTab === "depth") && (
               <Box sx={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
                 <OrderbookTrades market={selectedMarket} />
               </Box>
@@ -120,7 +128,9 @@ const PerpPage = () => {
 
           {/* Action Buttons */}
           <Box sx={{ flexShrink: 0, px: 0.5 }}>
-            <MobileActionButtons disabled={!isWalletConnected || needsChainSwitch} />
+            <MobileActionButtons
+              disabled={!isWalletConnected || needsChainSwitch}
+            />
           </Box>
 
           {/* Mobile Bottom Navbar */}
@@ -155,7 +165,7 @@ const PerpPage = () => {
           sx={{
             flex: 1,
             display: "grid",
-            gridTemplateColumns: "minmax(0, 1fr) 280px 350px", // Chart | Orderbook | Trade Panel
+            gridTemplateColumns: `minmax(0, 1fr) ${ORDERBOOK_WIDTH}px ${ORDER_FORM_WIDTH}px`, // Chart | Orderbook | Trade Panel
             gridTemplateRows: "auto minmax(400px, 1fr) 320px", // Header | Main | Bottom
             gap: 1,
             padding: 1,
@@ -164,7 +174,9 @@ const PerpPage = () => {
           }}
         >
           {/* ========== ROW 1: CHART HEADER ========== */}
-          <Box sx={{ gridColumn: "1 / 2", gridRow: "1 / 2", overflow: "hidden" }}>
+          <Box
+            sx={{ gridColumn: "1 / 2", gridRow: "1 / 2", overflow: "hidden" }}
+          >
             <GlowBox
               sx={{
                 height: "100%",
@@ -172,6 +184,7 @@ const PerpPage = () => {
                 spread: 22,
                 overflow: "hidden",
               }}
+              spread={15}
             >
               <MarketHeader
                 tickerData={tickerData}
@@ -186,7 +199,12 @@ const PerpPage = () => {
 
           {/* Chart Body */}
           <Box
-            sx={{ gridColumn: "1 / 2", gridRow: "2 / 3", overflow: "hidden", minWidth: 0 }}
+            sx={{
+              gridColumn: "1 / 2",
+              gridRow: "2 / 3",
+              overflow: "hidden",
+              minWidth: 0,
+            }}
           >
             <GlowBox
               sx={{
@@ -195,6 +213,7 @@ const PerpPage = () => {
                 p: 0,
                 overflow: "hidden",
               }}
+              spread={15}
             >
               <KumaCandlestickChart
                 market={selectedMarket}
@@ -216,6 +235,7 @@ const PerpPage = () => {
                 flexDirection: "column",
                 overflow: "hidden",
               }}
+              spread={15}
             >
               <OrderbookTrades market={selectedMarket} />
             </GlowBox>
@@ -232,6 +252,7 @@ const PerpPage = () => {
                 background: "rgba(5, 12, 25, 0.6)",
                 overflow: "hidden",
               }}
+              spread={15}
             >
               <OrderForm
                 market={selectedMarket}
@@ -254,6 +275,7 @@ const PerpPage = () => {
                 p: 0,
                 overflow: "hidden",
               }}
+              spread={15}
             >
               <PositionsPanel />
             </GlowBox>
@@ -270,6 +292,7 @@ const PerpPage = () => {
                 p: 0,
                 overflow: "hidden",
               }}
+              spread={15}
             >
               <DepositWithdraw
                 accountBalance={accountBalance}

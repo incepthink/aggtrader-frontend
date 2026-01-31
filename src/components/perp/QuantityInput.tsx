@@ -72,7 +72,7 @@ const QuantityInput = ({
       const calculatedQuantity = (maxQuantity * percentage) / 100;
       setQuantity(calculatedQuantity > 0 ? calculatedQuantity.toFixed(8) : "");
     },
-    [maxQuantity, setQuantity, setQuantityPercentage]
+    [maxQuantity, setQuantity, setQuantityPercentage],
   );
 
   /**
@@ -104,7 +104,7 @@ const QuantityInput = ({
         setQuantityPercentage(Math.min(100, Math.max(0, percentage)));
       }
     },
-    [maxQuantity, setQuantity, setQuantityPercentage]
+    [maxQuantity, setQuantity, setQuantityPercentage],
   );
 
   /**
@@ -116,7 +116,7 @@ const QuantityInput = ({
       const percentage = value as number;
       handlePercentageClick(percentage);
     },
-    [handlePercentageClick]
+    [handlePercentageClick],
   );
 
   const percentageButtons = [25, 50, 75, 100];
@@ -214,7 +214,7 @@ const QuantityInput = ({
       /> */}
 
       <div className="flex w-full items-center bg-[rgba(255,255,255,0.02)] border-2 border-[rgba(255,255,255,0.1)] mb-3">
-        <p className="p-3 text-sm text-white/80 shrink-0">Quantity</p>
+        <p className="p-2 text-sm text-white/80 shrink-0">Quantity</p>
 
         <input
           type="text"
@@ -222,7 +222,7 @@ const QuantityInput = ({
           onChange={handleQuantityChange}
           className="
       flex-1 min-w-0
-      bg-transparent px-3 py-3 text-sm text-white
+      bg-transparent px-3 py-1 text-sm text-white
       outline-none
       focus:ring-0
     "
@@ -230,7 +230,7 @@ const QuantityInput = ({
         />
 
         {disableUsdUnit ? (
-          <span className="shrink-0 text-white text-sm px-3 py-3 border-l border-[rgba(255,255,255,0.1)]">
+          <span className="shrink-0 text-white text-sm p-1 border-l border-[rgba(255,255,255,0.1)]">
             {assetSymbol}
           </span>
         ) : (
@@ -240,7 +240,7 @@ const QuantityInput = ({
             className="
         shrink-0
         text-white text-sm
-        px-3 py-3
+        p-1
         outline-none cursor-pointer
         border-l border-[rgba(255,255,255,0.1)]
         appearance-none
@@ -341,7 +341,10 @@ const QuantityInput = ({
             textAlign: "right",
           }}
         >
-          Max: {quantityUnit === "USD" ? `$${maxQuantity.toFixed(2)}` : `${maxQuantity.toFixed(8)} ${assetSymbol}`}
+          Max:{" "}
+          {quantityUnit === "USD"
+            ? `$${maxQuantity.toFixed(2)}`
+            : `${maxQuantity.toFixed(8)} ${assetSymbol}`}
         </Typography>
       )}
     </Box>

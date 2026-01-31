@@ -37,7 +37,7 @@ const OrderSideButtons = ({
         disabled={disabled}
         sx={{
           py: 1,
-          fontSize: "16px",
+          fontSize: "14px",
           fontWeight: 600,
           textTransform: "none",
           background: "linear-gradient(135deg, #00FF88 0%, #00CC6B 100%)",
@@ -67,7 +67,7 @@ const OrderSideButtons = ({
         disabled={disabled}
         sx={{
           py: 1,
-          fontSize: "16px",
+          fontSize: "14px",
           fontWeight: 600,
           textTransform: "none",
           background: "linear-gradient(135deg, #FF4444 0%, #CC0000 100%)",

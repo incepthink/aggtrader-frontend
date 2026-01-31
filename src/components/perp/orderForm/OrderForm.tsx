@@ -379,7 +379,7 @@ const OrderForm = ({ market, currentPrice, tickerData }: OrderFormProps) => {
         height: "100%",
         display: "flex",
         flexDirection: "column",
-        p: 2,
+        p: 1,
         justifyContent: "space-between",
       }}
     >

@@ -1,7 +1,15 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Tabs, Tab, Popper, Paper, MenuList, MenuItem, ClickAwayListener } from "@mui/material";
+import {
+  Tabs,
+  Tab,
+  Popper,
+  Paper,
+  MenuList,
+  MenuItem,
+  ClickAwayListener,
+} from "@mui/material";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import { usePerpStore } from "@/store/perpStore";
 
@@ -17,7 +25,9 @@ const OrderTypeTabs = () => {
       // Open dropdown instead of selecting directly
       setDropdownOpen(true);
     } else {
-      setActiveOrderType(newValue as "market" | "limit" | "stopMarket" | "stopLimit");
+      setActiveOrderType(
+        newValue as "market" | "limit" | "stopMarket" | "stopLimit",
+      );
     }
   };
 
@@ -34,8 +44,10 @@ const OrderTypeTabs = () => {
     setDropdownOpen(false);
   };
 
-  const isStopTypeSelected = activeOrderType === "stopMarket" || activeOrderType === "stopLimit";
-  const stopTabLabel = activeOrderType === "stopLimit" ? "Stop Limit" : "Stop Market";
+  const isStopTypeSelected =
+    activeOrderType === "stopMarket" || activeOrderType === "stopLimit";
+  const stopTabLabel =
+    activeOrderType === "stopLimit" ? "Stop Limit" : "Stop Market";
 
   return (
     <>
@@ -43,14 +55,14 @@ const OrderTypeTabs = () => {
         value={isStopTypeSelected ? false : activeOrderType}
         onChange={handleTabChange}
         sx={{
-          py: 0.5,
+          pt: 0.5,
           minHeight: "36px",
           "& .MuiTabs-indicator": {
             display: "none",
           },
           "& .MuiTab-root": {
             minWidth: "auto",
-            fontSize: "0.875rem",
+            fontSize: "0.75rem",
             fontWeight: 500,
             textTransform: "none",
             color: "rgba(255, 255, 255, 0.6)",
@@ -82,7 +94,9 @@ const OrderTypeTabs = () => {
           }
           value={activeOrderType === "stopLimit" ? "stopLimit" : "stopMarket"}
           sx={{
-            color: isStopTypeSelected ? "#00F5E0 !important" : "rgba(255, 255, 255, 0.6)",
+            color: isStopTypeSelected
+              ? "#00F5E0 !important"
+              : "rgba(255, 255, 255, 0.6)",
           }}
         />
       </Tabs>
@@ -109,7 +123,8 @@ const OrderTypeTabs = () => {
                 sx={{
                   fontSize: "0.875rem",
                   color: "#fff",
-                  bgcolor: activeOrderType === "stopLimit" ? "#00F5E0" : "transparent",
+                  bgcolor:
+                    activeOrderType === "stopLimit" ? "#00F5E0" : "transparent",
                   "&.Mui-selected": {
                     bgcolor: "#00F5E0",
                     color: "#000",
@@ -118,7 +133,10 @@ const OrderTypeTabs = () => {
                     },
                   },
                   "&:hover": {
-                    bgcolor: activeOrderType === "stopLimit" ? "#00D4C0" : "rgba(255, 255, 255, 0.05)",
+                    bgcolor:
+                      activeOrderType === "stopLimit"
+                        ? "#00D4C0"
+                        : "rgba(255, 255, 255, 0.05)",
                   },
                   py: 1,
                   px: 2,
@@ -132,7 +150,10 @@ const OrderTypeTabs = () => {
                 sx={{
                   fontSize: "0.875rem",
                   color: "#fff",
-                  bgcolor: activeOrderType === "stopMarket" ? "#00F5E0" : "transparent",
+                  bgcolor:
+                    activeOrderType === "stopMarket"
+                      ? "#00F5E0"
+                      : "transparent",
                   "&.Mui-selected": {
                     bgcolor: "#00F5E0",
                     color: "#000",
@@ -141,7 +162,10 @@ const OrderTypeTabs = () => {
                     },
                   },
                   "&:hover": {
-                    bgcolor: activeOrderType === "stopMarket" ? "#00D4C0" : "rgba(255, 255, 255, 0.05)",
+                    bgcolor:
+                      activeOrderType === "stopMarket"
+                        ? "#00D4C0"
+                        : "rgba(255, 255, 255, 0.05)",
                   },
                   py: 1,
                   px: 2,

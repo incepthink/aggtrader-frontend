@@ -20,15 +20,15 @@ const PriceInputs = () => {
       {/* Price Input - Only for Limit Orders */}
       {activeOrderType === "limit" && (
         <div className="flex w-full items-center bg-[rgba(255,255,255,0.02)] border-2 border-[rgba(255,255,255,0.1)] mb-3">
-          <p className="p-3 text-sm text-white/80 shrink-0">Price</p>
+          <p className="p-2 text-sm text-white/80 shrink-0">Price</p>
           <input
             type="text"
             value={limitPrice || ""}
             onChange={(e) => setLimitPrice(e.target.value)}
-            className="flex-1 min-w-0 bg-transparent px-3 py-3 text-sm text-white outline-none focus:ring-0 text-right"
+            className="flex-1 min-w-0 bg-transparent px-3 py-1 text-sm text-white outline-none focus:ring-0 text-right"
             placeholder="0.00"
           />
-          <span className="px-3 py-3 text-sm text-white/60 shrink-0 border-l border-[rgba(255,255,255,0.1)]">
+          <span className="p-1 text-sm text-white/60 shrink-0 border-l border-[rgba(255,255,255,0.1)]">
             USD
           </span>
         </div>
@@ -38,12 +38,12 @@ const PriceInputs = () => {
       {(activeOrderType === "stopMarket" ||
         activeOrderType === "stopLimit") && (
         <div className="flex w-full items-center bg-[rgba(255,255,255,0.02)] border-2 border-[rgba(255,255,255,0.1)] mb-3">
-          <p className="p-3 text-sm text-white/80 shrink-0">Stop Price</p>
+          <p className="p-2 text-sm text-white/80 shrink-0">Stop Price</p>
           <input
             type="text"
             value={stopPrice || ""}
             onChange={(e) => setStopPrice(e.target.value)}
-            className="flex-1 min-w-0 bg-transparent px-3 py-3 text-sm text-white outline-none focus:ring-0 text-right"
+            className="flex-1 min-w-0 bg-transparent px-3 py-1 text-sm text-white outline-none focus:ring-0 text-right"
             placeholder="0.00"
           />
           <select
@@ -51,7 +51,7 @@ const PriceInputs = () => {
             onChange={(e) =>
               setStopPriceTriggerType(e.target.value as "index" | "last")
             }
-            className="shrink-0 text-white text-sm px-3 py-3 outline-none cursor-pointer border-l border-[rgba(255,255,255,0.1)] appearance-none bg-transparent [&>option:checked]:bg-[#00F5E0] [&>option:checked]:text-black [&>option]:bg-black [&>option]:text-white"
+            className="shrink-0 text-white text-sm p-1 outline-none cursor-pointer border-l border-[rgba(255,255,255,0.1)] appearance-none bg-transparent [&>option:checked]:bg-[#00F5E0] [&>option:checked]:text-black [&>option]:bg-black [&>option]:text-white"
           >
             <option value="index">Index</option>
             <option value="last">Last</option>
@@ -62,15 +62,15 @@ const PriceInputs = () => {
       {/* Order Price Input - Only for Stop Limit Orders */}
       {activeOrderType === "stopLimit" && (
         <div className="flex w-full items-center bg-[rgba(255,255,255,0.02)] border-2 border-[rgba(255,255,255,0.1)] mb-3">
-          <p className="p-3 text-sm text-white/80 shrink-0">Order Price</p>
+          <p className="p-2 text-sm text-white/80 shrink-0">Order Price</p>
           <input
             type="text"
             value={orderPrice || ""}
             onChange={(e) => setOrderPrice(e.target.value)}
-            className="flex-1 min-w-0 bg-transparent px-3 py-3 text-sm text-white outline-none focus:ring-0 text-right"
+            className="flex-1 min-w-0 bg-transparent px-3 py-1 text-sm text-white outline-none focus:ring-0 text-right"
             placeholder="0.00"
           />
-          <span className="px-3 py-3 text-sm text-white/60 shrink-0 border-l border-[rgba(255,255,255,0.1)]">
+          <span className="p-1 text-sm text-white/60 shrink-0 border-l border-[rgba(255,255,255,0.1)]">
             USD
           </span>
         </div>
