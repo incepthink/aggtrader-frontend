@@ -33,6 +33,16 @@ function formatQuantity(
   return final.toFixed(8);
 }
 
+/**
+ * Format price to whole number with 8 decimal zeros
+ * Katana Perps API requires prices to be whole numbers formatted as "X.00000000"
+ */
+function formatPrice(price: string | number): string {
+  const value = typeof price === 'string' ? parseFloat(price) : price;
+  const rounded = Math.round(value);
+  return rounded.toFixed(8);
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -132,12 +142,12 @@ export async function POST(request: NextRequest) {
     // Format quantity according to market rules
     const formattedQuantity = formatQuantity(quantity, stepSize, minimumOrderSize);
 
-    // Format price for limit orders AND stop limit orders
+    // Format price for limit orders AND stop limit orders (must be whole number with 8 decimal zeros)
     const needsLimitPrice = isLimitOrder || isStopLimitOrder;
-    const formattedPrice = needsLimitPrice ? parseFloat(price).toFixed(8) : undefined;
+    const formattedPrice = needsLimitPrice ? formatPrice(price) : undefined;
 
-    // Format trigger price for stop orders
-    const formattedTriggerPrice = isStopOrder ? parseFloat(triggerPrice).toFixed(8) : undefined;
+    // Format trigger price for stop orders (must be whole number with 8 decimal zeros)
+    const formattedTriggerPrice = isStopOrder ? formatPrice(triggerPrice) : undefined;
 
     console.log('Order formatting:', {
       original: quantity,

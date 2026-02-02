@@ -60,6 +60,7 @@ export const useStopLimitOrder = () => {
         triggerPrice: params.triggerPrice,
         triggerType: triggerTypeNumber,
         price: params.price,
+        reduceOnly: params.reduceOnly,
       });
 
       console.log('Quantity adjusted for market rules:', {

@@ -45,10 +45,20 @@ function formatQuantity(quantity: string, stepSize: number, minimum: number): st
   return final.toFixed(8);
 }
 
+/**
+ * Format price to whole number with 8 decimal zeros
+ * Katana Perps API requires prices to be whole numbers formatted as "X.00000000"
+ */
+function formatPrice(price: string | number): string {
+  const value = typeof price === 'string' ? parseFloat(price) : price;
+  const rounded = Math.round(value);
+  return rounded.toFixed(8);
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { wallet, market, type, side, quantity, price, triggerPrice, triggerType } = body;
+    const { wallet, market, type, side, quantity, price, triggerPrice, triggerType, reduceOnly } = body;
 
     // Validate required fields
     if (!wallet || !market || type === undefined || side === undefined || !quantity) {
@@ -113,12 +123,12 @@ export async function POST(request: NextRequest) {
     // Format quantity according to market rules
     const formattedQuantity = formatQuantity(quantity, stepSize, minimumOrderSize);
 
-    // Format price for limit orders AND stop limit orders (8 decimal places)
+    // Format price for limit orders AND stop limit orders (must be whole number with 8 decimal zeros)
     const needsLimitPrice = isLimitOrder || isStopLimitOrder;
-    const formattedPrice = needsLimitPrice ? parseFloat(price).toFixed(8) : '0.00000000';
+    const formattedPrice = needsLimitPrice ? formatPrice(price) : '0.00000000';
 
-    // Format trigger price for stop orders (8 decimal places)
-    const formattedTriggerPrice = isStopOrder ? parseFloat(triggerPrice).toFixed(8) : '0.00000000';
+    // Format trigger price for stop orders (must be whole number with 8 decimal zeros)
+    const formattedTriggerPrice = isStopOrder ? formatPrice(triggerPrice) : '0.00000000';
 
     console.log('Typed data quantity formatting:', {
       original: quantity,
@@ -131,6 +141,7 @@ export async function POST(request: NextRequest) {
       isLimitOrder,
       isStopOrder,
       isStopLimitOrder,
+      reduceOnly: !!reduceOnly,
       sandbox,
     });
 
@@ -188,7 +199,7 @@ export async function POST(request: NextRequest) {
         triggerType: isStopOrder ? triggerType : 0,
         callbackRate: emptyPipString,
         conditionalOrderId: 0,
-        isReduceOnly: false,
+        isReduceOnly: !!reduceOnly,
         timeInForce: 0, // 0 = GTC (Good Till Cancel)
         selfTradePrevention: 0, // 0 = DC (Decrement and Cancel)
         isLiquidationAcquisitionOnly: false,

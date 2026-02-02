@@ -53,6 +53,7 @@ export const useLimitOrder = () => {
         side: sideNumber,
         quantity: formatQuantity(params.quantity),
         price: params.price,
+        reduceOnly: params.reduceOnly,
       });
 
       console.log('Quantity adjusted for market rules:', {

@@ -56,6 +56,7 @@ export const useStopMarketOrder = () => {
         quantity: formatQuantity(params.quantity),
         triggerPrice: params.triggerPrice,
         triggerType: triggerTypeNumber,
+        reduceOnly: params.reduceOnly,
       });
 
       console.log('Quantity adjusted for market rules:', {

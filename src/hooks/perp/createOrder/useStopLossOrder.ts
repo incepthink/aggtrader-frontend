@@ -47,6 +47,9 @@ export const useStopLossOrder = () => {
         triggerPrice: params.triggerPrice,
       });
 
+      // SL orders are typically reduce-only
+      const reduceOnly = params.reduceOnly ?? true;
+
       // Step 1: Get typed data
       const { nonce, typedData, formattedQuantity } = await fetchTypedData({
         wallet: address!,
@@ -56,6 +59,7 @@ export const useStopLossOrder = () => {
         quantity: formatQuantity(params.quantity),
         triggerPrice: params.triggerPrice,
         triggerType: triggerTypeNumber,
+        reduceOnly,
       });
 
       // Step 2: Sign typed data
@@ -80,7 +84,7 @@ export const useStopLossOrder = () => {
         triggerPrice: params.triggerPrice,
         triggerType: params.triggerType,
         signature,
-        reduceOnly: params.reduceOnly ?? true, // SL orders are typically reduce-only
+        reduceOnly,
       });
 
       console.log('Stop loss order created successfully:', result);

@@ -48,6 +48,7 @@ export const useMarketOrder = () => {
         type: typeNumber,
         side: sideNumber,
         quantity: formatQuantity(params.quantity),
+        reduceOnly: params.reduceOnly,
       });
 
       console.log('Quantity adjusted for market rules:', {

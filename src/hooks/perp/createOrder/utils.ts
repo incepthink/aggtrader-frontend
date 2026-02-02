@@ -34,6 +34,7 @@ export const fetchTypedData = async (params: {
   price?: string;
   triggerPrice?: string;
   triggerType?: number;
+  reduceOnly?: boolean;
 }): Promise<TypedDataResponse> => {
   const response = await fetch('/api/kuma/get-order-typed-data', {
     method: 'POST',
