@@ -23,7 +23,7 @@ interface TokenRowDesktopProps {
   change24h?: number | null;
   isCustomPrice: boolean;
   onPriceChange: (tokenKey: string, price: number) => void;
-  referralData: ReferralResponse;
+  referralData?: ReferralResponse;
 }
 
 export const TokenRowDesktop: React.FC<TokenRowDesktopProps> = ({

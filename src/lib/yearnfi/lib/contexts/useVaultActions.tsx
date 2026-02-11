@@ -55,7 +55,7 @@ type TVaultActionsContext = {
 };
 
 const VaultActionsContext = createContext<TVaultActionsContext | undefined>(
-  undefined
+  undefined,
 );
 
 export function VaultActionsProvider({
@@ -72,7 +72,7 @@ export function VaultActionsProvider({
   const vaultDecimals = vault.decimals ?? 18;
 
   const [allowance, setAllowance] = useState<TNormalizedBN>(
-    toNormalizedBN(BigInt(0), tokenDecimals)
+    toNormalizedBN(BigInt(0), tokenDecimals),
   );
   const [amount, setAmount] = useState<string>("");
   const [isDepositingFlow, setIsDepositingFlow] = useState<boolean>(true);
@@ -83,7 +83,9 @@ export function VaultActionsProvider({
 
   // Wagmi hooks for transaction signing
   const { sendTransactionAsync } = useSendTransaction();
-  const [pendingTxHash, setPendingTxHash] = useState<`0x${string}` | undefined>();
+  const [pendingTxHash, setPendingTxHash] = useState<
+    `0x${string}` | undefined
+  >();
 
   const { isSuccess: isTxSuccess } = useWaitForTransactionReceipt({
     hash: pendingTxHash,
@@ -206,8 +208,8 @@ export function VaultActionsProvider({
       ? BigInt(
           Math.floor(
             parseFloat(debouncedAmount) *
-              Math.pow(10, isDepositingFlow ? tokenDecimals : vaultDecimals)
-          )
+              Math.pow(10, isDepositingFlow ? tokenDecimals : vaultDecimals),
+          ),
         )
       : BigInt(0);
 
@@ -225,11 +227,11 @@ export function VaultActionsProvider({
   const expectedOut: TNormalizedBN = previewData
     ? toNormalizedBN(
         previewData as bigint,
-        isDepositingFlow ? vaultDecimals : tokenDecimals
+        isDepositingFlow ? vaultDecimals : tokenDecimals,
       )
     : toNormalizedBN(
         BigInt(0),
-        isDepositingFlow ? vaultDecimals : tokenDecimals
+        isDepositingFlow ? vaultDecimals : tokenDecimals,
       );
 
   const needsApproval = amountBigInt > allowance.raw && isDepositingFlow;
@@ -246,6 +248,8 @@ export function VaultActionsProvider({
   // onApprove is now integrated into onDeposit
   // Keeping this as a placeholder function for backward compatibility
   const onApprove = useCallback(async () => {
+    console.log("hi");
+
     toast({
       title: "Not Required",
       description: "Approval is now handled automatically during deposit",
@@ -335,7 +339,8 @@ export function VaultActionsProvider({
       console.error("=== DEPOSIT ERROR ===", error);
 
       const errorMessage =
-        error?.message?.includes("User rejected") || error?.message?.includes("User denied")
+        error?.message?.includes("User rejected") ||
+        error?.message?.includes("User denied")
           ? "Transaction cancelled by user"
           : error?.message || "Deposit failed";
 
@@ -419,7 +424,8 @@ export function VaultActionsProvider({
       console.error("=== WITHDRAWAL ERROR ===", error);
 
       const errorMessage =
-        error?.message?.includes("User rejected") || error?.message?.includes("User denied")
+        error?.message?.includes("User rejected") ||
+        error?.message?.includes("User denied")
           ? "Transaction cancelled by user"
           : error?.message || "Withdrawal failed";
 

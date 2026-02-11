@@ -51,7 +51,7 @@ export default function TokenBalancesCard() {
   }, [registerRefreshHandler, handleRefetch]);
 
   // Wallet not connected state
-  if (!address || !referralData) {
+  if (!address && !referralData) {
     return (
       <div className="relative mx-auto rounded-xl">
         <div className="relative p-4 sm:p-6 md:p-8 rounded-2xl text-white font-sans">

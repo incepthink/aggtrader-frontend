@@ -57,37 +57,37 @@ export function ActionButtons() {
     );
   }
 
-  if (isDepositing && needsApproval) {
-    return (
-      <Box
-        sx={{
-          display: "flex",
-          width: { xs: "100%", md: "auto" },
-          minWidth: { md: "200px" },
-        }}
-      >
-        <Button
-          fullWidth
-          variant="contained"
-          size="large"
-          onClick={onApprove}
-          disabled={isDisabled || isApproving}
-          sx={{
-            bgcolor: "primary.main",
-            "&.Mui-disabled": {
-              bgcolor: "primary.main",
-              opacity: 0.5,
-              color: "black",
-            },
-          }}
-        >
-          {isApproving ? "Approving..." : "Approve"}
-        </Button>
-      </Box>
-    );
-  }
+  // if (isDepositing && needsApproval) {
+  //   return (
+  //     <Box
+  //       sx={{
+  //         display: "flex",
+  //         width: { xs: "100%", md: "auto" },
+  //         minWidth: { md: "200px" },
+  //       }}
+  //     >
+  //       <Button
+  //         fullWidth
+  //         variant="contained"
+  //         size="large"
+  //         onClick={onApprove}
+  //         disabled={isDisabled || isApproving}
+  //         sx={{
+  //           bgcolor: "primary.main",
+  //           "&.Mui-disabled": {
+  //             bgcolor: "primary.main",
+  //             opacity: 0.5,
+  //             color: "black",
+  //           },
+  //         }}
+  //       >
+  //         {isApproving ? "Approving..." : "Approve"}
+  //       </Button>
+  //     </Box>
+  //   );
+  // }
 
-  if (isDepositing) {
+  if (isDepositing && needsApproval) {
     return (
       <Box
         sx={{

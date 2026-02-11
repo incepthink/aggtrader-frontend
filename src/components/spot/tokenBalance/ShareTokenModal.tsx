@@ -35,7 +35,7 @@ interface ShareTokenModalProps {
   currentPrice: number;
   pnl: number;
   roi: number;
-  referralData: ReferralResponse;
+  referralData?: ReferralResponse;
 }
 
 export const ShareTokenModal: React.FC<ShareTokenModalProps> = ({
@@ -49,7 +49,7 @@ export const ShareTokenModal: React.FC<ShareTokenModalProps> = ({
   referralData,
 }) => {
   const [customText, setCustomText] = useState(
-    `Trade $${token.symbol} seamlessly on @katana at @agg_trade using my referral code https://aggtrade.xyz/join/${referralData?.referralCode}`
+    `Trade $${token.symbol} seamlessly on @katana at @agg_trade using my referral code https://aggtrade.xyz/join/${referralData?.referralCode}`,
   );
   const [copied, setCopied] = useState(false);
   const [logoDataUrl, setLogoDataUrl] = useState<string>("");
@@ -137,12 +137,12 @@ export const ShareTokenModal: React.FC<ShareTokenModalProps> = ({
       console.error("Failed to generate image:", error);
       console.error(
         "Error details:",
-        error instanceof Error ? error.message : error
+        error instanceof Error ? error.message : error,
       );
       alert(
         `Failed to save image: ${
           error instanceof Error ? error.message : "Unknown error"
-        }`
+        }`,
       );
     }
   };

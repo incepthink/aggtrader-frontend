@@ -12,7 +12,7 @@ interface PortfolioContentProps {
   isCustomPrice: (tokenKey: string) => boolean;
   updateEntryPrice: (tokenKey: string, price: number) => void;
   chainName: string;
-  referralData: ReferralResponse;
+  referralData?: ReferralResponse;
 }
 
 export const PortfolioContent: React.FC<PortfolioContentProps> = ({

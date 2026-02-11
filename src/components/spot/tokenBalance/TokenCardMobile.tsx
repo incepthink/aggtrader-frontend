@@ -23,7 +23,7 @@ interface TokenCardMobileProps {
   change24h?: number | null;
   isCustomPrice: boolean;
   onPriceChange: (tokenKey: string, price: number) => void;
-  referralData: ReferralResponse;
+  referralData?: ReferralResponse;
 }
 
 export const TokenCardMobile: React.FC<TokenCardMobileProps> = ({

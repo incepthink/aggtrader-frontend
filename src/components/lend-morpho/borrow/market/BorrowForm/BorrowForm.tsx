@@ -1,7 +1,7 @@
 // /components/lend-morpho/borrow/market/BorrowForm/BorrowForm.tsx
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Box, Paper, Alert, Button, CircularProgress } from "@mui/material";
 import { MarketData } from "@/hooks/lend-morpho/MarketDetailHooks";
 import { useAccount, useBalance } from "wagmi";
@@ -12,11 +12,12 @@ import { useMorphoBorrow } from "@/hooks/lend-morpho/useMorphoBorrow";
 import { useMorphoRepay } from "@/hooks/lend-morpho/useMorphoRepay";
 import { useTokenApproval } from "@/hooks/lend-morpho/useTokenApproval";
 import { useRepayTokenApproval } from "@/hooks/lend-morpho/useRepayTokenApproval";
-import { useMorphoPosition } from "@/hooks/lend-morpho/useMorphoPosition";
+import { UserPosition } from "@/hooks/lend-morpho/useMorphoPosition";
 import { BorrowRepayHeader } from "./BorrowRepayHeader";
 import { BorrowTabContent } from "./BorrowTabContent";
 import { RepayTabContent } from "./RepayTabContent";
 import GlowBox from "@/components/common/ui/GlowBox";
+import { useUserMarketPositions } from "@/hooks/lend-morpho/useUserMarketPosition";
 
 interface BorrowFormProps {
   market: MarketData;
@@ -37,7 +38,7 @@ export function BorrowForm({
 
   const { isConnected, address } = useAccount();
 
-  // Get token prices first (needed for position hook)
+  // Get token prices
   const {
     tokenPrice: collateralTokenPrice,
     isLoading: isLoadingCollateralPrice,
@@ -58,18 +59,50 @@ export function BorrowForm({
   const tokenApproval = useTokenApproval(); // For collateral (borrow)
   const repayTokenApproval = useRepayTokenApproval(); // For loan token (repay)
 
-  // Get real user position via GraphQL API
+  // Get user positions across all markets via GraphQL API
   const {
-    data: userPosition,
+    data: userPositions,
     isLoading: isLoadingPosition,
     error: positionError,
     refetch: refetchPosition,
-  } = useMorphoPosition(
-    market,
-    address,
-    collateralTokenPrice || 0,
-    loanTokenPrice || 0
-  );
+  } = useUserMarketPositions();
+
+  // Find the position for this specific market and derive UserPosition
+  const userPosition = useMemo((): UserPosition | undefined => {
+    const currentPosition = userPositions?.positions?.find(
+      (pos) =>
+        pos.market.uniqueKey.toLowerCase() === market.uniqueKey.toLowerCase()
+    );
+
+    if (!currentPosition) return undefined;
+
+    const collateralAmount = parseFloat(
+      currentPosition.state.collateral || "0"
+    );
+    const borrowedAmount = parseFloat(
+      currentPosition.state.borrowAssets || "0"
+    );
+    const collateralUsd = currentPosition.state.collateralUsd || 0;
+    const borrowUsd = currentPosition.state.borrowAssetsUsd || 0;
+
+    const ltv = collateralUsd > 0 ? borrowUsd / collateralUsd : 0;
+    const lltv = parseFloat(market.lltv) / 1e18;
+    const healthFactor = ltv > 0 ? lltv / ltv : Infinity;
+
+    return {
+      collateralAmount,
+      borrowedAmount,
+      collateralShares: "0",
+      borrowShares: "0",
+      supplyShares: "0",
+      hasPosition: collateralAmount > 0 || borrowedAmount > 0,
+      hasDebt: borrowedAmount > 0,
+      ltv,
+      healthFactor,
+      formattedCollateral: collateralAmount.toFixed(6),
+      formattedBorrowed: borrowedAmount.toFixed(6),
+    };
+  }, [userPositions, market.uniqueKey, market.lltv]);
 
   // Get wallet balances
   const collateralBalanceQuery = useBalance({
@@ -89,14 +122,17 @@ export function BorrowForm({
     ? parseFloat(
         formatUnits(
           collateralBalanceQuery.data.value,
-          collateralBalanceQuery.data.decimals
-        )
+          collateralBalanceQuery.data.decimals,
+        ),
       )
     : 0;
 
   const loanBalance = loanBalanceQuery.data
     ? parseFloat(
-        formatUnits(loanBalanceQuery.data.value, loanBalanceQuery.data.decimals)
+        formatUnits(
+          loanBalanceQuery.data.value,
+          loanBalanceQuery.data.decimals,
+        ),
       )
     : 0;
 
@@ -123,10 +159,10 @@ export function BorrowForm({
   // Wallet connection status
   const isWalletProperlyConnected = Boolean(
     isConnected &&
-      address &&
-      address !== "0x0000000000000000000000000000000000000000" &&
-      address.startsWith("0x") &&
-      address.length === 42
+    address &&
+    address !== "0x0000000000000000000000000000000000000000" &&
+    address.startsWith("0x") &&
+    address.length === 42,
   );
 
   // Loading states
@@ -398,7 +434,7 @@ export function BorrowForm({
                     `https://etherscan.io/tx/${
                       morphoBorrow.txHash || morphoRepay.txHash
                     }`,
-                    "_blank"
+                    "_blank",
                   )
                 }
                 sx={{
