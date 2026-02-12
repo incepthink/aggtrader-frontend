@@ -76,9 +76,9 @@ export const AmountInput: React.FC<AmountInputProps> = ({
   // ✅ Enhanced wallet ready check
   const isWalletReady = Boolean(
     isHydrated &&
-      typeof window !== "undefined" &&
-      typeof window.ethereum !== "undefined" &&
-      isConnected
+    typeof window !== "undefined" &&
+    typeof window.ethereum !== "undefined" &&
+    isConnected,
   );
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -149,8 +149,8 @@ export const AmountInput: React.FC<AmountInputProps> = ({
   const displayBalance = isLoadingBalance
     ? "Loading..."
     : mode === "withdraw"
-    ? `${balance} ${symbol}` // For withdraw, balance already contains the withdrawable amount
-    : `${balance} ${symbol}`;
+      ? `${balance} ${symbol}` // For withdraw, balance already contains the withdrawable amount
+      : `${balance} ${symbol}`;
 
   // For position display, show different info based on mode
   const getPositionDisplay = () => {
@@ -173,7 +173,7 @@ export const AmountInput: React.FC<AmountInputProps> = ({
     if (mode === "withdraw") {
       return userPositionUsd > 0
         ? `Position: ${userPositionUsd.toFixed(
-            2
+            2,
           )} • Available: ${balance} ${symbol}`
         : "No position available";
     } else {
@@ -325,8 +325,8 @@ export const AmountInput: React.FC<AmountInputProps> = ({
                   walletError || !isWalletReady
                     ? "#6b7280"
                     : mode === "withdraw"
-                    ? "#3b82f6"
-                    : "#3b82f6",
+                      ? "#3b82f6"
+                      : "#3b82f6",
                 textTransform: "none",
                 fontSize: "12px",
                 fontWeight: "bold",
@@ -337,8 +337,8 @@ export const AmountInput: React.FC<AmountInputProps> = ({
                     walletError || !isWalletReady
                       ? "transparent"
                       : mode === "withdraw"
-                      ? "rgba(239, 68, 68, 0.1)"
-                      : "rgba(59, 130, 246, 0.1)",
+                        ? "rgba(239, 68, 68, 0.1)"
+                        : "rgba(59, 130, 246, 0.1)",
                 },
                 "&:disabled": {
                   color: "#6b7280",
@@ -474,28 +474,6 @@ export const AmountInput: React.FC<AmountInputProps> = ({
           )}
         </Box>
       )}
-
-      {/* Focus Input Button */}
-      <Box sx={{ mt: 2 }}>
-        <Button
-          variant="outlined"
-          size="small"
-          onClick={handleFocusInput}
-          data-testid="focus-input-button"
-          sx={{
-            color: "#00F5E0",
-            borderColor: "#00F5E0",
-            textTransform: "none",
-            fontSize: "12px",
-            "&:hover": {
-              borderColor: "#00F5E0",
-              backgroundColor: "rgba(0, 245, 224, 0.1)",
-            },
-          }}
-        >
-          Focus Input (For Testing)
-        </Button>
-      </Box>
     </Box>
   );
 };

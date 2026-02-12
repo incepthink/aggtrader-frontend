@@ -88,7 +88,7 @@ export const PositionSummary: React.FC<PositionSummaryProps> = ({
   return (
     <Box
       sx={{
-        backgroundColor: "#0d1117",
+        backgroundColor: "transparent",
         borderRadius: 2,
         p: 2,
         mb: 3,
@@ -170,7 +170,7 @@ export const PositionSummary: React.FC<PositionSummaryProps> = ({
       {mode === "borrow" ? (
         <>
           {/* ✅ LTV with Arrow */}
-          <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
+          <Box sx={{ display: "flex", justifyContent: "space-between" }}>
             <Typography variant="body2" sx={{ color: "#8b949e" }}>
               LTV / Liq LTV
             </Typography>
@@ -247,7 +247,9 @@ export const PositionSummary: React.FC<PositionSummaryProps> = ({
                     >
                       {formatHealthFactor(projectedHealthFactor)}
                       {projectedHealthFactor > currentHealthFactor ? (
-                        <TrendingUpIcon sx={{ fontSize: 14, color: "#4caf50" }} />
+                        <TrendingUpIcon
+                          sx={{ fontSize: 14, color: "#4caf50" }}
+                        />
                       ) : projectedHealthFactor < currentHealthFactor ? (
                         <TrendingDownIcon
                           sx={{ fontSize: 14, color: "#f44336" }}

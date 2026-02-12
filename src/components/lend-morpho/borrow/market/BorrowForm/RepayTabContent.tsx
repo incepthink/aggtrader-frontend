@@ -7,8 +7,7 @@ import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import TrendingDownIcon from "@mui/icons-material/TrendingDown";
 import { MarketData } from "@/hooks/lend-morpho/MarketDetailHooks";
 import { UserPosition } from "@/hooks/lend-morpho/useMorphoPosition";
-import { BorrowInput } from "./BorrowInput";
-import { CollateralInput } from "./CollateralInput";
+import EarnInput from "@/components/common/earn/EarnInput";
 import { MarketInfoDisplay } from "./MarketInfoDisplay";
 
 interface RepayTabContentProps {
@@ -37,8 +36,6 @@ interface RepayTabContentProps {
   };
   collateralTokenPrice?: number;
   needsApproval?: boolean;
-  repayInputMode?: "token" | "usd";
-  onToggleRepayMode?: () => void;
   isLoadingLoanPrice?: boolean;
 }
 
@@ -61,8 +58,6 @@ export const RepayTabContent: React.FC<RepayTabContentProps> = ({
   calculations,
   collateralTokenPrice = 0,
   needsApproval = false,
-  repayInputMode = "token",
-  onToggleRepayMode,
   isLoadingLoanPrice = false,
 }) => {
   const lltv = parseFloat(market.lltv) / 1e18;
@@ -80,7 +75,7 @@ export const RepayTabContent: React.FC<RepayTabContentProps> = ({
   const projectedDebt = Math.max(0, currentDebt - repayAmountNum);
   const projectedCollateral = Math.max(
     0,
-    currentCollateral - withdrawAmountNum
+    currentCollateral - withdrawAmountNum,
   );
 
   // Check if there are changes to display arrows
@@ -193,52 +188,64 @@ export const RepayTabContent: React.FC<RepayTabContentProps> = ({
   return (
     <Box>
       {/* Repay Loan Input */}
-      <BorrowInput
+      <EarnInput
         amount={repayAmount}
         onAmountChange={onRepayAmountChange}
         symbol={market.loanAsset.symbol}
-        balance={formattedLoanBalance}
+        balance={currentDebt > 0 ? currentDebt.toString() : "0.00"}
         tokenPrice={loanTokenPrice}
         isConnected={isConnected}
-        mode="repay"
         onMaxClick={handleMaxRepay}
-        maxBorrowable={currentDebt.toString()}
-        inputMode={repayInputMode}
-        onToggleMode={onToggleRepayMode}
+        maxButtonColor="#ef4444"
+        maxButtonHoverBg="rgba(239, 68, 68, 0.1)"
         isLoadingPrice={isLoadingLoanPrice}
+        balanceLabel="Current debt"
+        title={
+          <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
+            <Typography variant="body2">Repay</Typography>
+          </Box>
+        }
+        errorDisplay={
+          repayAmount && parseFloat(repayAmount) > currentDebt ? (
+            <Typography variant="caption" sx={{ color: "#ef4444" }}>
+              Amount exceeds debt
+            </Typography>
+          ) : undefined
+        }
       />
 
-      {/* Withdraw Collateral Input - Using CollateralInput but styled for withdrawal */}
-      <Box sx={{ mb: 3 }}>
-        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
-          <Typography variant="body2" sx={{ color: "#8b949e" }}>
-            Withdraw Collateral {market.collateralAsset.symbol}
-          </Typography>
-          <Typography
-            variant="body2"
-            sx={{ color: "#8b949e", fontSize: "12px" }}
-          >
-            {formatAmount(currentCollateral)} {market.collateralAsset.symbol}
-          </Typography>
-        </Box>
-
-        <CollateralInput
-          amount={withdrawAmount}
-          onAmountChange={onWithdrawAmountChange}
-          onMaxClick={handleMaxWithdraw}
-          symbol={market.collateralAsset.symbol}
-          balance={formatAmount(currentCollateral)}
-          tokenPrice={collateralTokenPrice}
-          isConnected={isConnected}
-          isLoadingBalance={false}
-          mode="repay"
-        />
-      </Box>
+      {/* Withdraw Collateral Input */}
+      <EarnInput
+        amount={withdrawAmount}
+        onAmountChange={onWithdrawAmountChange}
+        onMaxClick={handleMaxWithdraw}
+        symbol={market.collateralAsset.symbol}
+        balance={formatAmount(currentCollateral)}
+        tokenPrice={collateralTokenPrice}
+        isConnected={isConnected}
+        balanceLabel="Collateral"
+        title={
+          <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
+            <Typography variant="body2" sx={{}}>
+              Withdraw Collateral
+            </Typography>
+          </Box>
+        }
+        errorDisplay={
+          withdrawAmount &&
+          parseFloat(withdrawAmount) > currentCollateral &&
+          isConnected ? (
+            <Typography variant="caption" sx={{ color: "#ef4444" }}>
+              Insufficient collateral
+            </Typography>
+          ) : undefined
+        }
+      />
 
       {/* Position Summary */}
       <Box
         sx={{
-          backgroundColor: "#0d1117",
+          backgroundColor: "transparent",
           borderRadius: 2,
           p: 2.5,
           mb: 3,
@@ -322,7 +329,7 @@ export const RepayTabContent: React.FC<RepayTabContentProps> = ({
         </Box>
 
         {/* ✅ Health Factor with Arrow (only show change if there's any input) */}
-        <Box sx={{ mb: 3 }}>
+        <Box sx={{}}>
           <Typography
             variant="caption"
             sx={{ color: "#8b949e", mb: 1, display: "block" }}
@@ -373,7 +380,7 @@ export const RepayTabContent: React.FC<RepayTabContentProps> = ({
         <Divider sx={{ borderColor: "#30363d", my: 2 }} />
 
         {/* LTV Display and Slider */}
-        <Box sx={{ mb: 3 }}>
+        <Box sx={{}}>
           <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
             <Typography variant="body2" sx={{ color: "#8b949e" }}>
               LTV / Liq LTV
@@ -390,7 +397,7 @@ export const RepayTabContent: React.FC<RepayTabContentProps> = ({
           </Box>
 
           {/* LTV Slider */}
-          <Box sx={{ px: 1, mb: 2 }}>
+          <Box sx={{ px: 1 }}>
             <Slider
               value={Math.min(displayLTV * 100, lltv * 95)}
               onChange={handleLtvChange}
@@ -480,13 +487,13 @@ export const RepayTabContent: React.FC<RepayTabContentProps> = ({
               {isLoading
                 ? "Processing..."
                 : !hasDebt
-                ? "No Debt to Repay"
-                : (!repayAmount || parseFloat(repayAmount) === 0) &&
-                  (!withdrawAmount || parseFloat(withdrawAmount) === 0)
-                ? "Enter Amount"
-                : needsApproval
-                ? "Approve Token"
-                : "Repay"}
+                  ? "No Debt to Repay"
+                  : (!repayAmount || parseFloat(repayAmount) === 0) &&
+                      (!withdrawAmount || parseFloat(withdrawAmount) === 0)
+                    ? "Enter Amount"
+                    : needsApproval
+                      ? "Approve Token"
+                      : "Repay"}
             </Button>
           )}
 

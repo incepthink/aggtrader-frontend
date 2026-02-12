@@ -1,4 +1,6 @@
 // Katana Network Token Address Mapping
+export type KATANA_TOKEN = keyof typeof KATANA_TOKEN_MAP;
+
 export const KATANA_TOKEN_MAP: Record<string, { 
   symbol: string; 
   decimals: number; 

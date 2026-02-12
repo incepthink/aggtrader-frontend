@@ -22,7 +22,7 @@ import {
 } from "@/hooks/lend-morpho/useUserVaultPosition";
 import { calculateProjectedEarnings } from "./formatters";
 import { DepositWithdrawHeader } from "./DepositWithdrawHeader";
-import { AmountInput } from "./AmountInput";
+import EarnInput from "@/components/common/earn/EarnInput";
 import { PositionDisplay } from "./PositionDisplay";
 import { ProjectedEarnings } from "./ProjectedEarnings";
 import { ActionButton } from "./ActionButton";
@@ -60,7 +60,7 @@ export const DepositForm: React.FC<DepositFormProps> = ({
   // Parse balance data
   const balance = balanceQuery.data
     ? parseFloat(
-        formatUnits(balanceQuery.data.value, balanceQuery.data.decimals)
+        formatUnits(balanceQuery.data.value, balanceQuery.data.decimals),
       )
     : 0;
 
@@ -112,7 +112,7 @@ export const DepositForm: React.FC<DepositFormProps> = ({
   } = useMorphoDeposit(
     vault.address,
     vault.asset.address,
-    vault.asset.decimals
+    vault.asset.decimals,
   );
 
   // Pass userPosition from API to withdraw hook (handles undefined)
@@ -133,7 +133,7 @@ export const DepositForm: React.FC<DepositFormProps> = ({
     vault.address,
     vault.asset.address,
     vault.asset.decimals,
-    userPosition // Can be undefined, hook handles it
+    userPosition, // Can be undefined, hook handles it
   );
 
   const depositAmount = parseFloat(amount) || 0;
@@ -161,21 +161,21 @@ export const DepositForm: React.FC<DepositFormProps> = ({
   const currentEarnings = calculateProjectedEarnings(
     currentPositionUsd,
     vault,
-    1
+    1,
   );
   const projectedEarnings = calculateProjectedEarnings(
     projectedPositionUsd,
     vault,
-    1
+    1,
   );
 
   // ✅ Same wallet connection check as BorrowForm
   const isWalletProperlyConnected = Boolean(
     isConnected &&
-      address &&
-      address !== "0x0000000000000000000000000000000000000000" &&
-      address.startsWith("0x") &&
-      address.length === 42
+    address &&
+    address !== "0x0000000000000000000000000000000000000000" &&
+    address.startsWith("0x") &&
+    address.length === 42,
   );
 
   // Loading states (similar to BorrowForm)
@@ -457,7 +457,7 @@ export const DepositForm: React.FC<DepositFormProps> = ({
                     `https://etherscan.io/tx/${
                       depositTxHash || withdrawTxHash
                     }`,
-                    "_blank"
+                    "_blank",
                   )
                 }
                 sx={{
@@ -473,7 +473,7 @@ export const DepositForm: React.FC<DepositFormProps> = ({
             </Alert>
           )}
 
-          <AmountInput
+          <EarnInput
             amount={amount}
             onAmountChange={handleAmountChange}
             onMaxClick={handleMaxClick}
@@ -482,18 +482,29 @@ export const DepositForm: React.FC<DepositFormProps> = ({
               activeTab === "deposit"
                 ? formattedBalance
                 : hasWithdrawablePosition()
-                ? getMaxWithdrawableTokens() || "0"
-                : "0"
+                  ? getMaxWithdrawableTokens() || "0"
+                  : "0"
             }
             tokenPrice={tokenPrice || 0}
             isConnected={isWalletProperlyConnected}
             isLoadingBalance={
               activeTab === "deposit" ? isLoadingBalance : isLoadingPosition
             }
-            mode={activeTab}
-            userPosition={currentPositionTokens}
-            userPositionUsd={currentPositionUsd}
-            walletError={null} // ✅ Don't pass wallet errors to AmountInput
+            balanceLabel={activeTab === "deposit" ? "Balance" : "Available"}
+            topSlot={
+              amount &&
+              activeTab === "withdraw" &&
+              parseFloat(amount) > currentPositionTokens &&
+              currentPositionTokens > 0 ? (
+                <Typography
+                  variant="caption"
+                  sx={{ color: "#ef4444", mt: 1, display: "block" }}
+                >
+                  Amount exceeds available balance (
+                  {currentPositionTokens.toFixed(4)} {vault.asset.symbol})
+                </Typography>
+              ) : undefined
+            }
           />
 
           <Divider sx={{ borderColor: "#2d3748", mb: 3 }} />
@@ -502,7 +513,7 @@ export const DepositForm: React.FC<DepositFormProps> = ({
             symbol={vault.asset.symbol}
             currentPosition={Number(formatTokenAmount(currentPositionTokens))} // ✅ Better formatting
             projectedPosition={Number(
-              formatTokenAmount(projectedPositionTokens)
+              formatTokenAmount(projectedPositionTokens),
             )} // ✅ Better formatting
             currentPositionUsd={currentPositionUsd}
             projectedPositionUsd={projectedPositionUsd}

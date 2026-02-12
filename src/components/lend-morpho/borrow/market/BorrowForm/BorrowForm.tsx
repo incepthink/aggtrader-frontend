@@ -18,6 +18,7 @@ import { BorrowTabContent } from "./BorrowTabContent";
 import { RepayTabContent } from "./RepayTabContent";
 import GlowBox from "@/components/common/ui/GlowBox";
 import { useUserMarketPositions } from "@/hooks/lend-morpho/useUserMarketPosition";
+import EarnForm from "@/components/common/earn/EarnForm";
 
 interface BorrowFormProps {
   market: MarketData;
@@ -71,16 +72,16 @@ export function BorrowForm({
   const userPosition = useMemo((): UserPosition | undefined => {
     const currentPosition = userPositions?.positions?.find(
       (pos) =>
-        pos.market.uniqueKey.toLowerCase() === market.uniqueKey.toLowerCase()
+        pos.market.uniqueKey.toLowerCase() === market.uniqueKey.toLowerCase(),
     );
 
     if (!currentPosition) return undefined;
 
     const collateralAmount = parseFloat(
-      currentPosition.state.collateral || "0"
+      currentPosition.state.collateral || "0",
     );
     const borrowedAmount = parseFloat(
-      currentPosition.state.borrowAssets || "0"
+      currentPosition.state.borrowAssets || "0",
     );
     const collateralUsd = currentPosition.state.collateralUsd || 0;
     const borrowUsd = currentPosition.state.borrowAssetsUsd || 0;
@@ -319,6 +320,73 @@ export function BorrowForm({
     ltv: userPosition?.ltv,
     healthFactor: userPosition?.healthFactor,
   });
+
+  const tabs = [
+    {
+      id: "borrow",
+      label: "Borrow",
+      isSupported: true,
+    },
+    {
+      id: "repay",
+      label: "Repay",
+      isSupported: userPosition?.hasDebt || false, // Only show Repay tab if user has debt
+    },
+  ];
+
+  return (
+    <EarnForm tabs={tabs} activeTab={activeTab} setActiveTab={handleTabChange}>
+      {activeTab === "borrow" ? (
+        <BorrowTabContent
+          market={market}
+          collateralAmount={collateralAmount}
+          borrowAmount={borrowAmount}
+          onCollateralAmountChange={setCollateralAmount}
+          onBorrowAmountChange={setBorrowAmount}
+          onMaxCollateral={handleMaxCollateral}
+          onBorrow={tokenApproval.isApproved ? handleBorrow : handleApprove}
+          onConnect={onConnectWallet}
+          isConnected={isWalletProperlyConnected}
+          isLoading={isLoading}
+          formattedCollateralBalance={formattedCollateralBalance}
+          formattedLoanBalance={formattedLoanBalance}
+          collateralTokenPrice={collateralTokenPrice || 0}
+          loanTokenPrice={loanTokenPrice || 0}
+          isLoadingCollateralBalance={collateralBalanceQuery.isLoading}
+          calculations={calculations}
+          needsApproval={
+            !tokenApproval.isApproved && parseFloat(collateralAmount) > 0
+          }
+          userPosition={userPosition || null}
+        />
+      ) : (
+        <RepayTabContent
+          market={market}
+          repayAmount={repayAmount}
+          withdrawAmount={withdrawAmount}
+          onRepayAmountChange={setRepayAmount}
+          onWithdrawAmountChange={setWithdrawAmount}
+          onMaxRepay={handleMaxRepay}
+          onRepay={
+            repayTokenApproval.isApproved ? handleRepay : handleRepayApprove
+          }
+          onConnect={onConnectWallet}
+          isConnected={isWalletProperlyConnected}
+          isLoading={isLoading}
+          isLoadingData={isLoadingData}
+          formattedLoanBalance={formattedLoanBalance}
+          loanTokenPrice={loanTokenPrice || 0}
+          hasDebt={hasDebt}
+          userPosition={userPosition || null}
+          calculations={calculations}
+          collateralTokenPrice={collateralTokenPrice || 0}
+          needsApproval={
+            !repayTokenApproval.isApproved && parseFloat(repayAmount) > 0
+          }
+        />
+      )}
+    </EarnForm>
+  );
 
   return (
     <GlowBox

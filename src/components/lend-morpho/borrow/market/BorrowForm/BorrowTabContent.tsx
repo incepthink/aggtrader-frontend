@@ -2,12 +2,10 @@
 "use client";
 
 import React from "react";
-import { Box, Divider } from "@mui/material";
-import { SwapHoriz } from "@mui/icons-material";
+import { Box, Divider, Typography } from "@mui/material";
 import { MarketData } from "@/hooks/lend-morpho/MarketDetailHooks";
 import { UserPosition } from "@/hooks/lend-morpho/useMorphoPosition";
-import { CollateralInput } from "./CollateralInput";
-import { BorrowInput } from "./BorrowInput";
+import EarnInput from "@/components/common/earn/EarnInput";
 import { PositionSummary } from "./PositionSummary";
 import { HealthFactorAlert } from "./HealthFactorAlert";
 import { BorrowActionButton } from "./BorrowActionButton";
@@ -42,8 +40,6 @@ interface BorrowTabContentProps {
     formatPercentage: (value: number) => string;
     formatNumber: (value: number) => string;
   };
-  borrowInputMode?: "token" | "usd";
-  onToggleBorrowMode?: () => void;
   isLoadingLoanPrice?: boolean;
 }
 
@@ -66,8 +62,6 @@ export const BorrowTabContent: React.FC<BorrowTabContentProps> = ({
   needsApproval = false,
   userPosition,
   calculations,
-  borrowInputMode = "token",
-  onToggleBorrowMode,
   isLoadingLoanPrice = false,
 }) => {
   const lltv = parseFloat(market.lltv) / 1e18;
@@ -107,7 +101,7 @@ export const BorrowTabContent: React.FC<BorrowTabContentProps> = ({
       const existingBorrowed = userPosition?.borrowedAmount || 0;
       const newBorrowAmount = Math.max(
         0,
-        desiredTotalBorrowAmount - existingBorrowed
+        desiredTotalBorrowAmount - existingBorrowed,
       );
 
       // Update borrow amount, ensuring it doesn't exceed max borrowable
@@ -164,7 +158,7 @@ export const BorrowTabContent: React.FC<BorrowTabContentProps> = ({
 
   return (
     <>
-      <CollateralInput
+      <EarnInput
         amount={collateralAmount}
         onAmountChange={onCollateralAmountChange}
         onMaxClick={onMaxCollateral}
@@ -173,6 +167,21 @@ export const BorrowTabContent: React.FC<BorrowTabContentProps> = ({
         tokenPrice={collateralTokenPrice}
         isConnected={isConnected}
         isLoadingBalance={isLoadingCollateralBalance}
+        title={
+          <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
+            <Typography variant="body2">Supply Collateral</Typography>
+          </Box>
+        }
+        errorDisplay={
+          collateralAmount &&
+          parseFloat(collateralAmount) >
+            parseFloat(formattedCollateralBalance) &&
+          isConnected ? (
+            <Typography variant="caption" sx={{ color: "#ef4444" }}>
+              Insufficient balance
+            </Typography>
+          ) : undefined
+        }
       />
 
       {/* Divider with Arrow */}
@@ -180,19 +189,62 @@ export const BorrowTabContent: React.FC<BorrowTabContentProps> = ({
         <SwapHoriz sx={{ color: "#8b949e" }} />
       </Box> */}
 
-      <BorrowInput
+      <EarnInput
         amount={borrowAmount}
         onAmountChange={onBorrowAmountChange}
         symbol={market.loanAsset.symbol}
         balance={formattedLoanBalance}
         tokenPrice={loanTokenPrice}
         isConnected={isConnected}
-        mode="borrow"
-        suggestedAmount={calculations.maxBorrowableAmount}
-        collateralAmount={collateralAmount}
-        inputMode={borrowInputMode}
-        onToggleMode={onToggleBorrowMode}
         isLoadingPrice={isLoadingLoanPrice}
+        title={
+          <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
+            <Typography variant="body2">Borrow</Typography>
+          </Box>
+        }
+        errorDisplay={
+          borrowAmount &&
+          calculations.maxBorrowableAmount > 0 &&
+          parseFloat(borrowAmount) > calculations.maxBorrowableAmount && (
+            <Typography
+              variant="caption"
+              sx={{
+                color: "#ef4444",
+                display: "block",
+                textAlign: "right",
+              }}
+            >
+              Exceeds max borrowable
+            </Typography>
+          )
+        }
+        topSlot={
+          <>
+            {calculations.maxBorrowableAmount > 0 &&
+              collateralAmount &&
+              parseFloat(collateralAmount) > 0 && (
+                <Typography
+                  data-testid="max-borrowable-button"
+                  variant="caption"
+                  sx={{
+                    color: "#3b82f6",
+                    cursor: "pointer",
+                    display: "block",
+                    textAlign: "right",
+                    "&:hover": { textDecoration: "underline" },
+                  }}
+                  onClick={() =>
+                    onBorrowAmountChange(
+                      calculations.maxBorrowableAmount.toFixed(6),
+                    )
+                  }
+                >
+                  Max borrowable: {calculations.maxBorrowableAmount.toFixed(4)}{" "}
+                  {market.loanAsset.symbol}
+                </Typography>
+              )}
+          </>
+        }
       />
 
       {/* ✅ Updated PositionSummary with arrow data */}

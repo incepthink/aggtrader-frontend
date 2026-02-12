@@ -5,6 +5,7 @@ import React, { useState } from "react";
 import { useAccount, usePublicClient, useWalletClient } from "wagmi";
 import { parseUnits, formatUnits, Address, erc20Abi } from "viem";
 import { MarketData } from "@/hooks/lend-morpho/MarketDetailHooks";
+import { addresses } from "@morpho-org/blue-sdk";
 
 // Morpho Blue ABI - Core functions
 const MorphoBlueABI = [
@@ -58,7 +59,12 @@ const MorphoBlueABI = [
   },
 ] as const;
 
-const MORPHO_BLUE_ADDRESS = "0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb";
+const {
+  morpho,
+} = addresses[747474];
+
+const MORPHO_BLUE_ADDRESS = morpho;
+
 
 interface BorrowParams {
   market: MarketData;
