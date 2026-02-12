@@ -28,6 +28,7 @@ import { ProjectedEarnings } from "./ProjectedEarnings";
 import { ActionButton } from "./ActionButton";
 import { VaultInfoCard } from "./VaultInfoCard";
 import GlowBox from "@/components/common/ui/GlowBox";
+import EarnForm from "@/components/common/earn/EarnForm";
 
 interface DepositFormProps {
   vault: VaultDetail;
@@ -338,6 +339,210 @@ export const DepositForm: React.FC<DepositFormProps> = ({
       </Button>
     );
   };
+
+  const tabs = [
+    {
+      id: "deposit",
+      label: "Deposit",
+      isSupported: true,
+    },
+    {
+      id: "withdraw",
+      label: "Withdraw",
+      isSupported: (userPosition && true) || false, // Only show Withdraw tab if user has a position
+    },
+  ];
+
+  return (
+    <EarnForm activeTab={activeTab} setActiveTab={handleTabChange} tabs={tabs}>
+      {/* Wallet connection warning */}
+      {isConnected && !isWalletProperlyConnected && (
+        <Alert
+          severity="warning"
+          sx={{
+            mb: 3,
+            backgroundColor: "#f59e0b",
+            color: "white",
+            "& .MuiAlert-icon": { color: "white" },
+          }}
+        >
+          Wallet connection issue. Please disconnect and reconnect your wallet.
+        </Alert>
+      )}
+
+      {/* ✅ Loading states (like BorrowForm) */}
+      {isLoadingData && isWalletProperlyConnected && (
+        <Alert
+          severity="info"
+          sx={{
+            mb: 3,
+            backgroundColor: "#3b82f6",
+            color: "white",
+            "& .MuiAlert-icon": { color: "white" },
+          }}
+        >
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <CircularProgress size={16} sx={{ color: "white" }} />
+            Loading {isLoadingBalance && "wallet balance"}
+            {isLoadingBalance && isLoadingPosition && " and "}
+            {isLoadingPosition && "position data"}...
+          </Box>
+        </Alert>
+      )}
+
+      {/* No position warning for withdraw tab */}
+      {activeTab === "withdraw" &&
+        !hasWithdrawablePosition() &&
+        isWalletProperlyConnected &&
+        !isLoadingPosition && (
+          <Alert
+            severity="info"
+            sx={{
+              mb: 3,
+              backgroundColor: "#3b82f6",
+              color: "white",
+              "& .MuiAlert-icon": { color: "white" },
+            }}
+          >
+            You don't have any {vault.asset.symbol} deposited in this vault.
+            Switch to the Deposit tab to start earning.
+          </Alert>
+        )}
+
+      {/* ✅ Error display (like BorrowForm) */}
+      {currentError && (
+        <Alert
+          severity="error"
+          sx={{
+            mb: 3,
+            backgroundColor: "#dc2626",
+            color: "white",
+            "& .MuiAlert-icon": { color: "white" },
+          }}
+        >
+          {currentError}
+        </Alert>
+      )}
+
+      {/* ✅ Success message (like BorrowForm) */}
+      {(depositTxHash || withdrawTxHash) && !currentError && (
+        <Alert
+          severity="success"
+          sx={{
+            mb: 3,
+            backgroundColor: "#16a34a",
+            color: "white",
+            "& .MuiAlert-icon": { color: "white" },
+          }}
+        >
+          Transaction successful! Hash:{" "}
+          {(depositTxHash || withdrawTxHash)?.slice(0, 10)}...
+          <Button
+            size="small"
+            onClick={() =>
+              window.open(
+                `https://etherscan.io/tx/${depositTxHash || withdrawTxHash}`,
+                "_blank",
+              )
+            }
+            sx={{
+              color: "white",
+              textDecoration: "underline",
+              ml: 1,
+              p: 0,
+              minWidth: "auto",
+            }}
+          >
+            View on Etherscan
+          </Button>
+        </Alert>
+      )}
+
+      <EarnInput
+        amount={amount}
+        onAmountChange={handleAmountChange}
+        onMaxClick={handleMaxClick}
+        symbol={vault.asset.symbol}
+        balance={
+          activeTab === "deposit"
+            ? formattedBalance
+            : hasWithdrawablePosition()
+              ? getMaxWithdrawableTokens() || "0"
+              : "0"
+        }
+        tokenPrice={tokenPrice || 0}
+        isConnected={isWalletProperlyConnected}
+        isLoadingBalance={
+          activeTab === "deposit" ? isLoadingBalance : isLoadingPosition
+        }
+        title={
+          <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
+            <Typography variant="body2">
+              {activeTab === "deposit" ? "Deposit" : "Withdraw"}
+            </Typography>
+          </Box>
+        }
+        balanceLabel={activeTab === "deposit" ? "Balance" : "Available"}
+        errorDisplay={
+          amount &&
+          activeTab === "withdraw" &&
+          parseFloat(amount) > currentPositionTokens &&
+          currentPositionTokens > 0 ? (
+            <Typography variant="caption" sx={{ color: "#ef4444" }}>
+              Amount exceeds available balance
+            </Typography>
+          ) : undefined
+        }
+      />
+
+      <Divider sx={{ borderColor: "#2d3748", mb: 3 }} />
+
+      <PositionDisplay
+        symbol={vault.asset.symbol}
+        currentPosition={Number(formatTokenAmount(currentPositionTokens))} // ✅ Better formatting
+        projectedPosition={Number(formatTokenAmount(projectedPositionTokens))} // ✅ Better formatting
+        currentPositionUsd={currentPositionUsd}
+        projectedPositionUsd={projectedPositionUsd}
+        netApy={vault.state.avgNetApy}
+        dailyApy={vault.state.dailyNetApy || vault.state.netApy}
+        mode={activeTab}
+        decimals={decimals} // ✅ Pass decimals to component
+      />
+
+      <ProjectedEarnings
+        current={currentEarnings}
+        projected={projectedEarnings}
+        hasAmount={depositAmount > 0}
+        mode={activeTab}
+      />
+
+      <Divider sx={{ borderColor: "#2d3748", mb: 3 }} />
+
+      {/* Action Button - Different for Deposit vs Withdraw */}
+      {activeTab === "deposit" ? (
+        <ActionButton
+          isConnected={isWalletProperlyConnected}
+          amount={amount}
+          balance={balance}
+          symbol={vault.asset.symbol}
+          isLoading={isDepositing || isApproving} // ✅ Show loading for both states
+          isApproving={isApproving}
+          needsApproval={false} // ✅ Always false - handle approval internally
+          txHash={depositTxHash}
+          error={currentError}
+          onDeposit={handleDeposit} // ✅ Always call deposit (handles approval internally)
+          onApprove={handleApprove} // ✅ Not used but required by interface
+          onConnect={onConnectWallet}
+          onReset={() => {
+            setWalletError(null);
+            resetDeposit();
+          }}
+        />
+      ) : (
+        <WithdrawButton />
+      )}
+    </EarnForm>
+  );
 
   return (
     <GlowBox
