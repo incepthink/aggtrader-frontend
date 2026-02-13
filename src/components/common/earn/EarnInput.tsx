@@ -4,6 +4,7 @@ import React, { useState, useCallback } from "react";
 import { Box, Typography, IconButton } from "@mui/material";
 import SwapHorizIcon from "@mui/icons-material/SwapHoriz";
 import "@/components/spot/index.css";
+import { getToken } from "@/utils/katanaTokens";
 
 export type InputMode = "token" | "usd";
 
@@ -56,6 +57,9 @@ const EarnInput: React.FC<EarnInputProps> = ({
   topSlot,
 }) => {
   const [inputMode, setInputMode] = useState<InputMode>("token");
+
+  // get token image from utils/katanaTokens.ts
+  const { image: assetLogo } = getToken(symbol) || {};
 
   const handleToggleMode = useCallback(() => {
     if (!amount || !tokenPrice) {
@@ -197,9 +201,19 @@ const EarnInput: React.FC<EarnInputProps> = ({
               MAX
             </span>
           )}
-          <Typography sx={{ color: "#8b949e", fontSize: "16px" }}>
-            {symbol}
-          </Typography>
+          {assetLogo ? (
+            <div>
+              <img
+                src={assetLogo}
+                alt={symbol}
+                className="md:w-6 md:h-6 w-4 h-4"
+              />
+            </div>
+          ) : (
+            <Typography sx={{ color: "#8b949e", fontSize: "16px" }}>
+              {symbol}
+            </Typography>
+          )}
         </Box>
       </Box>
 

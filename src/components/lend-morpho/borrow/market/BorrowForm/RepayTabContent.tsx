@@ -3,12 +3,11 @@
 
 import React from "react";
 import { Box, Typography, Divider, Slider, Alert, Button } from "@mui/material";
-import TrendingUpIcon from "@mui/icons-material/TrendingUp";
-import TrendingDownIcon from "@mui/icons-material/TrendingDown";
 import { MarketData } from "@/hooks/lend-morpho/MarketDetailHooks";
 import { UserPosition } from "@/hooks/lend-morpho/useMorphoPosition";
 import EarnInput from "@/components/common/earn/EarnInput";
 import { MarketInfoDisplay } from "./MarketInfoDisplay";
+import { PositionSummary } from "./PositionSummary";
 
 interface RepayTabContentProps {
   market: MarketData;
@@ -66,21 +65,22 @@ export const RepayTabContent: React.FC<RepayTabContentProps> = ({
   const currentDebt = userPosition?.borrowedAmount || 0;
   const currentCollateral = userPosition?.collateralAmount || 0;
   const currentHealthFactor = userPosition?.healthFactor || Infinity;
-  const currentLTV = userPosition?.ltv || 0;
 
-  // Calculate projected values after repay/withdraw
+  // Input amounts
   const repayAmountNum = parseFloat(repayAmount) || 0;
   const withdrawAmountNum = parseFloat(withdrawAmount) || 0;
 
+  // Projected values after repay/withdraw
   const projectedDebt = Math.max(0, currentDebt - repayAmountNum);
   const projectedCollateral = Math.max(
     0,
     currentCollateral - withdrawAmountNum,
   );
 
-  // Check if there are changes to display arrows
+  // Changes flags (for arrows)
   const hasDebtChange = repayAmountNum > 0;
   const hasCollateralChange = withdrawAmountNum > 0;
+  const hasAnyChange = hasDebtChange || hasCollateralChange;
 
   // Calculate projected LTV and health factor
   let projectedLTV = 0;
@@ -100,43 +100,38 @@ export const RepayTabContent: React.FC<RepayTabContentProps> = ({
     }
   }
 
-  // If no debt, LTV should be 0 and health factor infinity
   if (projectedDebt === 0) {
     projectedLTV = 0;
     projectedHealthFactor = Infinity;
   }
 
-  // Handle LTV slider change
+  // LTV slider change: sets repay amount to hit target LTV
   const handleLtvChange = (_event: Event, newValue: number | number[]) => {
-    if (typeof newValue === "number") {
-      const targetLTV = newValue / 100;
+    if (typeof newValue !== "number") return;
 
-      // Calculate required repay amount to achieve target LTV
-      if (
-        projectedCollateral > 0 &&
-        collateralTokenPrice > 0 &&
-        loanTokenPrice > 0
-      ) {
-        const collateralValue = projectedCollateral * collateralTokenPrice;
-        const targetDebtValueUSD = targetLTV * collateralValue;
-        const targetDebtAmount = targetDebtValueUSD / loanTokenPrice;
-        const requiredRepayAmount = Math.max(0, currentDebt - targetDebtAmount);
+    const targetLTV = newValue / 100;
 
-        onRepayAmountChange(requiredRepayAmount.toFixed(6));
-      }
+    if (
+      projectedCollateral > 0 &&
+      collateralTokenPrice > 0 &&
+      loanTokenPrice > 0
+    ) {
+      const collateralValue = projectedCollateral * collateralTokenPrice;
+      const targetDebtValueUSD = targetLTV * collateralValue;
+      const targetDebtAmount = targetDebtValueUSD / loanTokenPrice;
+
+      const requiredRepayAmount = Math.max(0, currentDebt - targetDebtAmount);
+      onRepayAmountChange(requiredRepayAmount.toFixed(6));
     }
   };
 
   const handleMaxRepay = () => {
-    if (currentDebt > 0) {
-      onRepayAmountChange(currentDebt.toString());
-    }
+    if (currentDebt > 0) onRepayAmountChange(currentDebt.toString());
   };
 
   const handleMaxWithdraw = () => {
-    if (currentCollateral > 0) {
+    if (currentCollateral > 0)
       onWithdrawAmountChange(currentCollateral.toString());
-    }
   };
 
   const getHealthFactorColor = (hf: number) => {
@@ -153,11 +148,9 @@ export const RepayTabContent: React.FC<RepayTabContentProps> = ({
   };
 
   const canRepay =
-    isConnected &&
-    hasDebt &&
-    (parseFloat(repayAmount) > 0 || parseFloat(withdrawAmount) > 0);
+    isConnected && hasDebt && (repayAmountNum > 0 || withdrawAmountNum > 0);
 
-  // Calculate current LTV for display (before any changes)
+  // Calculate current LTV (before changes)
   let currentLTVDisplay = 0;
   if (
     currentCollateral > 0 &&
@@ -170,13 +163,10 @@ export const RepayTabContent: React.FC<RepayTabContentProps> = ({
     currentLTVDisplay = debtValueUSD / collateralValueUSD;
   }
 
-  // Use projected LTV for display if there are changes, otherwise use current
-  const displayLTV =
-    repayAmountNum > 0 || withdrawAmountNum > 0
-      ? projectedLTV
-      : currentLTVDisplay;
+  // Display projected if any change, else current
+  const displayLTV = hasAnyChange ? projectedLTV : currentLTVDisplay;
 
-  // ✅ Format number with appropriate precision
+  // Format amount
   const formatAmount = (amount: number): string => {
     if (amount === 0) return "0.00";
     if (amount < 0.0001) return amount.toFixed(8);
@@ -206,7 +196,7 @@ export const RepayTabContent: React.FC<RepayTabContentProps> = ({
           </Box>
         }
         errorDisplay={
-          repayAmount && parseFloat(repayAmount) > currentDebt ? (
+          repayAmount && repayAmountNum > currentDebt ? (
             <Typography variant="caption" sx={{ color: "#ef4444" }}>
               Amount exceeds debt
             </Typography>
@@ -226,14 +216,12 @@ export const RepayTabContent: React.FC<RepayTabContentProps> = ({
         balanceLabel="Collateral"
         title={
           <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
-            <Typography variant="body2" sx={{}}>
-              Withdraw Collateral
-            </Typography>
+            <Typography variant="body2">Withdraw Collateral</Typography>
           </Box>
         }
         errorDisplay={
           withdrawAmount &&
-          parseFloat(withdrawAmount) > currentCollateral &&
+          withdrawAmountNum > currentCollateral &&
           isConnected ? (
             <Typography variant="caption" sx={{ color: "#ef4444" }}>
               Insufficient collateral
@@ -242,146 +230,43 @@ export const RepayTabContent: React.FC<RepayTabContentProps> = ({
         }
       />
 
-      {/* Position Summary */}
+      {/* Position Summary Box (same as before), now reusing PositionSummary */}
       <Box
         sx={{
           backgroundColor: "transparent",
           borderRadius: 2,
-          p: 2.5,
+          p: 2,
           mb: 3,
           border: "1px solid #30363d",
         }}
       >
-        {/* ✅ Current Debt with Arrow */}
-        <Box sx={{ mb: 2 }}>
-          <Typography
-            variant="caption"
-            sx={{ color: "#8b949e", mb: 1, display: "block" }}
-          >
-            Current debt ({market.loanAsset.symbol})
-          </Typography>
-          <Box sx={{ display: "flex", alignItems: "baseline", gap: 2 }}>
-            <Typography
-              variant="body1"
-              sx={{ color: "white", fontWeight: 600 }}
-            >
-              {formatAmount(currentDebt)}
-            </Typography>
-            {hasDebtChange && (
-              <>
-                <Typography variant="body2" sx={{ color: "#8b949e" }}>
-                  →
-                </Typography>
-                <Typography
-                  variant="body1"
-                  sx={{
-                    color: "#4caf50", // Green for debt reduction
-                    fontWeight: 600,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 0.5,
-                  }}
-                >
-                  {formatAmount(projectedDebt)}
-                  <TrendingDownIcon sx={{ fontSize: 16, color: "#4caf50" }} />
-                </Typography>
-              </>
-            )}
-          </Box>
-        </Box>
+        {/* ✅ Common UI block */}
+        <PositionSummary
+          hideContainer
+          mode="repay"
+          collateralSymbol={market.collateralAsset.symbol}
+          loanSymbol={market.loanAsset.symbol}
+          collateralAmount={formatAmount(currentCollateral)}
+          borrowedAmount={formatAmount(currentDebt)}
+          ltv={`${(displayLTV * 100).toFixed(2)}%`}
+          liquidationLtv={`${(lltv * 100).toFixed(2)}%`}
+          healthFactor={currentHealthFactor}
+          // Arrow data
+          currentCollateral={currentCollateral}
+          currentBorrowed={currentDebt}
+          currentHealthFactor={currentHealthFactor}
+          projectedCollateral={projectedCollateral}
+          projectedBorrowed={projectedDebt}
+          projectedHealthFactor={projectedHealthFactor}
+          hasCollateralChange={hasCollateralChange}
+          hasBorrowChange={hasDebtChange}
+          hasAnyChange={hasAnyChange}
+          formatAmount={formatAmount}
+        />
 
-        {/* ✅ Collateral with Arrow */}
-        <Box sx={{ mb: 2 }}>
-          <Typography
-            variant="caption"
-            sx={{ color: "#8b949e", mb: 1, display: "block" }}
-          >
-            Collateral ({market.collateralAsset.symbol})
-          </Typography>
-          <Box sx={{ display: "flex", alignItems: "baseline", gap: 2 }}>
-            <Typography
-              variant="body1"
-              sx={{ color: "white", fontWeight: 600 }}
-            >
-              {formatAmount(currentCollateral)}
-            </Typography>
-            {hasCollateralChange && (
-              <>
-                <Typography variant="body2" sx={{ color: "#8b949e" }}>
-                  →
-                </Typography>
-                <Typography
-                  variant="body1"
-                  sx={{
-                    color: "#f59e0b", // Orange/yellow for collateral withdrawal
-                    fontWeight: 600,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 0.5,
-                  }}
-                >
-                  {formatAmount(projectedCollateral)}
-                  <TrendingDownIcon sx={{ fontSize: 16, color: "#f59e0b" }} />
-                </Typography>
-              </>
-            )}
-          </Box>
-        </Box>
-
-        {/* ✅ Health Factor with Arrow (only show change if there's any input) */}
-        <Box sx={{}}>
-          <Typography
-            variant="caption"
-            sx={{ color: "#8b949e", mb: 1, display: "block" }}
-          >
-            Health Factor
-          </Typography>
-          <Box sx={{ display: "flex", alignItems: "baseline", gap: 2 }}>
-            <Typography
-              variant="body1"
-              sx={{
-                color: getHealthFactorColor(currentHealthFactor),
-                fontWeight: 600,
-              }}
-            >
-              {currentHealthFactor === Infinity
-                ? "∞"
-                : currentHealthFactor.toFixed(2)}
-            </Typography>
-            {(hasDebtChange || hasCollateralChange) && (
-              <>
-                <Typography variant="body2" sx={{ color: "#8b949e" }}>
-                  →
-                </Typography>
-                <Typography
-                  variant="body1"
-                  sx={{
-                    color: getHealthFactorColor(projectedHealthFactor),
-                    fontWeight: 600,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 0.5,
-                  }}
-                >
-                  {projectedHealthFactor === Infinity
-                    ? "∞"
-                    : projectedHealthFactor.toFixed(2)}
-                  {projectedHealthFactor > currentHealthFactor ? (
-                    <TrendingUpIcon sx={{ fontSize: 16, color: "#4caf50" }} />
-                  ) : projectedHealthFactor < currentHealthFactor ? (
-                    <TrendingDownIcon sx={{ fontSize: 16, color: "#f44336" }} />
-                  ) : null}
-                </Typography>
-              </>
-            )}
-          </Box>
-        </Box>
-
-        <Divider sx={{ borderColor: "#30363d", my: 2 }} />
-
-        {/* LTV Display and Slider */}
-        <Box sx={{}}>
-          <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
+        {/* LTV Display and Slider (kept in repay tab as you wanted) */}
+        <Box>
+          <Box sx={{ display: "flex", justifyContent: "space-between", my: 1 }}>
             <Typography variant="body2" sx={{ color: "#8b949e" }}>
               LTV / Liq LTV
             </Typography>
@@ -396,13 +281,12 @@ export const RepayTabContent: React.FC<RepayTabContentProps> = ({
             </Typography>
           </Box>
 
-          {/* LTV Slider */}
           <Box sx={{ px: 1 }}>
             <Slider
               value={Math.min(displayLTV * 100, lltv * 95)}
               onChange={handleLtvChange}
               min={0}
-              max={lltv * 95} // 95% of liquidation LTV
+              max={lltv * 95}
               step={0.1}
               disabled={
                 !hasDebt ||
@@ -488,8 +372,8 @@ export const RepayTabContent: React.FC<RepayTabContentProps> = ({
                 ? "Processing..."
                 : !hasDebt
                   ? "No Debt to Repay"
-                  : (!repayAmount || parseFloat(repayAmount) === 0) &&
-                      (!withdrawAmount || parseFloat(withdrawAmount) === 0)
+                  : (!repayAmount || repayAmountNum === 0) &&
+                      (!withdrawAmount || withdrawAmountNum === 0)
                     ? "Enter Amount"
                     : needsApproval
                       ? "Approve Token"
@@ -497,7 +381,6 @@ export const RepayTabContent: React.FC<RepayTabContentProps> = ({
             </Button>
           )}
 
-          {/* Additional info text */}
           <Typography
             variant="caption"
             sx={{
@@ -526,8 +409,6 @@ export const RepayTabContent: React.FC<RepayTabContentProps> = ({
           Borrow tab to borrow assets.
         </Alert>
       )}
-
-      <Divider sx={{ borderColor: "#2d3748", my: 3 }} />
 
       <MarketInfoDisplay
         borrowApy={market.borrowApy}
