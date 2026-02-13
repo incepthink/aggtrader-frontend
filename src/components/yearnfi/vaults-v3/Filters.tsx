@@ -13,10 +13,15 @@ import {
 import SearchIcon from "@mui/icons-material/Search";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import GlowBox from "@/components/common/ui/GlowBox";
-import {
-  ALL_VAULTSV3_KINDS_KEYS,
-  ALL_VAULTSV3_CATEGORIES_KEYS,
-} from "@/lib/yearnfi/vaults-v3/constants";
+
+const TYPE_OPTIONS = [{ id: "single", name: "Single Asset" }];
+const TYPE_ALL = ["all", "single"]; // "All" state = both selected
+
+const CATEGORY_OPTIONS = [
+  { id: "stablecoin", name: "Stablecoin" },
+  { id: "volatile", name: "Volatile" },
+];
+const CATEGORY_ALL = ["stablecoin", "volatile"];
 
 type FiltersProps = {
   types: string[] | null;
@@ -38,7 +43,8 @@ type FilterBoxProps = {
   options: { id: string | number; name: string }[];
   allOptions: (string | number)[];
   onChange: (values: any[]) => void;
-  noAll?: Boolean;
+  noAll?: boolean;
+  disabled?: boolean; // ✅ add
 };
 
 function FilterBox({
@@ -48,10 +54,12 @@ function FilterBox({
   allOptions,
   onChange,
   noAll,
+  disabled,
 }: FilterBoxProps) {
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
+    if (disabled) return;
     setAnchorEl(event.currentTarget);
   };
 
@@ -124,7 +132,8 @@ function FilterBox({
           backgroundColor: "rgba(0, 0, 0, 0.3)",
           borderRadius: 1,
           border: "1px solid rgba(255, 255, 255, 0.2)",
-          cursor: "pointer",
+          cursor: disabled ? "not-allowed" : "pointer",
+          opacity: disabled ? 0.7 : 1,
           transition: "all 0.2s",
           "&:hover": {
             borderColor: "#00F5E0",
@@ -250,15 +259,8 @@ export function Filters({
     return () => clearTimeout(timer);
   }, [localSearch, shouldDebounce, onSearch]);
 
-  const typeOptions = ALL_VAULTSV3_KINDS_KEYS.map((key) => ({
-    id: key,
-    name: key,
-  }));
-
-  const categoryOptions = ALL_VAULTSV3_CATEGORIES_KEYS.map((key) => ({
-    id: key,
-    name: key,
-  }));
+  const typeOptions = TYPE_OPTIONS;
+  const categoryOptions = CATEGORY_OPTIONS;
 
   const chainOptions = CHAIN_OPTIONS.map((chain) => ({
     id: chain.id,
@@ -273,7 +275,7 @@ export function Filters({
           gridTemplateColumns: {
             xs: "1fr",
             sm: "repeat(2, 1fr)",
-            md: "2fr 1fr 1fr 1fr"
+            md: "2fr 1fr 1fr 1fr",
           },
           gap: { xs: 1.5, sm: 2 },
         }}
@@ -287,7 +289,12 @@ export function Filters({
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
-                <SearchIcon sx={{ color: "rgba(255, 255, 255, 0.5)", fontSize: { xs: "1.25rem", sm: "1.5rem" } }} />
+                <SearchIcon
+                  sx={{
+                    color: "rgba(255, 255, 255, 0.5)",
+                    fontSize: { xs: "1.25rem", sm: "1.5rem" },
+                  }}
+                />
               </InputAdornment>
             ),
             sx: {
@@ -312,18 +319,22 @@ export function Filters({
 
         <FilterBox
           label="Type"
-          selected={types || []}
-          options={typeOptions}
-          allOptions={ALL_VAULTSV3_KINDS_KEYS}
-          onChange={onChangeTypes}
+          noAll={true}
+          disabled={true}
+          selected={["all"]}
+          options={[{ id: "all", name: "All" }]}
+          allOptions={["all"]}
+          onChange={() => {}}
         />
 
         <FilterBox
           label="Category"
-          selected={categories || []}
-          options={categoryOptions}
-          allOptions={ALL_VAULTSV3_CATEGORIES_KEYS}
-          onChange={onChangeCategories}
+          noAll={true}
+          disabled={true}
+          selected={["all"]}
+          options={[{ id: "all", name: "All" }]}
+          allOptions={["all"]}
+          onChange={() => {}}
         />
 
         <FilterBox

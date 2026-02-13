@@ -3,11 +3,11 @@
 import { useState, useCallback } from 'react';
 import type { TSortDirection } from '@/lib/yearnfi/lib/types';
 
-export type TPossibleSortBy = 
-  | 'name' 
-  | 'apy' 
-  | 'tvl' 
-  | 'available' 
+export type TPossibleSortBy =
+  | 'name'
+  | 'apy'
+  | 'tvl'
+  | 'available'
   | 'deposited'
   | 'estAPY'
   | 'APY'
@@ -17,35 +17,23 @@ export type TPossibleSortBy =
 type UseQueryArgumentsProps = {
   defaultTypes?: string[];
   defaultCategories?: string[];
-  defaultPathname?: string;
 };
 
 export function useQueryArguments({
-  defaultTypes = [],
-  defaultCategories = [],
+  defaultTypes = ['all', 'single'],
+  defaultCategories = ['stablecoin', 'volatile'],
 }: UseQueryArgumentsProps) {
   const [search, setSearch] = useState<string>('');
   const [types, setTypes] = useState<string[] | null>(defaultTypes);
   const [categories, setCategories] = useState<string[] | null>(defaultCategories);
-  const [chains, setChains] = useState<number[] | null>([ 747474]); // Ethereum + Katana
+  const [chains, setChains] = useState<number[] | null>([747474]);
   const [sortDirection, setSortDirection] = useState<TSortDirection>('');
   const [sortBy, setSortBy] = useState<TPossibleSortBy>('featuringScore');
 
-  const onSearch = useCallback((value: string) => {
-    setSearch(value);
-  }, []);
-
-  const onChangeTypes = useCallback((value: string[] | null) => {
-    setTypes(value);
-  }, []);
-
-  const onChangeCategories = useCallback((value: string[] | null) => {
-    setCategories(value);
-  }, []);
-
-  const onChangeChains = useCallback((value: number[] | null) => {
-    setChains(value);
-  }, []);
+  const onSearch = useCallback((value: string) => setSearch(value), []);
+  const onChangeTypes = useCallback((value: string[] | null) => setTypes(value), []);
+  const onChangeCategories = useCallback((value: string[] | null) => setCategories(value), []);
+  const onChangeChains = useCallback((value: number[] | null) => setChains(value), []);
 
   const onChangeSortDirection = useCallback((value: TSortDirection | '') => {
     setSortDirection(value as TSortDirection);
@@ -59,7 +47,7 @@ export function useQueryArguments({
     setSearch('');
     setTypes(defaultTypes);
     setCategories(defaultCategories);
-    setChains([ 747474]);
+    setChains([747474]);
     setSortDirection('');
     setSortBy('featuringScore');
   }, [defaultTypes, defaultCategories]);

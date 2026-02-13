@@ -11,6 +11,7 @@ import type { TYDaemonVault } from "@/lib/yearnfi/lib/utils/schemas/yDaemonVault
 import { formatAmount } from "@/lib/yearnfi/lib/utils";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import GlowBox from "@/components/common/ui/GlowBox";
+import { getToken } from "@/utils/katanaTokens";
 
 type VaultActionPanelProps = {
   vault: TYDaemonVault;
@@ -44,6 +45,10 @@ export function VaultActionPanel({ vault }: VaultActionPanelProps) {
     );
   }
 
+  // Wallet-side token symbol (always underlying token)
+  const walletTokenSymbol = vault.token.symbol;
+  const walletToken = getToken(walletTokenSymbol);
+
   const handleMaxClick = () => {
     if (isDepositing) {
       onChangeAmount(maxDepositPossible.normalized.toString());
@@ -57,6 +62,27 @@ export function VaultActionPanel({ vault }: VaultActionPanelProps) {
     if (val === "" || /^\d*\.?\d*$/.test(val)) {
       onChangeAmount(val);
     }
+  };
+
+  const WalletTokenLogo = () => {
+    if (!walletToken?.image) return null;
+    return (
+      <Box
+        sx={{
+          width: 24,
+          height: 24,
+          borderRadius: "50%",
+          overflow: "hidden",
+          flexShrink: 0,
+        }}
+      >
+        <img
+          src={walletToken.image}
+          alt={walletToken.symbol}
+          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+        />
+      </Box>
+    );
   };
 
   return (
@@ -93,6 +119,7 @@ export function VaultActionPanel({ vault }: VaultActionPanelProps) {
             >
               {isDepositing ? "From wallet" : "From vault"}
             </Typography>
+
             <Box
               sx={{
                 display: "flex",
@@ -112,19 +139,15 @@ export function VaultActionPanel({ vault }: VaultActionPanelProps) {
                   minWidth: "120px",
                 }}
               >
-                <Box
-                  sx={{
-                    width: 24,
-                    height: 24,
-                    borderRadius: "50%",
-                    bgcolor: "primary.main",
-                  }}
-                />
+                {/* ✅ Logo only for wallet side (From wallet in deposit) */}
+                {isDepositing ? <WalletTokenLogo /> : null}
+
                 <Typography variant="body2" fontWeight={600}>
                   {isDepositing ? vault.token.symbol : vault.symbol}
                 </Typography>
               </Box>
             </Box>
+
             <Typography
               variant="caption"
               color="text.secondary"
@@ -135,7 +158,7 @@ export function VaultActionPanel({ vault }: VaultActionPanelProps) {
                 isDepositing
                   ? userTokenBalance.normalized
                   : userVaultBalance.normalized,
-                4
+                4,
               )}{" "}
               {isDepositing ? vault.token.symbol : vault.symbol}
             </Typography>
@@ -215,6 +238,7 @@ export function VaultActionPanel({ vault }: VaultActionPanelProps) {
             >
               {isDepositing ? "To vault" : "To wallet"}
             </Typography>
+
             <Box
               sx={{
                 display: "flex",
@@ -234,19 +258,15 @@ export function VaultActionPanel({ vault }: VaultActionPanelProps) {
                   minWidth: "120px",
                 }}
               >
-                <Box
-                  sx={{
-                    width: 24,
-                    height: 24,
-                    borderRadius: "50%",
-                    bgcolor: "secondary.main",
-                  }}
-                />
+                {/* ✅ Logo only for wallet side (To wallet in withdraw) */}
+                {!isDepositing ? <WalletTokenLogo /> : null}
+
                 <Typography variant="body2" fontWeight={600}>
                   {isDepositing ? vault.symbol : vault.token.symbol}
                 </Typography>
               </Box>
             </Box>
+
             <Typography
               variant="caption"
               color="text.secondary"
@@ -319,6 +339,7 @@ export function VaultActionPanel({ vault }: VaultActionPanelProps) {
               >
                 {isDepositing ? "From wallet" : "From vault"}
               </Typography>
+
               <Box
                 sx={{
                   display: "flex",
@@ -338,19 +359,15 @@ export function VaultActionPanel({ vault }: VaultActionPanelProps) {
                     minWidth: "120px",
                   }}
                 >
-                  <Box
-                    sx={{
-                      width: 24,
-                      height: 24,
-                      borderRadius: "50%",
-                      bgcolor: "primary.main",
-                    }}
-                  />
+                  {/* ✅ Logo only for wallet side (From wallet in deposit) */}
+                  {isDepositing ? <WalletTokenLogo /> : null}
+
                   <Typography variant="body2" fontWeight={600}>
                     {isDepositing ? vault.token.symbol : vault.symbol}
                   </Typography>
                 </Box>
               </Box>
+
               <Typography
                 variant="caption"
                 color="text.secondary"
@@ -361,7 +378,7 @@ export function VaultActionPanel({ vault }: VaultActionPanelProps) {
                   isDepositing
                     ? userTokenBalance.normalized
                     : userVaultBalance.normalized,
-                  4
+                  4,
                 )}{" "}
                 {isDepositing ? vault.token.symbol : vault.symbol}
               </Typography>
@@ -441,6 +458,7 @@ export function VaultActionPanel({ vault }: VaultActionPanelProps) {
               >
                 {isDepositing ? "To vault" : "To wallet"}
               </Typography>
+
               <Box
                 sx={{
                   display: "flex",
@@ -460,19 +478,15 @@ export function VaultActionPanel({ vault }: VaultActionPanelProps) {
                     minWidth: "120px",
                   }}
                 >
-                  <Box
-                    sx={{
-                      width: 24,
-                      height: 24,
-                      borderRadius: "50%",
-                      bgcolor: "secondary.main",
-                    }}
-                  />
+                  {/* ✅ Logo only for wallet side (To wallet in withdraw) */}
+                  {!isDepositing ? <WalletTokenLogo /> : null}
+
                   <Typography variant="body2" fontWeight={600}>
                     {isDepositing ? vault.symbol : vault.token.symbol}
                   </Typography>
                 </Box>
               </Box>
+
               <Typography
                 variant="caption"
                 color="text.secondary"
@@ -558,19 +572,15 @@ export function VaultActionPanel({ vault }: VaultActionPanelProps) {
               }}
             >
               <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <Box
-                  sx={{
-                    width: 24,
-                    height: 24,
-                    borderRadius: "50%",
-                    bgcolor: "primary.main",
-                  }}
-                />
+                {/* ✅ Logo only for wallet side (From wallet in deposit) */}
+                {isDepositing ? <WalletTokenLogo /> : null}
+
                 <Typography variant="body2" fontWeight={600}>
                   {isDepositing ? vault.token.symbol : vault.symbol}
                 </Typography>
               </Box>
             </Box>
+
             <Typography
               variant="caption"
               color="text.secondary"
@@ -581,7 +591,7 @@ export function VaultActionPanel({ vault }: VaultActionPanelProps) {
                 isDepositing
                   ? userTokenBalance.normalized
                   : userVaultBalance.normalized,
-                4
+                4,
               )}{" "}
               {isDepositing ? vault.token.symbol : vault.symbol}
             </Typography>
@@ -657,6 +667,7 @@ export function VaultActionPanel({ vault }: VaultActionPanelProps) {
             >
               {isDepositing ? "To vault" : "To wallet"}
             </Typography>
+
             <Box
               sx={{
                 display: "flex",
@@ -670,14 +681,9 @@ export function VaultActionPanel({ vault }: VaultActionPanelProps) {
               }}
             >
               <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <Box
-                  sx={{
-                    width: 24,
-                    height: 24,
-                    borderRadius: "50%",
-                    bgcolor: "secondary.main",
-                  }}
-                />
+                {/* ✅ Logo only for wallet side (To wallet in withdraw) */}
+                {!isDepositing ? <WalletTokenLogo /> : null}
+
                 <Typography variant="body2" fontWeight={600}>
                   {isDepositing ? vault.symbol : vault.token.symbol}
                 </Typography>

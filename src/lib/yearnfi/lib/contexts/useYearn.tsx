@@ -1,6 +1,7 @@
 // ============================================================================
 // FILE: lib/contexts/useYearn.tsx
 // ============================================================================
+
 "use client";
 
 import {
@@ -12,23 +13,44 @@ import {
 } from "react";
 import useSWR from "swr";
 import type { TYDaemonVault } from "../utils/schemas/yDaemonVaultsSchemas";
-import type { TDict, TNormalizedBN } from "../types/mixed";
+import type { TNormalizedBN } from "../types/mixed";
 import type { TAddress } from "../types/address";
-import { toNormalizedBN } from "../utils";
 
 type TTokenAndChain = { address: TAddress; chainID: number };
 
+// inside useYearn.tsx (top-level)
+const KATANA_ALLOWED_ASSETS = new Set([
+  "vbUSDC",
+  "vbUSDT",
+  "AUSD",
+  "vbETH",
+  "vbWBTC",
+]);
+
 type TYearnContext = {
+  // ✅ Top-level assets (Multi Strategy) — what you render as 5 rows
+  assetVaults: TYDaemonVault[];
+
+  // ✅ Child vaults (Single Strategy) — what you render inside dropdown
+  childVaults: TYDaemonVault[];
+
+  // ✅ Keep old name for compatibility if needed
   vaults: TYDaemonVault[];
+
   vaultsMigrations: TYDaemonVault[];
   vaultsRetired: TYDaemonVault[];
+
   isLoadingVaultList: boolean;
+
+  // ✅ Used for dropdown: tokenAddress -> child vaults
+  childVaultsByToken: Record<string, TYDaemonVault[]>;
+
   getPrice: (params: TTokenAndChain) => TNormalizedBN;
 };
 
 const YearnContext = createContext<TYearnContext | undefined>(undefined);
 
-const SUPPORTED_CHAINS = [747474]; // Ethereum + Katana
+const SUPPORTED_CHAINS = [747474];
 
 const fetcher = async (urls: string[]) => {
   const responses = await Promise.all(
@@ -41,83 +63,135 @@ const fetcher = async (urls: string[]) => {
         .catch((err) => {
           console.error(`Error fetching ${url}:`, err);
           return [];
-        })
-    )
+        }),
+    ),
   );
 
-  // Flatten all vaults from all chains
-  const allVaults = responses.flat();
+  const allVaults: TYDaemonVault[] = responses.flat();
 
-  // Separate vaults by type
-  const activeVaults = allVaults.filter(
-    (vault: TYDaemonVault) =>
-      vault.version?.startsWith("3") &&
+  // ✅ Split by kind
+  const multi = allVaults.filter(
+    (v) =>
+      v.version?.startsWith("3") &&
+      v.kind === "Multi Strategy" &&
+      KATANA_ALLOWED_ASSETS.has((v.token?.symbol || v.symbol) as string),
+  );
+
+  const single = allVaults.filter(
+    (v) => v.version?.startsWith("3") && v.kind === "Single Strategy",
+  );
+
+  // Keep your existing migrations/retired logic BUT only for Multi Strategy
+  const activeVaults = multi.filter(
+    (vault) =>
       vault.migration?.available !== true &&
-      !(vault as any).info?.isRetired // Use type assertion for optional property
+      vault.status !== "retired" &&
+      vault.status !== "withdraw-only",
   );
 
-  const migrations = allVaults.filter(
-    (vault: TYDaemonVault) =>
-      vault.version?.startsWith("3") && vault.migration?.available === true
+  const migrations = multi.filter(
+    (vault) => vault.migration?.available === true,
   );
 
-  const retired = allVaults.filter(
-    (vault: TYDaemonVault) =>
-      vault.version?.startsWith("3") && (vault as any).info?.isRetired === true // Use type assertion for optional property
+  const retired = multi.filter(
+    (vault) => vault.status === "retired" || vault.status === "withdraw-only",
   );
 
-  return { activeVaults, migrations, retired };
+  return { activeVaults, migrations, retired, single };
 };
 
 export function YearnProvider({ children }: { children: ReactNode }) {
   const urls = SUPPORTED_CHAINS.map(
-    (chainId) => `https://ydaemon.yearn.fi/${chainId}/vaults/all`
+    (chainId) => `https://ydaemon.yearn.fi/${chainId}/vaults/all`,
   );
 
-  const { data, error, isLoading } = useSWR(
+  const { data, isLoading } = useSWR(
     ["yearn-v3-vaults", ...urls],
     () => fetcher(urls),
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
-      refreshInterval: 60000, // Refresh every minute
-    }
+      refreshInterval: 60000,
+    },
   );
 
-  const vaults = useMemo(() => data?.activeVaults || [], [data]);
+  // ✅ These are the 5 parent rows
+  const assetVaults = useMemo(() => data?.activeVaults || [], [data]);
+
+  // ✅ These are children shown in dropdown
+  const childVaults = useMemo(() => data?.single || [], [data]);
+
   const vaultsMigrations = useMemo(() => data?.migrations || [], [data]);
   const vaultsRetired = useMemo(() => data?.retired || [], [data]);
 
+  // ✅ Backwards compatible: if some code still uses `vaults`
+  // make it equal to assetVaults so it no longer includes noisy single strategy vaults
+  const vaults = assetVaults;
+
+  // ✅ tokenAddress -> childVaults
+  const childVaultsByToken = useMemo(() => {
+    const map: Record<string, TYDaemonVault[]> = {};
+    for (const v of childVaults) {
+      const tokenAddr = v.token?.address?.toLowerCase?.();
+      if (!tokenAddr) continue;
+      if (!map[tokenAddr]) map[tokenAddr] = [];
+      map[tokenAddr].push(v);
+    }
+
+    // Optional: stable sort children by TVL desc so it matches official feel
+    for (const k of Object.keys(map)) {
+      map[k] = map[k].sort((a, b) => (b.tvl?.tvl || 0) - (a.tvl?.tvl || 0));
+    }
+
+    return map;
+  }, [childVaults]);
+
+  // ✅ Price from vault tvl.price (works for parent + child)
   const getPrice = useCallback(
     ({ address, chainID }: TTokenAndChain): TNormalizedBN => {
-      const allVaults = [...vaults, ...vaultsMigrations, ...vaultsRetired];
-      const vault = allVaults.find(
+      const all = [
+        ...assetVaults,
+        ...childVaults,
+        ...vaultsMigrations,
+        ...vaultsRetired,
+      ];
+      const vault = all.find(
         (v) =>
           v.address.toLowerCase() === address.toLowerCase() &&
-          v.chainID === chainID
+          v.chainID === chainID,
       );
-
       const price = vault?.tvl?.price || 0;
 
-      // Return TNormalizedBN with all required properties
       return {
-        raw: BigInt(Math.floor(price * 1_000_000)), // Convert to 6 decimals
+        raw: BigInt(Math.floor(price * 1_000_000)),
         normalized: price,
         display: price.toFixed(6),
       };
     },
-    [vaults, vaultsMigrations, vaultsRetired]
+    [assetVaults, childVaults, vaultsMigrations, vaultsRetired],
   );
 
   const value: TYearnContext = useMemo(
     () => ({
+      assetVaults,
+      childVaults,
+      childVaultsByToken,
       vaults,
       vaultsMigrations,
       vaultsRetired,
       isLoadingVaultList: isLoading,
       getPrice,
     }),
-    [vaults, vaultsMigrations, vaultsRetired, isLoading, getPrice]
+    [
+      assetVaults,
+      childVaults,
+      childVaultsByToken,
+      vaults,
+      vaultsMigrations,
+      vaultsRetired,
+      isLoading,
+      getPrice,
+    ],
   );
 
   return (
@@ -127,8 +201,6 @@ export function YearnProvider({ children }: { children: ReactNode }) {
 
 export function useYearn() {
   const context = useContext(YearnContext);
-  if (!context) {
-    throw new Error("useYearn must be used within YearnProvider");
-  }
+  if (!context) throw new Error("useYearn must be used within YearnProvider");
   return context;
 }

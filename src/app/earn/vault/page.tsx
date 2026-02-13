@@ -21,10 +21,9 @@ import {
   ALL_VAULTSV3_KINDS_KEYS,
   ALL_VAULTSV3_CATEGORIES_KEYS,
 } from "@/lib/yearnfi/vaults-v3/constants";
+import { VaultsV3AssetRow } from "@/components/yearnfi/vaults-v3/list/VaultsV3AssetRow";
 
 export default function VaultPage() {
-  const { isLoadingVaultList } = useYearn();
-
   const {
     search,
     types,
@@ -40,40 +39,38 @@ export default function VaultPage() {
     onChangeSortBy,
     onReset,
   } = useQueryArguments({
-    defaultTypes: ALL_VAULTSV3_KINDS_KEYS,
-    defaultCategories: ALL_VAULTSV3_CATEGORIES_KEYS,
+    defaultTypes: ["all"],
+    defaultCategories: ["stablecoin", "volatile"],
   });
 
-  const { activeVaults } = useVaultFilter(types, chains, true);
+  const { vaults, isLoadingVaultList } = useYearn();
+  console.log("All vaults from context:", vaults);
+
+  const fiveAssets = useMemo(() => {
+    const allowed = new Set(["vbUSDC", "vbETH", "vbUSDT", "vbWBTC", "AUSD"]);
+    return (vaults || [])
+      .filter((v) => v.chainID === 747474)
+      .filter((v) => v.version?.startsWith("3"))
+      .filter((v) => allowed.has(v.token?.symbol || "")) // ✅ asset key
+      .filter((v) => v.kind === "Multi Strategy"); // ✅ single asset vaults
+  }, [vaults]);
 
   // Apply search filter
-  const searchedVaults = useMemo((): TYDaemonVault[] => {
-    if (!search) {
-      return activeVaults;
-    }
+  const searchedVaults = useMemo(() => {
+    if (!search) return fiveAssets;
 
-    let searchRegex: RegExp;
-    try {
-      const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      searchRegex = new RegExp(escapedSearch, "i");
-    } catch {
-      const lowercaseSearch = search.toLowerCase();
-      return activeVaults.filter((vault: TYDaemonVault): boolean => {
-        const searchableText =
-          `${vault.name} ${vault.symbol} ${vault.token.name} ${vault.token.symbol} ${vault.address} ${vault.token.address}`.toLowerCase();
-        return searchableText.includes(lowercaseSearch);
-      });
-    }
-
-    return activeVaults.filter((vault: TYDaemonVault): boolean => {
-      const searchableText = `${vault.name} ${vault.symbol} ${vault.token.name} ${vault.token.symbol} ${vault.address} ${vault.token.address}`;
-      return searchRegex.test(searchableText);
+    const s = search.toLowerCase();
+    return fiveAssets.filter((v) => {
+      const asset = (v.token?.symbol || "").toLowerCase();
+      const name = (v.name || "").toLowerCase();
+      const symbol = (v.symbol || "").toLowerCase();
+      return asset.includes(s) || name.includes(s) || symbol.includes(s);
     });
-  }, [activeVaults, search]);
-
+  }, [fiveAssets, search]);
+  console.log("Searched vaults:", searchedVaults);
   // Apply sorting
   const sortedVaults = useSortVaults(searchedVaults, sortBy, sortDirection);
-
+  console.log("Sorted vaults:", sortedVaults);
   // Filter by categories and chains
   const filteredVaults = useMemo(() => {
     let filtered = sortedVaults;
@@ -90,7 +87,7 @@ export default function VaultPage() {
   }, [sortedVaults, chains, categories]);
 
   const shouldShowEmptyState =
-    isLoadingVaultList || isZero(filteredVaults.length);
+    isLoadingVaultList || isZero(sortedVaults.length);
 
   return (
     <Container
@@ -131,7 +128,7 @@ export default function VaultPage() {
             sortDirection={sortDirection}
             onSort={(
               newSortBy: string,
-              newSortDirection: TSortDirection
+              newSortDirection: TSortDirection,
             ): void => {
               if (newSortDirection === "") {
                 onChangeSortBy("featuringScore");
@@ -184,7 +181,7 @@ export default function VaultPage() {
           {shouldShowEmptyState ? (
             <VaultsListEmpty
               isLoading={isLoadingVaultList}
-              sortedVaultsToDisplay={filteredVaults}
+              sortedVaultsToDisplay={searchedVaults}
               currentSearch={search || ""}
               currentCategories={types}
               currentChains={chains}
@@ -193,11 +190,8 @@ export default function VaultPage() {
             />
           ) : (
             <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-              {filteredVaults.map((vault) => (
-                <VaultsV3ListRow
-                  key={`${vault.chainID}_${vault.address}`}
-                  currentVault={vault}
-                />
+              {searchedVaults.map((v) => (
+                <VaultsV3AssetRow key={`${v.chainID}_${v.address}`} vault={v} />
               ))}
             </Box>
           )}
