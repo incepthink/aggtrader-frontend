@@ -16,7 +16,7 @@ interface ApprovalResult {
   isApproved: boolean;
   isLoading: boolean;
   error: string | null;
-  approve: (params: ApprovalParams) => Promise<void>;
+  approve: (params: ApprovalParams) => Promise<boolean>;
   checkApproval: (
     params: Omit<ApprovalParams, "amount"> & { amount: string }
   ) => Promise<void>;
@@ -70,7 +70,7 @@ export function useTokenApproval(): ApprovalResult {
   }: ApprovalParams) => {
     if (!address || !walletClient || !publicClient) {
       setError("Wallet not connected");
-      return;
+      return false;
     }
 
     setIsLoading(true);
@@ -99,6 +99,7 @@ export function useTokenApproval(): ApprovalResult {
       } else {
         throw new Error("Approval transaction failed");
       }
+      return true;
     } catch (err: any) {
       console.error("Approval error:", err);
 
@@ -107,6 +108,7 @@ export function useTokenApproval(): ApprovalResult {
       } else {
         setError(err.message || "Approval failed");
       }
+      return false;
     } finally {
       setIsLoading(false);
     }

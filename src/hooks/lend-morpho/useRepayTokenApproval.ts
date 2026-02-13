@@ -16,7 +16,7 @@ interface RepayApprovalResult {
   isApproved: boolean;
   isLoading: boolean;
   error: string | null;
-  approve: (params: RepayApprovalParams) => Promise<void>;
+  approve: (params: RepayApprovalParams) => Promise<boolean>;
   checkApproval: (
     params: Omit<RepayApprovalParams, "amount"> & { amount: string }
   ) => Promise<void>;
@@ -79,7 +79,7 @@ export function useRepayTokenApproval(): RepayApprovalResult {
   }: RepayApprovalParams) => {
     if (!address || !walletClient || !publicClient) {
       setError("Wallet not connected");
-      return;
+      return false;
     }
 
     setIsLoading(true);
@@ -115,6 +115,7 @@ export function useRepayTokenApproval(): RepayApprovalResult {
       } else {
         throw new Error("Repay token approval transaction failed");
       }
+      return true;
     } catch (err: any) {
       console.error("Repay token approval error:", err);
 
@@ -123,6 +124,7 @@ export function useRepayTokenApproval(): RepayApprovalResult {
       } else {
         setError(err.message || "Approval failed");
       }
+      return false;
     } finally {
       setIsLoading(false);
     }

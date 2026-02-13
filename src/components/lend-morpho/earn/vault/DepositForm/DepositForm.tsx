@@ -29,6 +29,8 @@ import { ActionButton } from "./ActionButton";
 import { VaultInfoCard } from "./VaultInfoCard";
 import GlowBox from "@/components/common/ui/GlowBox";
 import EarnForm from "@/components/common/earn/EarnForm";
+import { useNotify } from "@/components/common/NotificationProvider";
+import { getToken } from "@/utils/katanaTokens";
 
 interface DepositFormProps {
   vault: VaultDetail;
@@ -43,6 +45,11 @@ export const DepositForm: React.FC<DepositFormProps> = ({
   const [activeTab, setActiveTab] = useState<"deposit" | "withdraw">("deposit");
   const [walletError, setWalletError] = useState<string | null>(null);
   const { isConnected, address } = useAccount();
+  const { show } = useNotify();
+
+  // Get correct token decimals via getToken (normalizes vb-prefixed symbols)
+  const vaultToken = getToken(vault.asset.symbol);
+  const tokenDecimals = vaultToken?.decimals ?? vault.asset.decimals;
 
   // Fetch token balance
   const balanceQuery = useBalance({
@@ -65,7 +72,7 @@ export const DepositForm: React.FC<DepositFormProps> = ({
       )
     : 0;
 
-  const decimals = balanceQuery.data?.decimals || 18;
+  const decimals = tokenDecimals;
   const formattedBalance = balance.toFixed(5);
   const isLoadingBalance = balanceQuery.isLoading;
   const isLoadingBalances = balanceQuery.isLoading;
@@ -113,7 +120,7 @@ export const DepositForm: React.FC<DepositFormProps> = ({
   } = useMorphoDeposit(
     vault.address,
     vault.asset.address,
-    vault.asset.decimals,
+    tokenDecimals,
   );
 
   // Pass userPosition from API to withdraw hook (handles undefined)
@@ -133,7 +140,7 @@ export const DepositForm: React.FC<DepositFormProps> = ({
   } = useMorphoWithdraw(
     vault.address,
     vault.asset.address,
-    vault.asset.decimals,
+    tokenDecimals,
     userPosition, // Can be undefined, hook handles it
   );
 
@@ -227,32 +234,71 @@ export const DepositForm: React.FC<DepositFormProps> = ({
 
   const handleApprove = async () => {
     if (!amount) return;
-    // ✅ Clear any existing errors before approval
+    // Clear any existing errors before approval
     if (depositError) {
       resetDeposit();
     }
-    await approve(amount);
+    const success = await approve(amount);
+
+    if (!success) {
+      show({
+        id: crypto.randomUUID(),
+        type: "error",
+        message: "Approval was rejected",
+        duration: 5000,
+      });
+    }
   };
 
   const handleDeposit = async () => {
     if (!amount) return;
-    // ✅ Clear any existing errors before deposit
+    // Clear any existing errors before deposit
     if (depositError) {
       resetDeposit();
     }
     const success = await deposit(amount);
-    if (success) {
-      setAmount("");
+
+    if (!success) {
+      show({
+        id: crypto.randomUUID(),
+        type: "error",
+        message: depositError || "Deposit failed",
+        duration: 5000,
+      });
+      return;
     }
+
+    show({
+      id: crypto.randomUUID(),
+      type: "success",
+      message: "Deposit successful",
+      duration: 4000,
+    });
+    setAmount("");
   };
 
   const handleWithdraw = async () => {
     if (!amount) return;
 
     const success = await withdraw(amount);
-    if (success) {
-      setAmount("");
+
+    if (!success) {
+      show({
+        id: crypto.randomUUID(),
+        type: "error",
+        message: withdrawError || "Withdrawal failed",
+        duration: 5000,
+      });
+      return;
     }
+
+    show({
+      id: crypto.randomUUID(),
+      type: "success",
+      message: "Withdrawal successful",
+      duration: 4000,
+    });
+    setAmount("");
   };
 
   // ✅ Simple error handling like BorrowForm

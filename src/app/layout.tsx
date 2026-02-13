@@ -15,6 +15,7 @@ import Script from "next/script";
 import { ConditionalSpotNavbar } from "@/components/common/navbar/ConditionalSpotNavbar";
 import { ConditionalPerpNavbar } from "@/components/common/navbar/ConditionalPerpNavbar";
 import { AttestationWrapper } from "@/components/providers/AttestationWrapper";
+import NotificationProvider from "@/components/common/NotificationProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -69,18 +70,20 @@ export default function RootLayout({
               <AttestationWrapper />
               <DerivedStateTwapProvider isLimitOrder={true}>
                 <VaultProviders>
-                  <div className="fixed inset-0 -z-10 overflow-hidden">
-                    <img
-                      src="/ellipse-home.png"
-                      className="w-full h-full object-cover"
-                      alt=""
-                    />
-                  </div>
-                  <Navbar />
-                  <ConditionalMorphoNavbar />
-                  <ConditionalSpotNavbar />
-                  <ConditionalPerpNavbar />
-                  {children}
+                  <NotificationProvider>
+                    <div className="fixed inset-0 -z-10 overflow-hidden">
+                      <img
+                        src="/ellipse-home.png"
+                        className="w-full h-full object-cover"
+                        alt=""
+                      />
+                    </div>
+                    <Navbar />
+                    <ConditionalMorphoNavbar />
+                    <ConditionalSpotNavbar />
+                    <ConditionalPerpNavbar />
+                    {children}
+                  </NotificationProvider>
                 </VaultProviders>
               </DerivedStateTwapProvider>
             </ChainProvider>

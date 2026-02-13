@@ -1,7 +1,7 @@
 // /components/lend-morpho/borrow/market/BorrowForm/BorrowForm.tsx
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useContext } from "react";
 import { Box, Paper, Alert, Button, CircularProgress } from "@mui/material";
 import { MarketData } from "@/hooks/lend-morpho/MarketDetailHooks";
 import { useAccount, useBalance } from "wagmi";
@@ -12,6 +12,7 @@ import { useMorphoBorrow } from "@/hooks/lend-morpho/useMorphoBorrow";
 import { useMorphoRepay } from "@/hooks/lend-morpho/useMorphoRepay";
 import { useTokenApproval } from "@/hooks/lend-morpho/useTokenApproval";
 import { useRepayTokenApproval } from "@/hooks/lend-morpho/useRepayTokenApproval";
+import { getToken } from "@/utils/katanaTokens";
 import { UserPosition } from "@/hooks/lend-morpho/useMorphoPosition";
 import { BorrowRepayHeader } from "./BorrowRepayHeader";
 import { BorrowTabContent } from "./BorrowTabContent";
@@ -19,6 +20,10 @@ import { RepayTabContent } from "./RepayTabContent";
 import GlowBox from "@/components/common/ui/GlowBox";
 import { useUserMarketPositions } from "@/hooks/lend-morpho/useUserMarketPosition";
 import EarnForm from "@/components/common/earn/EarnForm";
+import {
+  NotificationContext,
+  useNotify,
+} from "@/components/common/NotificationProvider";
 
 interface BorrowFormProps {
   market: MarketData;
@@ -31,6 +36,7 @@ export function BorrowForm({
   market,
   onConnectWallet = () => console.log("Connect wallet clicked"),
 }: BorrowFormProps) {
+  // states
   const [activeTab, setActiveTab] = useState<"borrow" | "repay">("borrow");
   const [collateralAmount, setCollateralAmount] = useState("");
   const [borrowAmount, setBorrowAmount] = useState("");
@@ -38,6 +44,17 @@ export function BorrowForm({
   const [withdrawAmount, setWithdrawAmount] = useState("");
 
   const { isConnected, address } = useAccount();
+
+  const { show, remove } = useNotify();
+
+  // Get correct token decimals via getToken (normalizes vb-prefixed symbols)
+  const collateralToken = getToken(market.collateralAsset.symbol);
+  const loanToken = getToken(market.loanAsset.symbol);
+  const collateralDecimals = collateralToken?.decimals ?? market.collateralAsset.decimals;
+  const loanDecimals = loanToken?.decimals ?? market.loanAsset.decimals;
+
+  const lastCollateralPriceErrorRef = React.useRef<string | null>(null);
+  const lastLoanPriceErrorRef = React.useRef<string | null>(null);
 
   // Get token prices
   const {
@@ -51,6 +68,71 @@ export function BorrowForm({
     isLoading: isLoadingLoanPrice,
     error: loanPriceError,
   } = usePriceBackend(market.loanAsset.address as Address);
+
+  React.useEffect(() => {
+    if (!collateralPriceError) {
+      lastCollateralPriceErrorRef.current = null;
+      return;
+    }
+
+    const errMsg =
+      collateralPriceError instanceof Error
+        ? collateralPriceError.message
+        : String(collateralPriceError);
+
+    // prevent repeating same error message
+    if (lastCollateralPriceErrorRef.current === errMsg) return;
+    lastCollateralPriceErrorRef.current = errMsg;
+
+    show({
+      id: crypto.randomUUID(), // if your show() still requires id
+      type: "error",
+      message: `Failed to fetch ${market.collateralAsset.symbol} price`,
+      duration: 5000,
+    });
+
+    console.error("[PriceBackend] Collateral price fetch failed", {
+      token: market.collateralAsset.symbol,
+      address: market.collateralAsset.address,
+      chainId: 747474,
+      error: collateralPriceError,
+    });
+  }, [
+    collateralPriceError,
+    show,
+    market.collateralAsset.symbol,
+    market.collateralAsset.address,
+  ]);
+
+  React.useEffect(() => {
+    if (!loanPriceError) {
+      lastLoanPriceErrorRef.current = null;
+      return;
+    }
+
+    const errMsg =
+      loanPriceError instanceof Error
+        ? loanPriceError.message
+        : String(loanPriceError);
+
+    // prevent repeating same error message
+    if (lastLoanPriceErrorRef.current === errMsg) return;
+    lastLoanPriceErrorRef.current = errMsg;
+
+    show({
+      id: crypto.randomUUID(), // if your show() still requires id
+      type: "error",
+      message: `Failed to fetch ${market.loanAsset.symbol} price`,
+      duration: 5000,
+    });
+
+    console.error("[PriceBackend] Loan price fetch failed", {
+      token: market.loanAsset.symbol,
+      address: market.loanAsset.address,
+      chainId: 747474,
+      error: loanPriceError,
+    });
+  }, [loanPriceError, show, market.loanAsset.symbol, market.loanAsset.address]);
 
   // Morpho hooks
   const morphoBorrow = useMorphoBorrow();
@@ -77,12 +159,13 @@ export function BorrowForm({
 
     if (!currentPosition) return undefined;
 
+    // Divide raw on-chain values by 10^decimals for human-readable display
     const collateralAmount = parseFloat(
       currentPosition.state.collateral || "0",
-    );
+    ) / (10 ** collateralDecimals);
     const borrowedAmount = parseFloat(
       currentPosition.state.borrowAssets || "0",
-    );
+    ) / (10 ** loanDecimals);
     const collateralUsd = currentPosition.state.collateralUsd || 0;
     const borrowUsd = currentPosition.state.borrowAssetsUsd || 0;
 
@@ -103,7 +186,7 @@ export function BorrowForm({
       formattedCollateral: collateralAmount.toFixed(6),
       formattedBorrowed: borrowedAmount.toFixed(6),
     };
-  }, [userPositions, market.uniqueKey, market.lltv]);
+  }, [userPositions, market.uniqueKey, market.lltv, collateralDecimals, loanDecimals]);
 
   // Get wallet balances
   const collateralBalanceQuery = useBalance({
@@ -111,7 +194,6 @@ export function BorrowForm({
     token: market.collateralAsset.address as `0x${string}`,
     query: { enabled: isConnected && !!address },
   });
-
   const loanBalanceQuery = useBalance({
     address,
     token: market.loanAsset.address as `0x${string}`,
@@ -187,7 +269,7 @@ export function BorrowForm({
         tokenAddress: market.collateralAsset.address as Address,
         spenderAddress: MORPHO_BLUE_ADDRESS as Address,
         amount: collateralAmount,
-        decimals: market.collateralAsset.decimals,
+        decimals: collateralDecimals,
       });
     }
   }, [collateralAmount, market.collateralAsset, activeTab]);
@@ -198,7 +280,7 @@ export function BorrowForm({
         tokenAddress: market.loanAsset.address as Address,
         spenderAddress: MORPHO_BLUE_ADDRESS as Address,
         amount: repayAmount,
-        decimals: market.loanAsset.decimals,
+        decimals: loanDecimals,
       });
     }
   }, [repayAmount, market.loanAsset, activeTab]);
@@ -244,39 +326,77 @@ export function BorrowForm({
   const handleApprove = async () => {
     if (!collateralAmount) return;
 
-    await tokenApproval.approve({
+    const success = await tokenApproval.approve({
       tokenAddress: market.collateralAsset.address as Address,
       spenderAddress: MORPHO_BLUE_ADDRESS as Address,
       amount: collateralAmount,
-      decimals: market.collateralAsset.decimals,
+      decimals: collateralDecimals,
     });
+
+    if (!success) {
+      show({
+        id: crypto.randomUUID(),
+        type: "error",
+        message: "Approval was rejected",
+        duration: 5000,
+      });
+    }
   };
 
   const handleRepayApprove = async () => {
     if (!repayAmount) return;
 
-    await repayTokenApproval.approve({
+    const success = await repayTokenApproval.approve({
       tokenAddress: market.loanAsset.address as Address,
       spenderAddress: MORPHO_BLUE_ADDRESS as Address,
       amount: repayAmount,
-      decimals: market.loanAsset.decimals,
+      decimals: loanDecimals,
     });
+
+    if (!success) {
+      show({
+        id: crypto.randomUUID(),
+        type: "error",
+        message: "Approval was rejected",
+        duration: 5000,
+      });
+    }
   };
 
   const handleBorrow = async () => {
     if (!collateralAmount || !borrowAmount) return;
 
-    await morphoBorrow.borrow({
+    const result = await morphoBorrow.borrow({
       market,
       collateralAmount,
       borrowAmount,
     });
 
-    // Reset form on success
-    if (morphoBorrow.txHash) {
-      setCollateralAmount("");
-      setBorrowAmount("");
+    if (!result.success) {
+      show({
+        id: crypto.randomUUID(),
+        type: "error",
+        message: result.error || "Borrow failed",
+        duration: 5000,
+      });
+
+      console.error("[MorphoBorrow] borrow() failed", {
+        market: market.uniqueKey,
+        collateralAmount,
+        borrowAmount,
+        error: result.error,
+      });
+
+      return;
     }
+
+    // success path
+    show({
+      id: crypto.randomUUID(),
+      type: "success",
+      message: "Borrow successful",
+      duration: 4000,
+    });
   };
 
   const handleRepay = async () => {
@@ -284,17 +404,40 @@ export function BorrowForm({
       return;
     }
 
-    await morphoRepay.repay({
+    const success = await morphoRepay.repay({
       market,
       repayAmount: repayAmount || "0",
       withdrawAmount: withdrawAmount || "0",
     });
 
-    // Reset form on success
-    if (morphoRepay.txHash) {
-      setRepayAmount("");
-      setWithdrawAmount("");
+    if (!success) {
+      show({
+        id: crypto.randomUUID(),
+        type: "error",
+        message: morphoRepay.error || "Repay failed",
+        duration: 5000,
+      });
+
+      console.error("[MorphoRepay] repay() failed", {
+        market: market.uniqueKey,
+        repayAmount,
+        withdrawAmount,
+        error: morphoRepay.error,
+      });
+
+      return;
     }
+
+    // success path
+    show({
+      id: crypto.randomUUID(),
+      type: "success",
+      message: "Repay successful",
+      duration: 4000,
+    });
+
+    setRepayAmount("");
+    setWithdrawAmount("");
   };
 
   // Get current error state (convert Error objects to strings)

@@ -316,12 +316,13 @@ export const useMorphoBorrow = () => {
     );
 
   // Execute borrow with collateral supply
+  // Returns { success: true } or { success: false, error: string }
   const borrow = React.useCallback(
     async ({
       market,
       collateralAmount,
       borrowAmount,
-    }: BorrowParams): Promise<boolean> => {
+    }: BorrowParams): Promise<{ success: boolean; error?: string }> => {
       console.log("=== BORROW FUNCTION CALLED ===");
       console.log("Params:", {
         market: market.uniqueKey,
@@ -332,18 +333,18 @@ export const useMorphoBorrow = () => {
       const validation = validateClients();
       if (!address || !isConnected) {
           console.log("Wallet not connected");
-          return false;
+          return { success: false, error: "Wallet not connected" };
         }
 
         if (!publicClient) {
           console.log("Public client not available");
-          return false;
+          return { success: false, error: "Public client not available" };
         }
 
       if (!collateralAmount || !borrowAmount) {
         console.log("Invalid amounts:", { collateralAmount, borrowAmount });
         updateState({ error: "Please enter valid amounts" });
-        return false;
+        return { success: false, error: "Please enter valid amounts" };
       }
 
       updateState({ isLoading: true, error: null, txHash: null });
@@ -398,8 +399,8 @@ export const useMorphoBorrow = () => {
             if (!approved) {
               console.log("Approval failed");
               updateState({ isLoading: false });
-              return false;
-            
+              return { success: false, error: "Transaction rejected by user" };
+
           }
         }
 
@@ -467,7 +468,7 @@ export const useMorphoBorrow = () => {
         if (borrowReceipt.status === "success") {
           console.log("=== BORROW SUCCESSFUL ===");
           updateState({ isLoading: false });
-          return true;
+          return { success: true };
         } else {
           throw new Error("Borrow transaction failed");
         }
@@ -495,7 +496,7 @@ export const useMorphoBorrow = () => {
           isLoading: false,
           error: errorMessage,
         });
-        return false;
+        return { success: false, error: errorMessage };
       }
     },
     [

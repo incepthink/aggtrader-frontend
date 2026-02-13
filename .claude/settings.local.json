@@ -26,7 +26,8 @@
       "WebFetch(domain:docs.kuma.bid)",
       "WebFetch(domain:api-docs-v1-perps.katana.network)",
       "WebFetch(domain:sdk-js-docs-v1-perps.katana.network)",
-      "Bash(npm run lint:*)"
+      "Bash(npm run lint:*)",
+      "Bash(git checkout:*)"
     ],
     "deny": [],
     "ask": []
