@@ -12,6 +12,8 @@ import { formatAmount } from "@/lib/yearnfi/lib/utils";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import GlowBox from "@/components/common/ui/GlowBox";
 import { getToken } from "@/utils/katanaTokens";
+import { usePriceBackend } from "@/hooks/sushiswap/usePriceBackend";
+import type { Address } from "viem";
 
 type VaultActionPanelProps = {
   vault: TYDaemonVault;
@@ -48,6 +50,29 @@ export function VaultActionPanel({ vault }: VaultActionPanelProps) {
   // Wallet-side token symbol (always underlying token)
   const walletTokenSymbol = vault.token.symbol;
   const walletToken = getToken(walletTokenSymbol);
+
+  // Fetch underlying token price for USD conversion
+  const { data: tokenPrice, isLoading: isLoadingPrice } = usePriceBackend(
+    vault.token.address as Address,
+    undefined,
+    747474
+  );
+
+  // Calculate USD values
+  const inputAmountUSD = tokenPrice && amount
+    ? (parseFloat(amount) || 0) * tokenPrice
+    : 0;
+
+  const outputAmountUSD = tokenPrice && expectedOut.normalized
+    ? expectedOut.normalized * tokenPrice
+    : 0;
+
+  // Format USD display
+  const formatUSD = (value: number): string => {
+    if (value === 0) return "$0.00";
+    if (value < 0.01) return `$${value.toFixed(4)}`;
+    return `$${value.toFixed(2)}`;
+  };
 
   const handleMaxClick = () => {
     if (isDepositing) {
@@ -220,7 +245,7 @@ export function VaultActionPanel({ vault }: VaultActionPanelProps) {
               color="text.secondary"
               sx={{ mt: 0.5, display: "block" }}
             >
-              $0.00
+              {isLoadingPrice ? "Loading..." : formatUSD(inputAmountUSD)}
             </Typography>
           </Box>
 
@@ -311,7 +336,7 @@ export function VaultActionPanel({ vault }: VaultActionPanelProps) {
               color="text.secondary"
               sx={{ mt: 0.5, display: "block" }}
             >
-              $0.00
+              {isLoadingPrice || isLoadingPreview ? "Loading..." : formatUSD(outputAmountUSD)}
             </Typography>
           </Box>
 
@@ -440,7 +465,7 @@ export function VaultActionPanel({ vault }: VaultActionPanelProps) {
                 color="text.secondary"
                 sx={{ mt: 0.5, display: "block" }}
               >
-                $0.00
+                {isLoadingPrice ? "Loading..." : formatUSD(inputAmountUSD)}
               </Typography>
             </Box>
 
@@ -531,7 +556,7 @@ export function VaultActionPanel({ vault }: VaultActionPanelProps) {
                 color="text.secondary"
                 sx={{ mt: 0.5, display: "block" }}
               >
-                $0.00
+                {isLoadingPrice || isLoadingPreview ? "Loading..." : formatUSD(outputAmountUSD)}
               </Typography>
             </Box>
           </Box>
@@ -654,7 +679,7 @@ export function VaultActionPanel({ vault }: VaultActionPanelProps) {
               color="text.secondary"
               sx={{ mt: 0.5, display: "block" }}
             >
-              $0.00
+              {isLoadingPrice ? "Loading..." : formatUSD(inputAmountUSD)}
             </Typography>
           </Box>
 
@@ -728,7 +753,7 @@ export function VaultActionPanel({ vault }: VaultActionPanelProps) {
               color="text.secondary"
               sx={{ mt: 0.5, display: "block" }}
             >
-              $0.00
+              {isLoadingPrice || isLoadingPreview ? "Loading..." : formatUSD(outputAmountUSD)}
             </Typography>
           </Box>
 
