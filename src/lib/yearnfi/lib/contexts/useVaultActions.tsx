@@ -20,7 +20,7 @@ import { VAULT_V3_ABI } from "@/lib/yearnfi/lib/abis/vaultV3.abi";
 import { ERC20_ABI } from "@/lib/yearnfi/lib/abis/erc20.abi";
 import { checkAllowance } from "@/lib/yearnfi/lib/utils/wagmi/transactions";
 import { toNormalizedBN } from "@/lib/yearnfi/lib/utils";
-import { useToast } from "@/hooks/use-toast";
+import { useNotify } from "@/components/common/NotificationProvider";
 import {
   fetchDepositFromBackend,
   fetchWithdrawFromBackend,
@@ -66,7 +66,7 @@ export function VaultActionsProvider({
   vault: TYDaemonVault;
 }) {
   const { address, isConnected } = useAccount();
-  const { toast } = useToast();
+  const { show } = useNotify();
 
   const tokenDecimals = (vault.token as any).decimals ?? vault.decimals ?? 18;
   const vaultDecimals = vault.decimals ?? 18;
@@ -248,21 +248,23 @@ export function VaultActionsProvider({
   // onApprove is now integrated into onDeposit
   // Keeping this as a placeholder function for backward compatibility
   const onApprove = useCallback(async () => {
-    console.log("hi");
-
-    toast({
-      title: "Not Required",
-      description: "Approval is now handled automatically during deposit",
+    show({
+      id: crypto.randomUUID(),
+      type: "info",
+      message: "Approval is now handled automatically during deposit",
+      duration: 4000,
     });
-  }, [toast]);
+  }, [show]);
 
   const onDeposit = useCallback(async () => {
     if (!address || amountBigInt === BigInt(0) || !sendTransactionAsync) return;
 
     setIsDepositingTx(true);
-    toast({
-      title: "Preparing Deposit",
-      description: "Fetching transaction from backend...",
+    show({
+      id: crypto.randomUUID(),
+      type: "info",
+      message: "Preparing deposit...",
+      duration: 3000,
     });
 
     try {
@@ -287,9 +289,11 @@ export function VaultActionsProvider({
       // If approval needed, sign it first
       if (response.data.approval) {
         console.log("=== APPROVAL NEEDED ===");
-        toast({
-          title: "Approval Required",
-          description: "Please approve the token spending...",
+        show({
+          id: crypto.randomUUID(),
+          type: "info",
+          message: "Approval required. Please approve the token spending...",
+          duration: 5000,
         });
 
         const approvalHash = await sendTransactionAsync({
@@ -301,9 +305,11 @@ export function VaultActionsProvider({
         console.log("Approval tx hash:", approvalHash);
         setPendingTxHash(approvalHash);
 
-        toast({
-          title: "Approval Sent",
-          description: "Waiting for confirmation...",
+        show({
+          id: crypto.randomUUID(),
+          type: "success",
+          message: "Approval successful",
+          duration: 4000,
         });
 
         // Wait a bit for approval to be mined (simple approach)
@@ -312,10 +318,6 @@ export function VaultActionsProvider({
 
       // Sign deposit transaction
       console.log("=== SIGNING DEPOSIT ===");
-      toast({
-        title: "Deposit Pending",
-        description: "Please confirm the deposit transaction...",
-      });
 
       const depositHash = await sendTransactionAsync({
         to: response.data.deposit.to,
@@ -326,10 +328,11 @@ export function VaultActionsProvider({
       console.log("Deposit tx hash:", depositHash);
       setPendingTxHash(depositHash);
 
-      toast({
-        title: "Deposit Successful",
-        description: `Successfully deposited ${amount} ${vault.token.symbol}`,
-        variant: "success",
+      show({
+        id: crypto.randomUUID(),
+        type: "success",
+        message: `Successfully deposited ${amount} ${vault.token.symbol}`,
+        duration: 4000,
       });
 
       setAmount("");
@@ -344,10 +347,11 @@ export function VaultActionsProvider({
           ? "Transaction cancelled by user"
           : error?.message || "Deposit failed";
 
-      toast({
-        title: "Deposit Failed",
-        description: errorMessage,
-        variant: "destructive",
+      show({
+        id: crypto.randomUUID(),
+        type: "error",
+        message: errorMessage,
+        duration: 5000,
       });
     } finally {
       setIsDepositingTx(false);
@@ -363,7 +367,7 @@ export function VaultActionsProvider({
     tokenDecimals,
     refetch,
     fetchAllowanceData,
-    toast,
+    show,
     sendTransactionAsync,
   ]);
 
@@ -371,9 +375,11 @@ export function VaultActionsProvider({
     if (!address || amountBigInt === BigInt(0) || !sendTransactionAsync) return;
 
     setIsWithdrawingTx(true);
-    toast({
-      title: "Preparing Withdrawal",
-      description: "Fetching transaction from backend...",
+    show({
+      id: crypto.randomUUID(),
+      type: "info",
+      message: "Preparing withdrawal...",
+      duration: 3000,
     });
 
     try {
@@ -398,10 +404,6 @@ export function VaultActionsProvider({
 
       // Sign withdrawal transaction
       console.log("=== SIGNING WITHDRAWAL ===");
-      toast({
-        title: "Withdrawal Pending",
-        description: "Please confirm the withdrawal transaction...",
-      });
 
       const withdrawHash = await sendTransactionAsync({
         to: response.data.to,
@@ -412,10 +414,11 @@ export function VaultActionsProvider({
       console.log("Withdrawal tx hash:", withdrawHash);
       setPendingTxHash(withdrawHash);
 
-      toast({
-        title: "Withdrawal Successful",
-        description: `Successfully withdrew ${amount} ${vault.symbol}`,
-        variant: "success",
+      show({
+        id: crypto.randomUUID(),
+        type: "success",
+        message: `Successfully withdrew ${amount} ${vault.symbol}`,
+        duration: 4000,
       });
 
       setAmount("");
@@ -429,10 +432,11 @@ export function VaultActionsProvider({
           ? "Transaction cancelled by user"
           : error?.message || "Withdrawal failed";
 
-      toast({
-        title: "Withdrawal Failed",
-        description: errorMessage,
-        variant: "destructive",
+      show({
+        id: crypto.randomUUID(),
+        type: "error",
+        message: errorMessage,
+        duration: 5000,
       });
     } finally {
       setIsWithdrawingTx(false);
@@ -446,7 +450,7 @@ export function VaultActionsProvider({
     vault.chainID,
     vaultDecimals,
     refetch,
-    toast,
+    show,
     sendTransactionAsync,
   ]);
 

@@ -25,6 +25,7 @@ import {
   ApprovalState,
 } from "@/hooks/sushiswap/useTokenApproval";
 import type { Address } from "viem";
+import { useNotify } from "@/components/common/NotificationProvider";
 
 interface ApprovalButtonProps {
   token: Token;
@@ -47,6 +48,7 @@ export const ApprovalButton: React.FC<ApprovalButtonProps> = ({
   disabled = false,
   className = "",
 }) => {
+  const { show } = useNotify();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedOption, setSelectedOption] = useState<"exact" | "unlimited">(
     "exact"
@@ -93,11 +95,34 @@ export const ApprovalButton: React.FC<ApprovalButtonProps> = ({
         } else {
           await approveUnlimitedAmount();
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error("Approval failed:", error);
+
+        const errorMessage = error?.message || "";
+        const isUserRejection =
+          errorMessage.includes("User rejected") ||
+          errorMessage.includes("User denied") ||
+          errorMessage.includes("user rejected") ||
+          errorMessage.includes("rejected the request");
+
+        if (isUserRejection) {
+          show({
+            id: crypto.randomUUID(),
+            type: "info",
+            message: "Approval cancelled by user",
+            duration: 3000,
+          });
+        } else {
+          show({
+            id: crypto.randomUUID(),
+            type: "error",
+            message: errorMessage || "Approval failed",
+            duration: 5000,
+          });
+        }
       }
     },
-    [approveExactAmount, approveUnlimitedAmount, handleMenuClose]
+    [approveExactAmount, approveUnlimitedAmount, handleMenuClose, show]
   );
 
   const formatAmount = (amount: SimpleAmount): string => {

@@ -22,6 +22,7 @@ import {
 import { isNativeToken } from "@/store/limit-order/utils/token.types";
 import type { Address } from "viem";
 import { syncLimitOrders } from "@/utils/tracking/limitOrderTracking";
+import { useNotify } from "@/components/common/NotificationProvider";
 
 interface LimitTradeReviewDialogProps {
   isOpen: boolean;
@@ -50,6 +51,7 @@ export const LimitTradeReviewDialog: React.FC<LimitTradeReviewDialogProps> = ({
 
   const { data: trade } = useTwapTrade();
   const { address } = useAccount();
+  const { show } = useNotify();
   const [acceptDisclaimer, setAcceptDisclaimer] = useState(true);
   const [isConfirming, setIsConfirming] = useState(false);
   const [isTrackingOrder, setIsTrackingOrder] = useState(false);
@@ -117,19 +119,26 @@ export const LimitTradeReviewDialog: React.FC<LimitTradeReviewDialogProps> = ({
     setIsConfirming(true);
     setTransactionError(null);
 
-    try {
-      // console.log("📤 [LIMIT ORDER] Sending transaction:", {
-      //   to: trade.tx.to,
-      //   data: trade.tx.data,
-      //   value: trade.tx.value,
-      //   chainId: trade.tx.chainId,
-      // });
+    show({
+      id: crypto.randomUUID(),
+      type: "info",
+      message: "Preparing limit order...",
+      duration: 3000,
+    });
 
+    try {
       const hash = await sendTransactionAsync(trade.tx);
       console.log(
         "✅ [LIMIT ORDER] Transaction sent successfully, hash:",
         hash
       );
+
+      show({
+        id: crypto.randomUUID(),
+        type: "info",
+        message: "Limit order submitted. Waiting for confirmation...",
+        duration: 4000,
+      });
       // Success will be handled by the transaction receipt hook
     } catch (error: any) {
       console.error("❌ [LIMIT ORDER] Transaction failed:", error);
@@ -143,16 +152,38 @@ export const LimitTradeReviewDialog: React.FC<LimitTradeReviewDialogProps> = ({
 
       // Extract user-friendly error message
       let errorMsg = "Transaction failed";
-      if (error?.shortMessage) {
-        errorMsg = error.shortMessage;
-      } else if (error?.message) {
-        errorMsg = error.message;
+      const isUserRejection =
+        error?.message?.includes("User rejected") ||
+        error?.message?.includes("User denied") ||
+        error?.message?.includes("user rejected") ||
+        error?.message?.includes("rejected the request");
+
+      if (isUserRejection) {
+        errorMsg = "Transaction cancelled by user";
+        show({
+          id: crypto.randomUUID(),
+          type: "info",
+          message: errorMsg,
+          duration: 3000,
+        });
+      } else {
+        if (error?.shortMessage) {
+          errorMsg = error.shortMessage;
+        } else if (error?.message) {
+          errorMsg = error.message;
+        }
+        show({
+          id: crypto.randomUUID(),
+          type: "error",
+          message: errorMsg,
+          duration: 5000,
+        });
       }
 
       setTransactionError(errorMsg);
       setIsConfirming(false);
     }
-  }, [trade?.tx, sendTransactionAsync]);
+  }, [trade?.tx, sendTransactionAsync, show]);
 
   const onSuccess = useCallback(() => {
     setSwapAmount("");
@@ -189,28 +220,56 @@ export const LimitTradeReviewDialog: React.FC<LimitTradeReviewDialogProps> = ({
           newOrder.id
         );
 
+        show({
+          id: crypto.randomUUID(),
+          type: "success",
+          message: `Limit order created successfully!`,
+          duration: 4000,
+        });
+
         // Backend storage successful, now clear form and close dialog
         onSuccess();
       } else {
         console.warn(
           "⚠️ Could not find newly created order in blockchain data"
         );
+
+        show({
+          id: crypto.randomUUID(),
+          type: "success",
+          message: "Limit order created (tracking pending)",
+          duration: 4000,
+        });
         // Still call onSuccess even if backend fails (order is on-chain)
         onSuccess();
       }
     } catch (error) {
       console.error("❌ Failed to track order creation:", error);
+
+      show({
+        id: crypto.randomUUID(),
+        type: "success",
+        message: "Limit order created successfully!",
+        duration: 4000,
+      });
       // Still call onSuccess even if backend fails (order is on-chain)
       onSuccess();
     } finally {
       setIsTrackingOrder(false);
     }
-  }, [address, txHash, chainId, onSuccess]);
+  }, [address, txHash, chainId, onSuccess, show]);
 
   const handleApprovalSuccess = useCallback(() => {
     // Approval completed, user can now place the order
     console.log("Approval successful");
-  }, []);
+
+    show({
+      id: crypto.randomUUID(),
+      type: "success",
+      message: `${token0?.ticker} approved successfully!`,
+      duration: 4000,
+    });
+  }, [show, token0]);
 
   // Handle transaction status
   React.useEffect(() => {
@@ -223,22 +282,24 @@ export const LimitTradeReviewDialog: React.FC<LimitTradeReviewDialogProps> = ({
         "❌ [LIMIT ORDER] Transaction receipt error:",
         receiptError
       );
-      // console.error("❌ [LIMIT ORDER] Receipt error details:", {
-      //   message: receiptError?.message,
-      //   cause: receiptError?.cause,
-      //   shortMessage: receiptError?.shortMessage,
-      // });
 
       let errorMsg = "Transaction failed on-chain";
       if (receiptError?.message) {
         errorMsg = receiptError.message;
       }
 
+      show({
+        id: crypto.randomUUID(),
+        type: "error",
+        message: errorMsg,
+        duration: 5000,
+      });
+
       setTransactionError(errorMsg);
       setIsConfirming(false);
       setIsTrackingOrder(false);
     }
-  }, [status, isTrackingOrder, trackNewlyCreatedOrder, receiptError]);
+  }, [status, isTrackingOrder, trackNewlyCreatedOrder, receiptError, show]);
 
   if (!isOpen) return null;
 

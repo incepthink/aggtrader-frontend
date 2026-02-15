@@ -16,6 +16,9 @@ import type { TYDaemonVault } from "@/lib/yearnfi/lib/utils/schemas/yDaemonVault
 import { formatAmount } from "@/lib/yearnfi/lib/utils";
 import { CustomAPYDisplay } from "./CustomAPYDisplay";
 import { vaultYieldData } from "./VaultsV3ListRow";
+import { useWeb3 } from "@/lib/yearnfi/lib/contexts/useWeb3";
+import { useWallet } from "@/lib/yearnfi/lib/contexts/useWallet";
+import { useYearn } from "@/lib/yearnfi/lib/contexts/useYearn";
 
 type Props = {
   vault: TYDaemonVault; // single asset vault (vbUSDC, vbUSDT, vbETH, vbWBTC, AUSD)
@@ -26,6 +29,32 @@ export function VaultsV3AssetRow({ vault }: Props) {
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
   const [open, setOpen] = useState(false);
+
+  // Fetch user wallet and balance data
+  const { isActive } = useWeb3();
+  const { getBalance, isLoading } = useWallet();
+  const { getPrice } = useYearn();
+
+  // Calculate user holdings
+  const balance = getBalance({
+    address: vault.address,
+    chainID: vault.chainID,
+  });
+
+  const price = getPrice({
+    address: vault.address as any,
+    chainID: vault.chainID,
+  });
+
+  const userBalanceUSD = balance.normalized * price.normalized;
+  const hasHoldings = userBalanceUSD > 0;
+
+  // Format display value
+  const displayValue = !isActive
+    ? "$0.00"
+    : isLoading
+      ? "..."
+      : `$${formatAmount(userBalanceUSD, 2, 2)}`;
 
   const assetSymbol = vault.token?.symbol ?? vault.name;
 
@@ -133,11 +162,19 @@ export function VaultsV3AssetRow({ vault }: Props) {
             </Box>
 
             <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
-              <Typography
-                sx={{ fontSize: "0.95rem", fontWeight: 700, color: "white" }}
-              >
-                {assetSymbol}
-              </Typography>
+              <div className="flex gap-3 items-center">
+                <Typography
+                  sx={{ fontSize: "0.95rem", fontWeight: 700, color: "white" }}
+                >
+                  {assetSymbol}
+                </Typography>
+                {hasHoldings && (
+                  <span className="relative flex size-2">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-sky-400 opacity-75"></span>
+                    <span className="relative inline-flex size-2 rounded-full bg-sky-500"></span>
+                  </span>
+                )}
+              </div>
               <Typography
                 sx={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.5)" }}
               >
@@ -282,7 +319,7 @@ export function VaultsV3AssetRow({ vault }: Props) {
 
           {/* ✅ VAULT */}
           <Box
-            className="col-span-3"
+            className="col-span-4"
             sx={{ display: "flex", alignItems: "center", gap: 2 }}
           >
             <Box
@@ -301,11 +338,19 @@ export function VaultsV3AssetRow({ vault }: Props) {
             </Box>
 
             <Box sx={{ display: "flex", flexDirection: "column" }}>
-              <Typography
-                sx={{ fontSize: "0.95rem", fontWeight: 700, color: "white" }}
-              >
-                {assetSymbol}
-              </Typography>
+              <div className="flex gap-3 items-center">
+                <Typography
+                  sx={{ fontSize: "0.95rem", fontWeight: 700, color: "white" }}
+                >
+                  {assetSymbol}
+                </Typography>
+                {hasHoldings && (
+                  <span className="relative flex size-2">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-sky-400 opacity-75"></span>
+                    <span className="relative inline-flex size-2 rounded-full bg-sky-500"></span>
+                  </span>
+                )}
+              </div>
               <Typography
                 sx={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.5)" }}
               >
@@ -316,7 +361,7 @@ export function VaultsV3AssetRow({ vault }: Props) {
 
           {/* ✅ EST. APY */}
           <Box
-            className="col-span-2"
+            className="col-span-3"
             sx={{ display: "flex", alignItems: "center" }}
           >
             {requiresCustomAPY ? (
@@ -328,16 +373,6 @@ export function VaultsV3AssetRow({ vault }: Props) {
                 {estApy}
               </Typography>
             )}
-          </Box>
-
-          {/* ✅ HIST. APY always "-" */}
-          <Box
-            className="col-span-2"
-            sx={{ display: "flex", alignItems: "center" }}
-          >
-            <Typography sx={{ fontSize: "0.875rem", color: "white" }}>
-              -
-            </Typography>
           </Box>
 
           {/* ✅ RISK LEVEL visible */}
@@ -352,17 +387,17 @@ export function VaultsV3AssetRow({ vault }: Props) {
 
           {/* ✅ HOLDINGS visible */}
           <Box
-            className="col-span-2"
+            className="col-span-3"
             sx={{ display: "flex", alignItems: "center" }}
           >
             <Typography sx={{ fontSize: "0.875rem", color: "white" }}>
-              $0.00
+              {displayValue}
             </Typography>
           </Box>
 
           {/* ✅ DEPOSITS shows TVL; right aligned */}
           <Box
-            className="col-span-2"
+            className="col-span-3"
             sx={{
               display: "flex",
               alignItems: "center",

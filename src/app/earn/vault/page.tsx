@@ -12,6 +12,8 @@ import { useQueryArguments } from "@/hooks/vaults-v2/useVaultsQueryArgs";
 import { useVaultFilter } from "@/lib/yearnfi/lib/hooks/useFilteredVaults";
 import { useSortVaults } from "@/hooks/vaults-v2/useSortVaults";
 import { useYearn } from "@/lib/yearnfi/lib/contexts/useYearn";
+import { useWallet } from "@/lib/yearnfi/lib/contexts/useWallet";
+import { useWeb3 } from "@/lib/yearnfi/lib/contexts/useWeb3";
 import type { TSortDirection } from "@/lib/yearnfi/lib/types";
 import type { TPossibleSortBy } from "@/hooks/vaults-v2/useVaultsQueryArgs";
 import type { TYDaemonVault } from "@/lib/yearnfi/lib/utils/schemas/yDaemonVaultsSchemas";
@@ -43,7 +45,9 @@ export default function VaultPage() {
     defaultCategories: ["stablecoin", "volatile"],
   });
 
-  const { vaults, isLoadingVaultList } = useYearn();
+  const { vaults, isLoadingVaultList, getPrice } = useYearn();
+  const { getBalance } = useWallet();
+  const { isActive } = useWeb3();
   console.log("All vaults from context:", vaults);
 
   const fiveAssets = useMemo(() => {
@@ -70,10 +74,52 @@ export default function VaultPage() {
   console.log("Searched vaults:", searchedVaults);
   // Apply sorting
   const sortedVaults = useSortVaults(searchedVaults, sortBy, sortDirection);
-  console.log("Sorted vaults:", sortedVaults);
+
+  // Prioritize vaults with user deposits
+  const finalSortedVaults = useMemo(() => {
+    if (!isActive) return sortedVaults;
+
+    // Calculate user balance for each vault
+    const vaultsWithBalance = sortedVaults.map((vault) => {
+      const balance = getBalance({
+        address: vault.address,
+        chainID: vault.chainID,
+      });
+      const price = getPrice({
+        address: vault.address as any,
+        chainID: vault.chainID,
+      });
+      const userBalanceUSD = balance.normalized * price.normalized;
+
+      return { vault, userBalanceUSD };
+    });
+
+    // Separate vaults with and without user balance
+    const withBalance = vaultsWithBalance.filter((v) => v.userBalanceUSD > 0);
+    const withoutBalance = vaultsWithBalance.filter((v) => v.userBalanceUSD === 0);
+
+    // Sort vaults with balance by TVL (descending)
+    withBalance.sort((a, b) => {
+      const tvlA = a.vault.tvl?.tvl || 0;
+      const tvlB = b.vault.tvl?.tvl || 0;
+      return tvlB - tvlA;
+    });
+
+    // Sort vaults without balance by TVL (descending)
+    withoutBalance.sort((a, b) => {
+      const tvlA = a.vault.tvl?.tvl || 0;
+      const tvlB = b.vault.tvl?.tvl || 0;
+      return tvlB - tvlA;
+    });
+
+    // Combine: user vaults first, then others
+    return [...withBalance.map((v) => v.vault), ...withoutBalance.map((v) => v.vault)];
+  }, [sortedVaults, isActive, getBalance, getPrice]);
+
+  console.log("Final sorted vaults:", finalSortedVaults);
   // Filter by categories and chains
   const filteredVaults = useMemo(() => {
-    let filtered = sortedVaults;
+    let filtered = finalSortedVaults;
 
     if (chains && chains.length > 0) {
       filtered = filtered.filter((v) => chains.includes(v.chainID));
@@ -84,10 +130,10 @@ export default function VaultPage() {
     }
 
     return filtered;
-  }, [sortedVaults, chains, categories]);
+  }, [finalSortedVaults, chains, categories]);
 
   const shouldShowEmptyState =
-    isLoadingVaultList || isZero(sortedVaults.length);
+    isLoadingVaultList || isZero(finalSortedVaults.length);
 
   return (
     <Container
@@ -140,6 +186,12 @@ export default function VaultPage() {
             }}
             items={[
               {
+                label: "",
+                value: "dropdown",
+                sortable: false,
+                className: "col-span-1",
+              },
+              {
                 label: "Vault",
                 value: "name",
                 sortable: false,
@@ -149,13 +201,7 @@ export default function VaultPage() {
                 label: "Est. APY",
                 value: "estAPY",
                 sortable: false,
-                className: "col-span-2",
-              },
-              {
-                label: "Hist. APY",
-                value: "APY",
-                sortable: false,
-                className: "col-span-2",
+                className: "col-span-3",
               },
               {
                 label: "Risk Level",
@@ -167,13 +213,13 @@ export default function VaultPage() {
                 label: "Holdings",
                 value: "deposited",
                 sortable: false,
-                className: "col-span-2",
+                className: "col-span-3",
               },
               {
                 label: "Deposits",
                 value: "tvl",
                 sortable: true,
-                className: "col-span-2",
+                className: "col-span-3",
               },
             ]}
           />
@@ -190,7 +236,7 @@ export default function VaultPage() {
             />
           ) : (
             <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-              {searchedVaults.map((v) => (
+              {finalSortedVaults.map((v) => (
                 <VaultsV3AssetRow key={`${v.chainID}_${v.address}`} vault={v} />
               ))}
             </Box>

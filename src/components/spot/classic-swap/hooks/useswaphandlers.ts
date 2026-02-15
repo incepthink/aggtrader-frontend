@@ -1,11 +1,12 @@
 import { useCallback, useMemo, useEffect } from "react";
 import { formatUnits } from "viem";
-import type { Token, SnackbarSeverity } from "../types";
+import type { Token } from "../types";
 import { useSushiClassic } from "./usesushiclassic";
 import { usePriceBackend } from "@/hooks/sushiswap/usePriceBackend";
 import { useQuoteDebounce } from "./usequotedebounce";
 import { useTokenApproval, ApprovalState } from "./useTokenApproval";
 import { useSpotStore } from "@/store/spotStore";
+import { useNotify } from "@/components/common/NotificationProvider";
 
 interface UseSwapHandlersProps {
   tokenOne: Token;
@@ -21,7 +22,6 @@ interface UseSwapHandlersProps {
   setTokenOneAmount: (amount: string) => void;
   setTokenTwoAmount: (amount: string) => void;
   setIsInitiatingSwap: (value: boolean) => void;
-  showSnackbar: (message: string, severity: SnackbarSeverity) => void;
 }
 
 export function useSwapHandlers({
@@ -38,8 +38,9 @@ export function useSwapHandlers({
   setTokenOneAmount,
   setTokenTwoAmount,
   setIsInitiatingSwap,
-  showSnackbar,
 }: UseSwapHandlersProps) {
+  const { show } = useNotify();
+
   const {
     quote,
     isLoadingQuote,
@@ -55,8 +56,15 @@ export function useSwapHandlers({
     executeSwap,
     routerAddress,
   } = useSushiClassic({
-    // NEW: Pass callbacks
-    showSnackbar,
+    // Pass notification callbacks
+    showSnackbar: (message: string, severity: "success" | "error" | "info") => {
+      show({
+        id: crypto.randomUUID(),
+        type: severity,
+        message,
+        duration: severity === "error" ? 5000 : 4000,
+      });
+    },
     onSuccess: () => {
       setTokenOneAmount("");
       setTokenTwoAmount("");
@@ -133,9 +141,14 @@ export function useSwapHandlers({
   // Show success notification when approval completes
   useEffect(() => {
     if (isApprovalConfirmed && approvalState === ApprovalState.APPROVED) {
-      showSnackbar(`${tokenOne.ticker} approved successfully!`, "success");
+      show({
+        id: crypto.randomUUID(),
+        type: "success",
+        message: `${tokenOne.ticker} approved successfully!`,
+        duration: 4000,
+      });
     }
-  }, [isApprovalConfirmed, approvalState, tokenOne.ticker, showSnackbar]);
+  }, [isApprovalConfirmed, approvalState, tokenOne.ticker, show]);
 
   useQuoteDebounce({
     tokenOneAmount,
@@ -227,15 +240,22 @@ export function useSwapHandlers({
         errorMessage.includes("rejected the request");
 
       if (isUserRejection) {
-        showSnackbar("Approval cancelled by user", "info");
+        show({
+          id: crypto.randomUUID(),
+          type: "info",
+          message: "Approval cancelled by user",
+          duration: 3000,
+        });
       } else {
-        showSnackbar(
-          errorMessage || "Approval failed",
-          "error"
-        );
+        show({
+          id: crypto.randomUUID(),
+          type: "error",
+          message: errorMessage || "Approval failed",
+          duration: 5000,
+        });
       }
     }
-  }, [approve, isApproving, isConfirmingApproval, tokenOne, showSnackbar]);
+  }, [approve, isApproving, isConfirmingApproval, show]);
 
   const handleSwap = useCallback(async () => {
     if (isInitiatingSwap || isSending || isConfirming) {
@@ -243,7 +263,12 @@ export function useSwapHandlers({
     }
 
     if (!tokenOneAmount || !address || !isConnected) {
-      showSnackbar("Connect wallet and enter an amount", "warning");
+      show({
+        id: crypto.randomUUID(),
+        type: "info",
+        message: "Connect wallet and enter an amount",
+        duration: 3000,
+      });
       return;
     }
 
@@ -269,13 +294,23 @@ export function useSwapHandlers({
         error?.name === "UserRejectedRequestError";
 
       if (isUserRejection) {
-        showSnackbar("Transaction cancelled by user", "info");
+        show({
+          id: crypto.randomUUID(),
+          type: "info",
+          message: "Transaction cancelled by user",
+          duration: 3000,
+        });
       } else {
         // For other errors, show a clean message
         const cleanMessage = errorMessage.length > 100
           ? "Transaction failed. Please try again."
           : errorMessage || "Swap failed";
-        showSnackbar(cleanMessage, "error");
+        show({
+          id: crypto.randomUUID(),
+          type: "error",
+          message: cleanMessage,
+          duration: 5000,
+        });
       }
 
       setIsInitiatingSwap(false);
@@ -292,7 +327,7 @@ export function useSwapHandlers({
     slippage,
     executeSwap,
     setIsInitiatingSwap,
-    showSnackbar,
+    show,
   ]);
 
   return {

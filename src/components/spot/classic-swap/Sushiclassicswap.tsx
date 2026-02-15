@@ -13,7 +13,6 @@ import { SwapInputSection } from "./components/Swapinputsection";
 import { SwapDetails } from "./components/SwapDetails";
 import { TokenSelectionModal } from "./components/TokenSelectionModal";
 import { SwapButton } from "./components/Swapbutton";
-import { NotificationSnackbar } from "./components/Notificationsnackbar";
 import type { InputMode } from "./components/SwapInput";
 
 import { useSwapState } from "./hooks/useswapstate";
@@ -41,13 +40,10 @@ const SushiClassicSwap = memo(() => {
     tokenTwoAmount,
     slippage,
     isInitiatingSwap,
-    snackbarState,
     setTokenOneAmount,
     setTokenTwoAmount,
     setSlippage,
     setIsInitiatingSwap,
-    showSnackbar,
-    closeSnackbar,
   } = useSwapState();
 
   const {
@@ -83,7 +79,6 @@ const SushiClassicSwap = memo(() => {
     setTokenOneAmount,
     setTokenTwoAmount,
     setIsInitiatingSwap,
-    showSnackbar,
   });
 
   // Wrapped handlers that handle USD input mode
@@ -191,7 +186,6 @@ const SushiClassicSwap = memo(() => {
     tokenTwo,
     isSending,
     isConfirming,
-    showSnackbar,
     setTokenOneAmount,
     setTokenTwoAmount,
     setIsInitiatingSwap,
@@ -350,13 +344,6 @@ const SushiClassicSwap = memo(() => {
       </div>
 
       <TokenSelectionModal />
-
-      <NotificationSnackbar
-        open={snackbarState.open}
-        message={snackbarState.message}
-        severity={snackbarState.severity}
-        onClose={closeSnackbar}
-      />
     </>
   );
 });

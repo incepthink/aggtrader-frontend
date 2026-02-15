@@ -9,6 +9,7 @@ import {
   isNativeToken,
   createWrappedNativeToken,
 } from "@/store/limit-order/utils/token.types";
+import { useNotify } from "@/components/common/NotificationProvider";
 
 interface WrapTokenButtonProps {
   token?: Token;
@@ -25,17 +26,48 @@ export const WrapTokenButton: React.FC<WrapTokenButtonProps> = ({
   disabled = false,
   className = "",
 }) => {
+  const { show } = useNotify();
+
   const handleWrapSuccess = () => {
     if (token && onWrapSuccess) {
       // Create the wrapped version of the native token
       const wrappedToken = createWrappedNativeToken(token.chainId);
       onWrapSuccess(wrappedToken);
+
+      show({
+        id: crypto.randomUUID(),
+        type: "success",
+        message: `Successfully wrapped ${token.ticker}!`,
+        duration: 4000,
+      });
     }
   };
 
   const handleWrapError = (error: Error) => {
     console.error("Wrap error:", error);
-    // You can add toast notification here if you have a notification system
+
+    const errorMessage = error?.message || "";
+    const isUserRejection =
+      errorMessage.includes("User rejected") ||
+      errorMessage.includes("User denied") ||
+      errorMessage.includes("user rejected") ||
+      errorMessage.includes("rejected the request");
+
+    if (isUserRejection) {
+      show({
+        id: crypto.randomUUID(),
+        type: "info",
+        message: "Wrap cancelled by user",
+        duration: 3000,
+      });
+    } else {
+      show({
+        id: crypto.randomUUID(),
+        type: "error",
+        message: errorMessage || "Failed to wrap token",
+        duration: 5000,
+      });
+    }
   };
 
   const { wrap, isPending, canWrap, needsWrapping } = useWrapNative({

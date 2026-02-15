@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import type { Token, SnackbarSeverity } from "../types";
+import type { Token } from "../types";
 import { useSushiClassic } from "./usesushiclassic";
 import { useSwapPrices } from "./useswapprices";
 
@@ -11,7 +11,6 @@ interface UseSwapEffectsProps {
   tokenTwoAmount: string;
   isSending: boolean;
   isConfirming: boolean;
-  showSnackbar: (message: string, severity: SnackbarSeverity) => void;
   setTokenOneAmount: (amount: string) => void;
   setTokenTwoAmount: (amount: string) => void;
   setIsInitiatingSwap: (value: boolean) => void;
@@ -23,7 +22,6 @@ export function useSwapEffects({
   tokenTwo,
   isSending,
   isConfirming,
-  showSnackbar,
   setTokenOneAmount,
   setTokenTwoAmount,
   setIsInitiatingSwap,
@@ -31,8 +29,8 @@ export function useSwapEffects({
   tokenTwoAmount,
   triggerPortfolioRefresh,
 }: UseSwapEffectsProps) {
-  const queryClient = useQueryClient(); // NEW
-  const { quoteError, isDone, sendError, confirmError, txHash, quote } = useSushiClassic(); 
+  const queryClient = useQueryClient();
+  const { isDone, txHash } = useSushiClassic();
   const { fetchPrices, binancePriceError } = useSwapPrices(tokenOne, tokenTwo);
 
   useEffect(() => {
@@ -40,21 +38,12 @@ export function useSwapEffects({
   }, [tokenOne.address, tokenTwo.address]);
 
   useEffect(() => {
-    if (quoteError) {
-      showSnackbar(`Quote error: ${quoteError}`, "error");
-    }
-  }, [quoteError, showSnackbar]);
-
-  useEffect(() => {
     if (isSending) {
       setIsInitiatingSwap(false);
-      showSnackbar("Sending tx…", "info");
-    } else if (isConfirming) {
-      showSnackbar("Confirming…", "info");
     }
-  }, [isSending, isConfirming, showSnackbar, setIsInitiatingSwap]);
+  }, [isSending, setIsInitiatingSwap]);
 
-  // UPDATED: Add balance refresh
+  // Add balance refresh when swap completes (notification is handled in useSushiClassic)
   useEffect(() => {
     if (isDone && txHash) {
       console.log("✅ Swap completed successfully, refreshing portfolio...");
@@ -70,10 +59,8 @@ export function useSwapEffects({
       setTimeout(() => {
         triggerPortfolioRefresh();
       }, 1000); // Small delay to allow chain to update
-
-      showSnackbar("✅ Swap completed! Refreshing balances...", "success");
     }
-  }, [isDone, txHash, queryClient, showSnackbar, triggerPortfolioRefresh]);
+  }, [isDone, txHash, queryClient, triggerPortfolioRefresh]);
 
   useEffect(() => {
     if (binancePriceError) {
