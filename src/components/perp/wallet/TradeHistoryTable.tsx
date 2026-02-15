@@ -1,11 +1,17 @@
 "use client";
 
 import React from "react";
-import { Box, Typography, CircularProgress } from "@mui/material";
+import { Box } from "@mui/material";
 import {
   KatanaPerpsFill,
   formatFillForDisplay,
 } from "@/hooks/perp/useKatanaPerpsFills";
+import {
+  WalletTable,
+  WalletTableRow,
+  WalletTableCell,
+  WalletTableColumn,
+} from "./WalletTable";
 
 interface TradeHistoryTableProps {
   fills: KatanaPerpsFill[];
@@ -14,7 +20,7 @@ interface TradeHistoryTableProps {
   error?: Error | null;
 }
 
-const columns = [
+const columns: WalletTableColumn[] = [
   { key: "date", label: "DATE", width: "140px" },
   { key: "market", label: "MARKET", width: "120px" },
   { key: "side", label: "SIDE", width: "60px" },
@@ -34,87 +40,26 @@ export const TradeHistoryTable: React.FC<TradeHistoryTableProps> = ({
   isError,
   error,
 }) => {
-  if (isLoading) {
-    return (
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          py: 8,
-        }}
-      >
-        <CircularProgress size={32} sx={{ color: "#00F5E0" }} />
-      </Box>
-    );
-  }
-
-  if (isError) {
-    return (
-      <Box sx={{ py: 4, px: 2, textAlign: "center" }}>
-        <Typography sx={{ color: "#FF4444", fontSize: "0.875rem" }}>
-          {error?.message || "Failed to load trade history"}
-        </Typography>
-      </Box>
-    );
-  }
-
-  if (!fills || fills.length === 0) {
-    return (
-      <Box sx={{ py: 8, textAlign: "center" }}>
-        <Typography sx={{ color: "rgba(255, 255, 255, 0.5)", fontSize: "0.875rem" }}>
-          No trade history found
-        </Typography>
-      </Box>
-    );
-  }
-
   return (
-    <Box sx={{ overflowX: "auto" }}>
-      <Box
-        component="table"
-        sx={{
-          width: "100%",
-          borderCollapse: "collapse",
-          minWidth: "1200px",
-        }}
-      >
-        {/* Table Header */}
-        <Box component="thead">
-          <Box component="tr">
-            {columns.map((column) => (
-              <Box
-                key={column.key}
-                component="th"
-                sx={{
-                  padding: "12px 16px",
-                  textAlign: "left",
-                  fontSize: "0.7rem",
-                  fontWeight: 500,
-                  color: "rgba(255, 255, 255, 0.4)",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.5px",
-                  borderBottom: "1px solid rgba(255, 255, 255, 0.05)",
-                  minWidth: column.width,
-                }}
-              >
-                {column.label}
-              </Box>
-            ))}
-          </Box>
-        </Box>
-
-        {/* Table Body */}
-        <Box component="tbody">
-          {fills.map((fill) => {
-            const formatted = formatFillForDisplay(fill);
-            return (
-              <TradeHistoryRow key={fill.fillId} fill={fill} formatted={formatted} />
-            );
-          })}
-        </Box>
-      </Box>
-    </Box>
+    <WalletTable
+      columns={columns}
+      data={fills}
+      isLoading={isLoading}
+      isError={isError}
+      error={error}
+      emptyTitle="No trade history"
+      emptyMessage="Your trade history will appear here"
+      renderRow={(fill) => {
+        const formatted = formatFillForDisplay(fill);
+        return (
+          <TradeHistoryRow
+            key={fill.fillId}
+            fill={fill}
+            formatted={formatted}
+          />
+        );
+      }}
+    />
   );
 };
 
@@ -123,42 +68,21 @@ interface TradeHistoryRowProps {
   formatted: ReturnType<typeof formatFillForDisplay>;
 }
 
-const TradeHistoryRow: React.FC<TradeHistoryRowProps> = ({ fill, formatted }) => {
+const TradeHistoryRow: React.FC<TradeHistoryRowProps> = ({
+  fill,
+  formatted,
+}) => {
   const isBuy = fill.side === "buy";
   const sideColor = isBuy ? "#00FF88" : "#FF4444";
   const pnlColor = formatted.realizedPnL >= 0 ? "#00FF88" : "#FF4444";
 
   return (
-    <Box
-      component="tr"
-      sx={{
-        borderBottom: "1px solid rgba(255, 255, 255, 0.03)",
-        "&:hover": {
-          backgroundColor: "rgba(255, 255, 255, 0.02)",
-        },
-      }}
-    >
+    <WalletTableRow>
       {/* Date */}
-      <Box
-        component="td"
-        sx={{
-          padding: "12px 16px",
-          fontSize: "0.875rem",
-          color: "#fff",
-        }}
-      >
-        {formatted.date}
-      </Box>
+      <WalletTableCell>{formatted.date}</WalletTableCell>
 
       {/* Market */}
-      <Box
-        component="td"
-        sx={{
-          padding: "12px 16px",
-          fontSize: "0.875rem",
-          color: "#fff",
-        }}
-      >
+      <WalletTableCell>
         <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
           <Box
             sx={{
@@ -170,115 +94,42 @@ const TradeHistoryRow: React.FC<TradeHistoryRowProps> = ({ fill, formatted }) =>
           />
           {fill.market}
         </Box>
-      </Box>
+      </WalletTableCell>
 
       {/* Side */}
-      <Box
-        component="td"
-        sx={{
-          padding: "12px 16px",
-          fontSize: "0.875rem",
-          color: sideColor,
-          fontWeight: 500,
-        }}
-      >
+      <WalletTableCell style={{ color: sideColor, fontWeight: 500 }}>
         {isBuy ? "Buy" : "Sell"}
-      </Box>
+      </WalletTableCell>
 
       {/* Price */}
-      <Box
-        component="td"
-        sx={{
-          padding: "12px 16px",
-          fontSize: "0.875rem",
-          color: "#fff",
-          fontFamily: "monospace",
-        }}
-      >
+      <WalletTableCell style={{ fontFamily: "monospace" }}>
         {formatted.price}
-      </Box>
+      </WalletTableCell>
 
       {/* Quantity */}
-      <Box
-        component="td"
-        sx={{
-          padding: "12px 16px",
-          fontSize: "0.875rem",
-          color: "#fff",
-          fontFamily: "monospace",
-        }}
-      >
+      <WalletTableCell style={{ fontFamily: "monospace" }}>
         {formatted.quantity}
-      </Box>
+      </WalletTableCell>
 
       {/* Value */}
-      <Box
-        component="td"
-        sx={{
-          padding: "12px 16px",
-          fontSize: "0.875rem",
-          color: "#fff",
-        }}
-      >
-        {formatted.value}
-      </Box>
+      <WalletTableCell>{formatted.value}</WalletTableCell>
 
       {/* Trade Fee */}
-      <Box
-        component="td"
-        sx={{
-          padding: "12px 16px",
-          fontSize: "0.875rem",
-          color: "#fff",
-        }}
-      >
-        {formatted.fee}
-      </Box>
+      <WalletTableCell>{formatted.fee}</WalletTableCell>
 
       {/* Type */}
-      <Box
-        component="td"
-        sx={{
-          padding: "12px 16px",
-          fontSize: "0.875rem",
-          color: "#fff",
-        }}
-      >
-        {formatted.type}
-      </Box>
+      <WalletTableCell>{formatted.type}</WalletTableCell>
 
       {/* Liquidity */}
-      <Box
-        component="td"
-        sx={{
-          padding: "12px 16px",
-          fontSize: "0.875rem",
-          color: "#fff",
-        }}
-      >
-        {formatted.liquidity}
-      </Box>
+      <WalletTableCell>{formatted.liquidity}</WalletTableCell>
 
       {/* Realized P&L */}
-      <Box
-        component="td"
-        sx={{
-          padding: "12px 16px",
-          fontSize: "0.875rem",
-          color: pnlColor,
-          fontWeight: 500,
-        }}
-      >
+      <WalletTableCell style={{ color: pnlColor, fontWeight: 500 }}>
         {formatted.realizedPnLFormatted}
-      </Box>
+      </WalletTableCell>
 
       {/* Status */}
-      <Box
-        component="td"
-        sx={{
-          padding: "12px 16px",
-        }}
-      >
+      <WalletTableCell>
         <Box
           sx={{
             display: "inline-flex",
@@ -304,8 +155,8 @@ const TradeHistoryRow: React.FC<TradeHistoryRowProps> = ({ fill, formatted }) =>
         >
           {formatted.statusFormatted}
         </Box>
-      </Box>
-    </Box>
+      </WalletTableCell>
+    </WalletTableRow>
   );
 };
 

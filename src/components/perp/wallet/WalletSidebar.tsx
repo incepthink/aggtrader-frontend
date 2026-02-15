@@ -71,13 +71,13 @@ export const WalletSidebar: React.FC = () => {
       sx={{
         width: 250,
         minWidth: 170,
-        backgroundColor: "#0a0e1a",
+        backgroundColor: "transparent",
         borderRight: "1px solid rgba(255, 255, 255, 0.1)",
         minHeight: "100%",
         height: "calc(100vh - 64px)",
       }}
     >
-      <List component="nav" sx={{ py: 1 }}>
+      <List component="nav" sx={{ py: 1, position: "sticky", top: 70 }}>
         {navItems.map((item) => (
           <React.Fragment key={item.label}>
             <ListItemButton
@@ -88,10 +88,10 @@ export const WalletSidebar: React.FC = () => {
                 color: item.children
                   ? isHistoryActive
                     ? "#fff"
-                    : "#8b949e"
+                    : "#fff"
                   : isActive(item.path)
                     ? "#fff"
-                    : "#8b949e",
+                    : "#fff",
                 backgroundColor:
                   !item.children && isActive(item.path)
                     ? "rgba(0, 245, 224, 0.1)"

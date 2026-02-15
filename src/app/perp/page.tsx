@@ -151,7 +151,7 @@ const PerpPage = () => {
           width: "100%",
           minHeight: "calc(100vh - 64px)",
           maxWidth: "100vw",
-          background: "#050C19",
+          background: "transparent",
           display: "flex",
           flexDirection: "column",
           overflow: "hidden",

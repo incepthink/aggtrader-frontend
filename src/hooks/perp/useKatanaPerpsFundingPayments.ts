@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useAccount } from "wagmi";
+import { usePerpBalanceStore } from "@/store/perpBalanceStore";
 
 /**
  * Funding payment types for funding history
@@ -37,11 +38,8 @@ export function useKatanaPerpsFundingPayments(options: UseKatanaPerpsFundingPaym
   const { address, isConnected } = useAccount();
   const { market, limit = 50, start, end, enabled = true } = options;
 
-  // Check if wallet is associated (stored in sessionStorage)
-  const isAssociated =
-    typeof window !== "undefined" && address
-      ? sessionStorage.getItem(`katana_perps_associated_${address}`) === "true"
-      : false;
+  // Use global store for isAssociated to share state across components
+  const isAssociated = usePerpBalanceStore((state) => state.isAssociated);
 
   return useQuery<KatanaPerpsFundingPayment[]>({
     queryKey: ["katana-perps-funding-payments", address, market, limit, start, end],

@@ -3,6 +3,7 @@
 import React from "react";
 import { Box } from "@mui/material";
 import WalletSidebar from "@/components/perp/wallet/WalletSidebar";
+import { KumaAuthWrapper } from "@/components/perp/KumaAuthWrapper";
 
 export default function WalletLayout({
   children,
@@ -10,23 +11,25 @@ export default function WalletLayout({
   children: React.ReactNode;
 }) {
   return (
-    <Box
-      sx={{
-        display: "flex",
-        minHeight: "calc(100vh - 64px)",
-        height: "calc(100vh - 64px)",
-        backgroundColor: "#050C19",
-      }}
-    >
-      <WalletSidebar />
+    <>
+      <KumaAuthWrapper />
       <Box
         sx={{
-          flex: 1,
-          overflow: "auto",
+          display: "flex",
+          minHeight: "calc(100vh - 64px)",
+          height: "calc(100vh - 64px)",
+          backgroundColor: "transparent",
         }}
       >
-        {children}
+        <WalletSidebar />
+        <Box
+          sx={{
+            flex: 1,
+          }}
+        >
+          {children}
+        </Box>
       </Box>
-    </Box>
+    </>
   );
 }

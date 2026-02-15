@@ -1,6 +1,13 @@
 "use client";
 
-import { Box, Typography, Button, CircularProgress, IconButton, Tooltip } from "@mui/material";
+import {
+  Box,
+  Typography,
+  Button,
+  CircularProgress,
+  IconButton,
+  Tooltip,
+} from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import {
@@ -11,6 +18,7 @@ import {
   formatOrderStatus,
   getStatusColor,
 } from "@/hooks/perp/useKatanaPerpsOrders";
+import AccountBalanceDisplay from "@/components/perp/wallet/AccountBalanceDisplay";
 
 // Table styles
 const tableStyles = {
@@ -41,7 +49,12 @@ const tableStyles = {
 };
 
 export default function OpenOrdersPage() {
-  const { data: orders = [], isLoading, error, refetch } = useKatanaPerpsOrders();
+  const {
+    data: orders = [],
+    isLoading,
+    error,
+    refetch,
+  } = useKatanaPerpsOrders();
 
   const handleCancelOrder = (orderId: string) => {
     // Placeholder for canceling order
@@ -76,7 +89,9 @@ export default function OpenOrdersPage() {
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-          <Typography sx={{ color: "#fff", fontSize: "1.125rem", fontWeight: 500 }}>
+          <Typography
+            sx={{ color: "#fff", fontSize: "1.125rem", fontWeight: 500 }}
+          >
             Open Orders
           </Typography>
           <Box
@@ -134,6 +149,9 @@ export default function OpenOrdersPage() {
         </Box>
       </Box>
 
+      {/* Balance Display */}
+      <AccountBalanceDisplay />
+
       {/* Loading State */}
       {isLoading && (
         <Box
@@ -147,7 +165,9 @@ export default function OpenOrdersPage() {
           }}
         >
           <CircularProgress size={32} sx={{ color: "#00F5E0" }} />
-          <Typography sx={{ color: "rgba(255, 255, 255, 0.5)", fontSize: "0.875rem" }}>
+          <Typography
+            sx={{ color: "rgba(255, 255, 255, 0.5)", fontSize: "0.875rem" }}
+          >
             Loading orders...
           </Typography>
         </Box>
@@ -198,7 +218,13 @@ export default function OpenOrdersPage() {
                 <th style={tableStyles.th}>Trigger Price</th>
                 <th style={tableStyles.th}>Status</th>
                 <th style={tableStyles.th}>Time</th>
-                <th style={{ ...tableStyles.th, textAlign: "center", width: "60px" }}></th>
+                <th
+                  style={{
+                    ...tableStyles.th,
+                    textAlign: "center",
+                    width: "60px",
+                  }}
+                ></th>
               </tr>
             </thead>
             <tbody>
@@ -206,13 +232,35 @@ export default function OpenOrdersPage() {
                 <tr>
                   <td
                     colSpan={11}
-                    style={{ ...tableStyles.td, textAlign: "center", padding: "64px 16px" }}
+                    style={{
+                      ...tableStyles.td,
+                      textAlign: "center",
+                      padding: "64px 16px",
+                    }}
                   >
-                    <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1 }}>
-                      <Typography sx={{ color: "#00F5E0", fontSize: "1rem", fontWeight: 500 }}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        gap: 1,
+                      }}
+                    >
+                      <Typography
+                        sx={{
+                          color: "#00F5E0",
+                          fontSize: "1rem",
+                          fontWeight: 500,
+                        }}
+                      >
                         No open orders
                       </Typography>
-                      <Typography sx={{ color: "rgba(255, 255, 255, 0.4)", fontSize: "0.875rem" }}>
+                      <Typography
+                        sx={{
+                          color: "rgba(255, 255, 255, 0.4)",
+                          fontSize: "0.875rem",
+                        }}
+                      >
                         Your open orders will appear here
                       </Typography>
                     </Box>
@@ -231,13 +279,18 @@ export default function OpenOrdersPage() {
                       key={order.orderId}
                       style={tableStyles.tr}
                       onMouseEnter={(e) =>
-                        (e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.02)")
+                        (e.currentTarget.style.backgroundColor =
+                          "rgba(255, 255, 255, 0.02)")
                       }
-                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                      onMouseLeave={(e) =>
+                        (e.currentTarget.style.backgroundColor = "transparent")
+                      }
                     >
                       {/* Market */}
                       <td style={{ ...tableStyles.td, fontWeight: 500 }}>
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                        <Box
+                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                        >
                           <span>{order.market}</span>
                           {order.reduceOnly && (
                             <Box
@@ -258,7 +311,9 @@ export default function OpenOrdersPage() {
                       </td>
 
                       {/* Type */}
-                      <td style={tableStyles.td}>{formatOrderType(order.type)}</td>
+                      <td style={tableStyles.td}>
+                        {formatOrderType(order.type)}
+                      </td>
 
                       {/* Side */}
                       <td
@@ -286,7 +341,9 @@ export default function OpenOrdersPage() {
 
                       {/* Filled */}
                       <td style={tableStyles.td}>
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                        <Box
+                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                        >
                           <Box
                             sx={{
                               width: 40,
@@ -300,11 +357,18 @@ export default function OpenOrdersPage() {
                               sx={{
                                 width: `${fillPercentage}%`,
                                 height: "100%",
-                                bgcolor: fillPercentage > 0 ? "#FFA500" : "transparent",
+                                bgcolor:
+                                  fillPercentage > 0
+                                    ? "#FFA500"
+                                    : "transparent",
                               }}
                             />
                           </Box>
-                          <span style={{ color: fillPercentage > 0 ? "#FFA500" : "inherit" }}>
+                          <span
+                            style={{
+                              color: fillPercentage > 0 ? "#FFA500" : "inherit",
+                            }}
+                          >
                             {fillPercentage.toFixed(1)}%
                           </span>
                         </Box>
@@ -325,10 +389,13 @@ export default function OpenOrdersPage() {
                           <Box>
                             <span>
                               $
-                              {parseFloat(order.triggerPrice).toLocaleString(undefined, {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
-                              })}
+                              {parseFloat(order.triggerPrice).toLocaleString(
+                                undefined,
+                                {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2,
+                                },
+                              )}
                             </span>
                             {order.triggerType && (
                               <span
@@ -363,7 +430,12 @@ export default function OpenOrdersPage() {
                       </td>
 
                       {/* Time */}
-                      <td style={{ ...tableStyles.td, color: "rgba(255, 255, 255, 0.6)" }}>
+                      <td
+                        style={{
+                          ...tableStyles.td,
+                          color: "rgba(255, 255, 255, 0.6)",
+                        }}
+                      >
                         {formatDate(order.time)}
                       </td>
 
