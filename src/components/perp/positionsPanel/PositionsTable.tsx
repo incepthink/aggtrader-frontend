@@ -84,8 +84,27 @@ export const PositionsTable = ({
     );
   }
 
+  const compactTableStyles = {
+    ...tableStyles.table,
+    tableLayout: 'fixed' as const,
+  };
+
+  const compactThStyles = {
+    ...tableStyles.th,
+    padding: '6px 8px',
+    fontSize: '0.625rem',
+    whiteSpace: 'normal' as const,
+    wordBreak: 'break-word' as const,
+  };
+
+  const compactTdStyles = {
+    ...tableStyles.td,
+    padding: '8px 8px',
+    fontSize: '0.75rem',
+  };
+
   return (
-    <div style={{ width: '100%', overflowX: 'auto' }}>
+    <div style={{ width: '100%' }}>
       {/* Close Error Banner */}
       {closeError && (
         <Box
@@ -111,34 +130,34 @@ export const PositionsTable = ({
           </IconButton>
         </Box>
       )}
-      <table style={tableStyles.table}>
+      <table style={compactTableStyles}>
         <thead>
           <tr style={{ background: 'rgba(5, 12, 25, 0.95)' }}>
-            <th style={tableStyles.th}>MARKET</th>
-            <th style={tableStyles.th}>QUANTITY</th>
-            <th style={tableStyles.th}>VALUE</th>
-            <th style={tableStyles.th}>ENTRY PRICE</th>
-            <th style={tableStyles.th}>INDEX PRICE</th>
-            <th style={tableStyles.th}>LIQUIDATION PRICE</th>
-            <th style={tableStyles.th}>POSITION MARGIN</th>
-            <th style={tableStyles.th}>UNREALIZED P&L (%)</th>
-            <th style={tableStyles.th}>REALIZED P&L</th>
-            <th style={tableStyles.th}>TP/SL</th>
-            <th style={tableStyles.th}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <th style={compactThStyles}>MARKET</th>
+            <th style={compactThStyles}>QTY</th>
+            <th style={compactThStyles}>VALUE</th>
+            <th style={compactThStyles}>ENTRY</th>
+            <th style={compactThStyles}>INDEX</th>
+            <th style={compactThStyles}>LIQ.</th>
+            <th style={compactThStyles}>MARGIN</th>
+            <th style={compactThStyles}>UNREAL P&L</th>
+            <th style={compactThStyles}>REAL P&L</th>
+            <th style={compactThStyles}>TP/SL</th>
+            <th style={compactThStyles}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '2px', justifyContent: 'center' }}>
                 ADL
                 <Tooltip title="Auto-Deleveraging risk indicator (1-5). Higher means higher risk of forced deleveraging.">
-                  <InfoOutlinedIcon sx={{ fontSize: 12, color: 'rgba(255, 255, 255, 0.3)' }} />
+                  <InfoOutlinedIcon sx={{ fontSize: 10, color: 'rgba(255, 255, 255, 0.3)' }} />
                 </Tooltip>
               </span>
             </th>
-            <th style={{ ...tableStyles.th, textAlign: 'center', width: '60px' }}></th>
+            <th style={{ ...compactThStyles, textAlign: 'center', width: '40px' }}></th>
           </tr>
         </thead>
         <tbody>
           {positions.length === 0 ? (
             <tr>
-              <td colSpan={12} style={{ ...tableStyles.td, textAlign: 'center', padding: '48px 16px' }}>
+              <td colSpan={12} style={{ ...compactTdStyles, textAlign: 'center', padding: '48px 16px' }}>
                 <Typography sx={{ color: '#00F5E0', fontSize: '0.875rem' }}>
                   No open positions
                 </Typography>
@@ -164,80 +183,80 @@ export const PositionsTable = ({
                   onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
                 >
                   {/* Market */}
-                  <td style={tableStyles.td}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <span style={{ fontWeight: 500 }}>{position.market}</span>
+                  <td style={compactTdStyles}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                      <span style={{ fontWeight: 500, fontSize: '0.75rem' }}>{position.market}</span>
                       <span
                         style={{
                           color: isLong ? '#00FF88' : '#FF4444',
-                          fontSize: '0.625rem',
+                          fontSize: '0.5rem',
                           fontWeight: 600,
                         }}
                       >
                         {isLong ? 'LONG' : 'SHORT'}
                       </span>
-                    </span>
+                    </div>
                   </td>
 
                   {/* Quantity */}
-                  <td style={tableStyles.td}>{formatPositionQuantity(position)}</td>
+                  <td style={compactTdStyles}>{formatPositionQuantity(position)}</td>
 
                   {/* Value */}
-                  <td style={tableStyles.td}>
+                  <td style={compactTdStyles}>
                     ${positionValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </td>
 
                   {/* Entry Price */}
-                  <td style={tableStyles.td}>
+                  <td style={compactTdStyles}>
                     ${entryPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </td>
 
                   {/* Index Price */}
-                  <td style={tableStyles.td}>
+                  <td style={compactTdStyles}>
                     ${indexPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </td>
 
                   {/* Liquidation Price */}
-                  <td style={tableStyles.td}>
+                  <td style={compactTdStyles}>
                     ${liquidationPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </td>
 
                   {/* Position Margin */}
-                  <td style={tableStyles.td}>
+                  <td style={compactTdStyles}>
                     ${marginRequirement.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </td>
 
                   {/* Unrealized P&L (%) */}
-                  <td style={tableStyles.td}>
-                    <div>
-                      <div style={{ color: unrealizedPnL >= 0 ? '#00FF88' : '#FF4444' }}>
+                  <td style={compactTdStyles}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+                      <div style={{ color: unrealizedPnL >= 0 ? '#00FF88' : '#FF4444', fontSize: '0.7rem' }}>
                         {unrealizedPnL >= 0 ? '+' : ''}
                         ${unrealizedPnL.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </div>
-                      <div style={{ color: unrealizedPnLPercentage >= 0 ? '#00FF88' : '#FF4444', fontSize: '0.75rem' }}>
+                      <div style={{ color: unrealizedPnLPercentage >= 0 ? '#00FF88' : '#FF4444', fontSize: '0.625rem' }}>
                         ({unrealizedPnLPercentage >= 0 ? '+' : ''}{unrealizedPnLPercentage.toFixed(2)}%)
                       </div>
                     </div>
                   </td>
 
                   {/* Realized P&L */}
-                  <td style={{ ...tableStyles.td, color: realizedPnL >= 0 ? '#00FF88' : '#FF4444' }}>
+                  <td style={{ ...compactTdStyles, color: realizedPnL >= 0 ? '#00FF88' : '#FF4444' }}>
                     {realizedPnL >= 0 ? '+' : ''}
                     ${realizedPnL.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </td>
 
                   {/* TP/SL */}
-                  <td style={{ ...tableStyles.td, color: 'rgba(255, 255, 255, 0.5)' }}>-</td>
+                  <td style={{ ...compactTdStyles, color: 'rgba(255, 255, 255, 0.5)' }}>-</td>
 
                   {/* ADL */}
-                  <td style={tableStyles.td}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                  <td style={compactTdStyles}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1px', justifyContent: 'center' }}>
                       {[1, 2, 3, 4, 5].map((level) => (
                         <div
                           key={level}
                           style={{
-                            width: '4px',
-                            height: '12px',
+                            width: '3px',
+                            height: '10px',
                             backgroundColor:
                               level <= position.adlQuintile
                                 ? position.adlQuintile >= 4
@@ -246,7 +265,7 @@ export const PositionsTable = ({
                                     ? '#FFA500'
                                     : '#00FF88'
                                 : 'rgba(255, 255, 255, 0.1)',
-                            borderRadius: '2px',
+                            borderRadius: '1px',
                           }}
                         />
                       ))}
@@ -254,7 +273,7 @@ export const PositionsTable = ({
                   </td>
 
                   {/* Close Button */}
-                  <td style={{ ...tableStyles.td, textAlign: 'center' }}>
+                  <td style={{ ...compactTdStyles, textAlign: 'center' }}>
                     <Tooltip title={closingMarket === position.market ? 'Closing...' : 'Close Position'}>
                       <span>
                         <IconButton
