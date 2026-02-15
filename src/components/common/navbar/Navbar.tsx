@@ -20,7 +20,7 @@ const navItems = [
     ],
     label: "BRIDGE",
   },
-  { href: ["/points"], label: "POINTS" },
+  // { href: ["/points"], label: "POINTS" },
   { href: ["/referral"], label: "REFERRAL" },
 ];
 
