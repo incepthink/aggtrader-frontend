@@ -78,7 +78,7 @@ const PerpPage = () => {
           }}
         >
           {/* Chain Switcher Banner */}
-          <BokutoSwitcher />
+          {/* <BokutoSwitcher /> */}
 
           {/* Mobile Market Header */}
           <MobileMarketHeader

@@ -6,6 +6,7 @@ import NavLink from "./Navlink";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { Menu, Close } from "@mui/icons-material";
 import KatanaLogo from "./KatanaLogo";
+import { useChain } from "@/context/ChainContext";
 
 const navItems = [
   {
@@ -37,6 +38,9 @@ export function GradientConnectButton({
 }: GradientConnectButtonProps) {
   // Client-side mounting guard to prevent SSR hydration mismatch
   const [isClient, setIsClient] = useState(false);
+
+  // Get route-aware chain context
+  const { isChainMismatch, requiredChainId, chainName } = useChain();
 
   useEffect(() => {
     setIsClient(true);
@@ -70,8 +74,10 @@ export function GradientConnectButton({
         account,
         openConnectModal,
         openAccountModal,
+        openChainModal,
         mounted,
         authenticationStatus,
+        chain,
       }) => {
         if (!mounted) return null;
         const ready = mounted && authenticationStatus !== "loading";
@@ -89,6 +95,24 @@ export function GradientConnectButton({
 
         const buttonStyles = variant === "form" ? formStyles : defaultStyles;
         const finalStyles = customStyles || buttonStyles;
+
+        // Show wrong network button if:
+        // 1. Chain is unsupported (not Katana or Bokuto), OR
+        // 2. Chain doesn't match required chain for current route
+        const isWrongNetwork = chain?.unsupported || (connected && isChainMismatch);
+
+        if (isWrongNetwork) {
+          return (
+            <button onClick={openChainModal} type="button" className={finalStyles}>
+              <span className={variant === "form" ? "block" : "hidden sm:inline"}>
+                Switch to {chainName}
+              </span>
+              <span className={variant === "form" ? "hidden" : "sm:hidden"}>
+                Switch
+              </span>
+            </button>
+          );
+        }
 
         return (
           <button

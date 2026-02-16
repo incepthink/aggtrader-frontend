@@ -7,8 +7,9 @@ import React, {
   ReactNode,
 } from "react";
 import { useAccount, useChainId } from "wagmi";
+import { usePathname } from "next/navigation";
 
-// Katana chain - the only supported chain
+// Katana chain - main chain for spot, lending, vaults
 export const katana = {
   id: 747474,
   name: "Katana",
@@ -30,6 +31,28 @@ export const katana = {
   },
 } as const;
 
+// Bokuto chain - testnet for perpetual trading
+export const bokuto = {
+  id: 737373,
+  name: "Bokuto",
+  nativeCurrency: {
+    decimals: 18,
+    name: "Ethereum",
+    symbol: "ETH",
+  },
+  rpcUrls: {
+    default: {
+      http: ["https://rpc-bokuto.katanarpc.com"],
+    },
+  },
+  blockExplorers: {
+    default: {
+      name: "Bokuto Explorer",
+      url: "https://bokuto.katanascan.com",
+    },
+  },
+} as const;
+
 // Katana configuration
 export const KATANA_CHAIN = {
   id: katana.id,
@@ -40,16 +63,27 @@ export const KATANA_CHAIN = {
   blockExplorerUrl: katana.blockExplorers.default.url,
 } as const;
 
-export type ChainId = 747474;
-export type ChainName = "KATANA";
+// Bokuto configuration
+export const BOKUTO_CHAIN = {
+  id: bokuto.id,
+  name: "Bokuto",
+  symbol: "ETH",
+  wagmiChain: bokuto,
+  rpcUrl: bokuto.rpcUrls.default.http[0],
+  blockExplorerUrl: bokuto.blockExplorers.default.url,
+} as const;
+
+export type ChainId = 747474 | 737373;
+export type ChainName = "KATANA" | "BOKUTO";
 
 interface ChainContextType {
   chainId: ChainId;
   chainName: ChainName;
-  chainConfig: typeof KATANA_CHAIN;
+  chainConfig: typeof KATANA_CHAIN | typeof BOKUTO_CHAIN;
   walletChainId: number | undefined;
   isWalletConnected: boolean;
   isChainMismatch: boolean;
+  requiredChainId: ChainId;
 }
 
 const ChainContext = createContext<ChainContextType | undefined>(undefined);
@@ -61,24 +95,29 @@ interface ChainProviderProps {
 export const ChainProvider: React.FC<ChainProviderProps> = ({ children }) => {
   // Wagmi hooks
   const { isConnected } = useAccount();
+  const pathname = usePathname();
 
   // Use useChainId with explicit config fallback to prevent ChainNotConfiguredError
   let walletChainId: number | undefined;
   try {
     walletChainId = useChainId();
   } catch (error) {
-    // If chain detection fails (injected provider not ready), assume Katana
-    walletChainId = 747474;
+    // If chain detection fails (injected provider not ready), default to undefined
+    walletChainId = undefined;
   }
 
-  // Always use Katana - no chain switching needed
-  const chainId: ChainId = 747474;
-  const chainName: ChainName = "KATANA";
-  const chainConfig = KATANA_CHAIN;
+  // Determine required chain based on current route
+  // /perp routes require Bokuto, all other routes require Katana
+  const requiredChainId: ChainId = pathname?.startsWith('/perp') ? 737373 : 747474;
 
-  // Check if wallet is on a different chain than Katana
+  // Set active chain based on required chain for current route
+  const chainId: ChainId = requiredChainId;
+  const chainName: ChainName = requiredChainId === 737373 ? "BOKUTO" : "KATANA";
+  const chainConfig = requiredChainId === 737373 ? BOKUTO_CHAIN : KATANA_CHAIN;
+
+  // Check if wallet is on a different chain than required for current route
   const isChainMismatch =
-    isConnected && walletChainId !== undefined && walletChainId !== chainId;
+    isConnected && walletChainId !== undefined && walletChainId !== requiredChainId;
 
   const value: ChainContextType = {
     chainId,
@@ -87,6 +126,7 @@ export const ChainProvider: React.FC<ChainProviderProps> = ({ children }) => {
     walletChainId,
     isWalletConnected: isConnected,
     isChainMismatch,
+    requiredChainId,
   };
 
   return (
