@@ -2,7 +2,11 @@
 
 import { useState } from 'react';
 import { Box, Tabs, Tab, Typography } from '@mui/material';
-import { useOrderbookTrades } from '@/hooks/perp/useOrderbookTrades';
+import {
+  useOrderbookSnapshot,
+  useOrderbookTrades,
+  useOrderbookConnection,
+} from '@/hooks/perp/useOrderbookTrades';
 import OrderbookDisplay from './OrderbookDisplay';
 import TradesDisplay from './TradesDisplay';
 
@@ -12,8 +16,9 @@ interface OrderbookTradesProps {
 
 const OrderbookTrades = ({ market = 'BTC-USD' }: OrderbookTradesProps) => {
   const [activeTab, setActiveTab] = useState(0);
-  const { isConnected, orderbookData, trades, error } =
-    useOrderbookTrades(market);
+  const orderbookData = useOrderbookSnapshot(market);
+  const trades = useOrderbookTrades(market);
+  const { isConnected, error } = useOrderbookConnection(market);
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
@@ -98,11 +103,27 @@ const OrderbookTrades = ({ market = 'BTC-USD' }: OrderbookTradesProps) => {
         </Box>
       )}
 
-      {/* Content */}
+      {/* Content — both tabs stay mounted to avoid remount flashes */}
       <Box sx={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
-        <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden' }}>
-          {activeTab === 0 && <OrderbookDisplay orderbookData={orderbookData} />}
-          {activeTab === 1 && <TradesDisplay trades={trades} />}
+        <Box
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            overflow: 'hidden',
+            display: activeTab === 0 ? 'block' : 'none',
+          }}
+        >
+          <OrderbookDisplay orderbookData={orderbookData} />
+        </Box>
+        <Box
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            overflow: 'hidden',
+            display: activeTab === 1 ? 'block' : 'none',
+          }}
+        >
+          <TradesDisplay trades={trades} />
         </Box>
       </Box>
     </Box>

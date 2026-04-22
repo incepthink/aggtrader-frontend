@@ -57,6 +57,11 @@ const KumaCandlestickChart: React.FC<KumaCandlestickChartProps> = ({
   const lastInterval = useRef<CandleInterval>(interval);
   // MEMORY LEAK FIX: Track timeout for cleanup
   const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Auto-retry refs
+  const retryCountRef = useRef<number>(0);
+  const autoRetryTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const MAX_AUTO_RETRIES = 3;
+  const AUTO_RETRY_DELAY_MS = 3000;
 
   // Get candle data from WebSocket
   const { isConnected, candleData, latestCandle, error, isLoadingHistory } =
@@ -77,15 +82,52 @@ const KumaCandlestickChart: React.FC<KumaCandlestickChartProps> = ({
     }
   }, [market, interval]);
 
-  // MEMORY LEAK FIX: Cleanup timeout on unmount
+  // MEMORY LEAK FIX: Cleanup timeouts on unmount
   useEffect(() => {
     return () => {
       if (processingTimeoutRef.current) {
         clearTimeout(processingTimeoutRef.current);
         processingTimeoutRef.current = null;
       }
+      if (autoRetryTimerRef.current) {
+        clearTimeout(autoRetryTimerRef.current);
+        autoRetryTimerRef.current = null;
+      }
     };
   }, []);
+
+  // Auto-retry when an error occurs (up to MAX_AUTO_RETRIES times)
+  useEffect(() => {
+    const hasError = !!(error || chartError);
+    if (!hasError) return;
+    if (retryCountRef.current >= MAX_AUTO_RETRIES) return;
+
+    if (autoRetryTimerRef.current) {
+      clearTimeout(autoRetryTimerRef.current);
+    }
+
+    autoRetryTimerRef.current = setTimeout(() => {
+      retryCountRef.current += 1;
+      setChartError(null);
+      setRenderKey((prev) => prev + 1);
+      setChartReady(false);
+      autoRetryTimerRef.current = null;
+    }, AUTO_RETRY_DELAY_MS);
+
+    return () => {
+      if (autoRetryTimerRef.current) {
+        clearTimeout(autoRetryTimerRef.current);
+        autoRetryTimerRef.current = null;
+      }
+    };
+  }, [error, chartError]);
+
+  // Reset retry counter when data loads successfully
+  useEffect(() => {
+    if (candleData.length > 0 && !error && !chartError) {
+      retryCountRef.current = 0;
+    }
+  }, [candleData.length, error, chartError]);
 
   // Handle timeframe change
   const handleTimeframeChange = useCallback((newTimeframe: TimeframeOption) => {
@@ -122,12 +164,20 @@ const KumaCandlestickChart: React.FC<KumaCandlestickChartProps> = ({
 
   // Handle retry actions
   const handleRetry = useCallback(() => {
+    retryCountRef.current = 0;
+    if (autoRetryTimerRef.current) {
+      clearTimeout(autoRetryTimerRef.current);
+      autoRetryTimerRef.current = null;
+    }
     setChartError(null);
     setRenderKey((prev) => prev + 1);
+    setChartReady(false);
   }, []);
 
   // Show error state
   if (error || chartError) {
+    const attemptsLeft = MAX_AUTO_RETRIES - retryCountRef.current;
+    const willAutoRetry = attemptsLeft > 0;
     return (
       <Box
         sx={{
@@ -147,6 +197,11 @@ const KumaCandlestickChart: React.FC<KumaCandlestickChartProps> = ({
         <Typography variant="body2" sx={{ color: '#999', textAlign: 'center' }}>
           {error || chartError}
         </Typography>
+        {willAutoRetry ? (
+          <Typography variant="caption" sx={{ color: '#666' }}>
+            Auto-retrying… ({retryCountRef.current + 1}/{MAX_AUTO_RETRIES})
+          </Typography>
+        ) : null}
         <Typography
           variant="body2"
           onClick={handleRetry}
@@ -156,7 +211,7 @@ const KumaCandlestickChart: React.FC<KumaCandlestickChartProps> = ({
             '&:hover': { textDecoration: 'underline' },
           }}
         >
-          Retry
+          Retry now
         </Typography>
       </Box>
     );

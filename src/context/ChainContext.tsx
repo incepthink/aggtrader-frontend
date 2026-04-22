@@ -7,7 +7,6 @@ import React, {
   ReactNode,
 } from "react";
 import { useAccount, useChainId } from "wagmi";
-import { usePathname } from "next/navigation";
 
 // Katana chain - main chain for spot, lending, vaults
 export const katana = {
@@ -95,7 +94,6 @@ interface ChainProviderProps {
 export const ChainProvider: React.FC<ChainProviderProps> = ({ children }) => {
   // Wagmi hooks
   const { isConnected } = useAccount();
-  const pathname = usePathname();
 
   // Use useChainId with explicit config fallback to prevent ChainNotConfiguredError
   let walletChainId: number | undefined;
@@ -106,14 +104,12 @@ export const ChainProvider: React.FC<ChainProviderProps> = ({ children }) => {
     walletChainId = undefined;
   }
 
-  // Determine required chain based on current route
-  // /perp routes require Bokuto, all other routes require Katana
-  const requiredChainId: ChainId = pathname?.startsWith('/perp') ? 737373 : 747474;
+  // Determine required chain based on current route — all routes require Katana
+  const requiredChainId: ChainId = 747474;
 
-  // Set active chain based on required chain for current route
   const chainId: ChainId = requiredChainId;
-  const chainName: ChainName = requiredChainId === 737373 ? "BOKUTO" : "KATANA";
-  const chainConfig = requiredChainId === 737373 ? BOKUTO_CHAIN : KATANA_CHAIN;
+  const chainName: ChainName = "KATANA";
+  const chainConfig = KATANA_CHAIN;
 
   // Check if wallet is on a different chain than required for current route
   const isChainMismatch =

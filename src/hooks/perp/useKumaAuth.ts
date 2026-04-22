@@ -1,14 +1,14 @@
-'use client';
+"use client";
 
-import { useState, useCallback, useEffect } from 'react';
-import { useAccount, useWalletClient } from 'wagmi';
-import { RestAuthenticatedClient } from '@katanaperps/katana-perps-sdk/clients';
-import { usePerpBalanceStore } from '@/store/perpBalanceStore';
+import { useState, useCallback, useEffect } from "react";
+import { useAccount, useWalletClient } from "wagmi";
+import { RestAuthenticatedClient } from "@katanaperps/katana-perps-sdk/clients";
+import { usePerpBalanceStore } from "@/store/perpBalanceStore";
 import {
   hasValidSessionKey,
   removeSessionKeysForWallet,
   cleanupExpiredKeys,
-} from '@/utils/perp/sessionKeyStorage';
+} from "@/utils/perp/sessionKeyStorage";
 
 /**
  * Katana Perps account balance interface
@@ -67,7 +67,9 @@ export const useKatanaPerpsAuth = (): UseKatanaPerpsAuthReturn => {
   const { data: walletClient } = useWalletClient();
 
   // Use global store for isAssociated to share state across components
-  const setGlobalIsAssociated = usePerpBalanceStore((state) => state.setIsAssociated);
+  const setGlobalIsAssociated = usePerpBalanceStore(
+    (state) => state.setIsAssociated,
+  );
 
   const [state, setState] = useState<KatanaPerpsAuthState>({
     isAssociated: false,
@@ -93,6 +95,8 @@ export const useKatanaPerpsAuth = (): UseKatanaPerpsAuthReturn => {
     // Cleanup expired session keys on load
     cleanupExpiredKeys();
 
+    console.log("SESSION KEYS", hasValidSessionKey(address));
+
     // Check if we have a valid session key in localStorage
     if (hasValidSessionKey(address)) {
       setState((prev) => ({
@@ -113,7 +117,7 @@ export const useKatanaPerpsAuth = (): UseKatanaPerpsAuthReturn => {
     if (!address || !walletClient) {
       setState((prev) => ({
         ...prev,
-        error: 'Wallet not connected',
+        error: "Wallet not connected",
       }));
       return false;
     }
@@ -127,10 +131,10 @@ export const useKatanaPerpsAuth = (): UseKatanaPerpsAuthReturn => {
     try {
       // Step 1: Get the typed data structure from our API
       // This ensures we sign exactly what Katana Perps expects
-      const typedDataResponse = await fetch('/api/kuma/get-typed-data', {
-        method: 'POST',
+      const typedDataResponse = await fetch("/api/kuma/get-typed-data", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           wallet: address,
@@ -139,7 +143,7 @@ export const useKatanaPerpsAuth = (): UseKatanaPerpsAuthReturn => {
 
       if (!typedDataResponse.ok) {
         const error = await typedDataResponse.json();
-        throw new Error(error.error || 'Failed to get typed data');
+        throw new Error(error.error || "Failed to get typed data");
       }
 
       const { nonce, typedData } = await typedDataResponse.json();
@@ -153,10 +157,10 @@ export const useKatanaPerpsAuth = (): UseKatanaPerpsAuthReturn => {
       });
 
       // Step 3: Submit signature to our Next.js API route (server-side proxy to avoid CORS)
-      const response = await fetch('/api/kuma/associate-wallet', {
-        method: 'POST',
+      const response = await fetch("/api/kuma/associate-wallet", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           nonce,
@@ -168,42 +172,42 @@ export const useKatanaPerpsAuth = (): UseKatanaPerpsAuthReturn => {
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || 'Failed to associate wallet');
+        throw new Error(result.error || "Failed to associate wallet");
       }
 
-      console.log('Wallet associated successfully with Katana Perps:', result);
+      console.log("Wallet associated successfully with Katana Perps:", result);
 
       // Store session key in localStorage (session key will be created by the modal based on user preference)
       // For now just sync to global store - the actual session key is created in UnlockWalletModal
       setGlobalIsAssociated(true);
 
       // Determine if using sandbox (Bokuto testnet) or mainnet
-      const sandbox = process.env.NEXT_PUBLIC_KATANA_PERPS_SANDBOX === 'true';
+      const sandbox = process.env.NEXT_PUBLIC_KATANA_PERPS_SANDBOX === "true";
 
       // Create client instance for future use (optional, if needed)
       const client = new RestAuthenticatedClient({
         apiKey: sandbox
-          ? process.env.NEXT_PUBLIC_KATANA_PERPS_API_KEY_TESTNET || ''
-          : process.env.NEXT_PUBLIC_KATANA_PERPS_API_KEY || '',
+          ? process.env.NEXT_PUBLIC_KATANA_PERPS_API_KEY_TESTNET || ""
+          : process.env.NEXT_PUBLIC_KATANA_PERPS_API_KEY || "",
         apiSecret: sandbox
-          ? process.env.NEXT_PUBLIC_KATANA_PERPS_API_SECRET_TESTNET || ''
-          : process.env.NEXT_PUBLIC_KATANA_PERPS_API_SECRET || '',
+          ? process.env.NEXT_PUBLIC_KATANA_PERPS_API_SECRET_TESTNET || ""
+          : process.env.NEXT_PUBLIC_KATANA_PERPS_API_SECRET || "",
         sandbox,
       });
 
       // Extract account balance from response
       const accountBalance: KatanaPerpsAccountBalance = {
-        equity: result.equity || '0',
-        freeCollateral: result.freeCollateral || '0',
-        heldCollateral: result.heldCollateral || '0',
-        availableCollateral: result.availableCollateral || '0',
-        buyingPower: result.buyingPower || '0',
-        leverage: result.leverage || '0',
-        marginRatio: result.marginRatio || '0',
-        quoteBalance: result.quoteBalance || '0',
-        unrealizedPnL: result.unrealizedPnL || '0',
-        makerFeeRate: result.makerFeeRate || '0',
-        takerFeeRate: result.takerFeeRate || '0',
+        equity: result.equity || "0",
+        freeCollateral: result.freeCollateral || "0",
+        heldCollateral: result.heldCollateral || "0",
+        availableCollateral: result.availableCollateral || "0",
+        buyingPower: result.buyingPower || "0",
+        leverage: result.leverage || "0",
+        marginRatio: result.marginRatio || "0",
+        quoteBalance: result.quoteBalance || "0",
+        unrealizedPnL: result.unrealizedPnL || "0",
+        makerFeeRate: result.makerFeeRate || "0",
+        takerFeeRate: result.takerFeeRate || "0",
         positions: result.positions || [],
       };
 
@@ -217,19 +221,26 @@ export const useKatanaPerpsAuth = (): UseKatanaPerpsAuthReturn => {
 
       return true;
     } catch (err: any) {
-      console.error('Failed to associate wallet with Katana Perps:', err);
+      console.error("Failed to associate wallet with Katana Perps:", err);
 
-      let errorMessage = 'Failed to associate wallet';
+      let errorMessage = "Failed to associate wallet";
 
       if (err.message) {
         errorMessage = err.message;
       }
 
       // Check for specific error cases
-      if (errorMessage.includes('User rejected') || errorMessage.includes('User denied')) {
-        errorMessage = 'Wallet signature was rejected. Please try again.';
-      } else if (errorMessage.includes('API key') || errorMessage.includes('credentials')) {
-        errorMessage = 'Invalid API credentials. Please check your configuration.';
+      if (
+        errorMessage.includes("User rejected") ||
+        errorMessage.includes("User denied")
+      ) {
+        errorMessage = "Wallet signature was rejected. Please try again.";
+      } else if (
+        errorMessage.includes("API key") ||
+        errorMessage.includes("credentials")
+      ) {
+        errorMessage =
+          "Invalid API credentials. Please check your configuration.";
       }
 
       setState({

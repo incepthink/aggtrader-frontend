@@ -5,7 +5,7 @@ import { useAccount, useChainId } from 'wagmi';
 import { useKatanaPerpsAuth } from '@/hooks/perp/useKumaAuth';
 import UnlockWalletModal from './UnlockWalletModal';
 
-const BOKUTO_CHAIN_ID = 737373;
+const KATANA_CHAIN_ID = 747474;
 
 /**
  * Automatically triggers Katana Perps wallet association when user visits /perp page
@@ -13,7 +13,7 @@ const BOKUTO_CHAIN_ID = 737373;
  * 1. User already connected wallet on Katana pages -> shows unlock modal on /perp visit
  * 2. User connects wallet while on /perp page -> shows unlock modal after connection
  *
- * IMPORTANT: Only shows modal after user is confirmed to be on Bokuto network
+ * IMPORTANT: Only shows modal after user is confirmed to be on Katana network
  */
 export const KatanaPerpsAuthWrapper = () => {
   const { address, isConnected } = useAccount();
@@ -22,7 +22,7 @@ export const KatanaPerpsAuthWrapper = () => {
   const [hasAttempted, setHasAttempted] = useState(false);
   const [showModal, setShowModal] = useState(false);
 
-  const isOnBokuto = chainId === BOKUTO_CHAIN_ID;
+  const isOnKatana = chainId === KATANA_CHAIN_ID;
 
   useEffect(() => {
     // Reset attempt tracker when wallet changes or disconnects
@@ -32,8 +32,8 @@ export const KatanaPerpsAuthWrapper = () => {
       return;
     }
 
-    // Don't show modal if not on Bokuto network - let BokutoSwitcher handle chain switching first
-    if (!isOnBokuto) {
+    // Don't show modal if not on Katana network - let KatanaSwitcher handle chain switching first
+    if (!isOnKatana) {
       setShowModal(false);
       return;
     }
@@ -50,7 +50,7 @@ export const KatanaPerpsAuthWrapper = () => {
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [isConnected, address, isAssociated, isAssociating, hasAttempted, isOnBokuto]);
+  }, [isConnected, address, isAssociated, isAssociating, hasAttempted, isOnKatana]);
 
   // Auto-close modal when association succeeds
   useEffect(() => {
@@ -59,12 +59,12 @@ export const KatanaPerpsAuthWrapper = () => {
     }
   }, [isAssociated, showModal]);
 
-  // Reset hasAttempted when switching TO Bokuto (to allow modal to show after chain switch)
+  // Reset hasAttempted when switching TO Katana (to allow modal to show after chain switch)
   useEffect(() => {
-    if (isOnBokuto && isConnected && !isAssociated) {
+    if (isOnKatana && isConnected && !isAssociated) {
       setHasAttempted(false);
     }
-  }, [isOnBokuto, isConnected, isAssociated]);
+  }, [isOnKatana, isConnected, isAssociated]);
 
   return (
     <UnlockWalletModal

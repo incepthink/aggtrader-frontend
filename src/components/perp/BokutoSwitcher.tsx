@@ -4,7 +4,7 @@ import { Box, Typography, Alert, CircularProgress } from "@mui/material";
 import { useAccount, useChainId, useSwitchChain } from "wagmi";
 import { useState, useEffect, useRef } from "react";
 
-const BOKUTO_CHAIN_ID = 737373;
+const KATANA_CHAIN_ID = 747474;
 
 /**
  * BokutoSwitcher - Automatically switches to Bokuto testnet on perp page
@@ -17,8 +17,8 @@ const BokutoSwitcher = () => {
   const [error, setError] = useState<string | null>(null);
   const hasAttemptedSwitch = useRef(false);
 
-  const isOnBokuto = chainId === BOKUTO_CHAIN_ID;
-  const needsChainSwitch = isConnected && !isOnBokuto;
+  const isOnKatana = chainId === KATANA_CHAIN_ID;
+  const needsChainSwitch = isConnected && !isOnKatana;
 
   // Automatically switch chain when needed
   useEffect(() => {
@@ -28,7 +28,7 @@ const BokutoSwitcher = () => {
 
       try {
         switchChain(
-          { chainId: BOKUTO_CHAIN_ID },
+          { chainId: KATANA_CHAIN_ID },
           {
             onError: (err) => {
               console.error("Failed to switch chain:", err);
@@ -45,11 +45,11 @@ const BokutoSwitcher = () => {
 
   // Reset the attempt flag when chain changes or disconnects
   useEffect(() => {
-    if (isOnBokuto || !isConnected) {
+    if (isOnKatana || !isConnected) {
       hasAttemptedSwitch.current = false;
       setError(null);
     }
-  }, [isOnBokuto, isConnected]);
+  }, [isOnKatana, isConnected]);
 
   // Don't show if wallet is not connected or already on correct chain
   if (!needsChainSwitch) {
@@ -85,10 +85,10 @@ const BokutoSwitcher = () => {
       >
         <Typography variant="body2" sx={{ fontWeight: 500 }}>
           {isPending
-            ? "Switching to Bokuto testnet..."
+            ? "Switching to Katana network..."
             : error
-              ? "Failed to switch network. Please switch to Bokuto testnet manually in your wallet."
-              : "Switching to Bokuto testnet..."}
+              ? "Failed to switch network. Please switch to Katana network manually in your wallet."
+              : "Switching to Katana network..."}
         </Typography>
         {error && (
           <Typography

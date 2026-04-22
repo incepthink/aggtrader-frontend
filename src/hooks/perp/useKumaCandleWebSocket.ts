@@ -151,8 +151,7 @@ export function useKumaCandleWebSocket({
       return;
     }
 
-    // Create WebSocket client instance with sandbox mode for Bokuto testnet
-    const wsClient = new WebSocketClient({ sandbox: true });
+    const wsClient = new WebSocketClient({ sandbox: process.env.NEXT_PUBLIC_KATANA_PERPS_SANDBOX === 'true' });
     wsClientRef.current = wsClient;
 
     // Handle connection event

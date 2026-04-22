@@ -8,7 +8,7 @@ import { usePerpStore } from "@/store/perpStore";
 import { useKumaAuth } from "@/hooks/perp/useKumaAuth";
 import { useKumaBalance } from "@/hooks/perp/useKumaBalance";
 import { useCreateOrder } from "@/hooks/perp/createOrder/useCreateOrder";
-import { useOrderbookTrades } from "@/hooks/perp/useOrderbookTrades";
+import { useOrderbookSnapshot } from "@/hooks/perp/useOrderbookTrades";
 import { KatanaPerpsTicker } from "@katanaperps/katana-perps-sdk";
 import {
   calculateMarketMetrics,
@@ -83,7 +83,7 @@ const OrderForm = ({ market, currentPrice, tickerData }: OrderFormProps) => {
   const clearLongTpSl = usePerpStore((s) => s.clearLongTpSl);
   const clearShortTpSl = usePerpStore((s) => s.clearShortTpSl);
 
-  const { orderbookData } = useOrderbookTrades(market);
+  const orderbookData = useOrderbookSnapshot(market);
 
   // Snackbar state for error notifications
   const [snackbarOpen, setSnackbarOpen] = useState(false);
@@ -101,6 +101,7 @@ const OrderForm = ({ market, currentPrice, tickerData }: OrderFormProps) => {
   };
 
   const isWalletUnlocked = isConnected && isAssociated;
+  // console.log(isConnected, isAssociated);
 
   const handleBuy = async () => {
     if (!isWalletUnlocked) {

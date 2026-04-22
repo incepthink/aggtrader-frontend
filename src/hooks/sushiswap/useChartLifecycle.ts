@@ -302,10 +302,16 @@ export const useChartLifecycle = ({
       // Sort data by time to ensure proper order
       const sortedData = [...newData].sort((a, b) => (a.time as number) - (b.time as number));
 
-      candlestickSeriesRef.current.setData(sortedData);
+      // Deduplicate: keep last (most up-to-date) candle per timestamp
+      // Prevents "data must be asc ordered" error when WS and history share a timestamp
+      const timeMap = new Map<number, CandlestickData>();
+      sortedData.forEach((item) => timeMap.set(item.time as number, item));
+      const dedupedData = Array.from(timeMap.values());
+
+      candlestickSeriesRef.current.setData(dedupedData);
 
       // Set initial visible range based on timeframe
-      if (sortedData.length > 0) {
+      if (dedupedData.length > 0) {
         // MEMORY LEAK FIX: Clear previous timeout before creating new one
         if (visibleRangeTimeoutRef.current) {
           clearTimeout(visibleRangeTimeoutRef.current);
@@ -318,13 +324,12 @@ export const useChartLifecycle = ({
               // Get the number of bars to show based on timeframe
               const visibleBars = getVisibleBarsForTimeframe(currentTimeframe as TimeframeOption);
 
-              const lastTime = sortedData[sortedData.length - 1].time as number;
-              const firstTime = sortedData[0].time as number;
+              const lastTime = dedupedData[dedupedData.length - 1].time as number;
 
               // Calculate how many bars to go back
-              const barsToGoBack = Math.min(visibleBars, sortedData.length);
-              const fromIndex = Math.max(0, sortedData.length - barsToGoBack);
-              const startTime = sortedData[fromIndex].time as number;
+              const barsToGoBack = Math.min(visibleBars, dedupedData.length);
+              const fromIndex = Math.max(0, dedupedData.length - barsToGoBack);
+              const startTime = dedupedData[fromIndex].time as number;
 
               chartRef.current.timeScale().setVisibleRange({
                 from: startTime as UTCTimestamp,

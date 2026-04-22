@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { Box, Typography, Tabs, Tab, Switch, Tooltip } from "@mui/material";
 import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
 import {
@@ -69,6 +69,93 @@ const PositionsPanel = () => {
     () => mergeOrders(restOrders, wsOrdersMap),
     [restOrders, wsOrdersMap],
   );
+
+  // Auto-retry constants
+  const MAX_AUTO_RETRIES = 3;
+  const AUTO_RETRY_DELAY_MS = 3000;
+
+  const positionsRetryCountRef = useRef(0);
+  const positionsRetryTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const ordersRetryCountRef = useRef(0);
+  const ordersRetryTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      if (positionsRetryTimerRef.current) clearTimeout(positionsRetryTimerRef.current);
+      if (ordersRetryTimerRef.current) clearTimeout(ordersRetryTimerRef.current);
+    };
+  }, []);
+
+  // Auto-retry on positions REST error
+  useEffect(() => {
+    if (!positionsError) return;
+    if (positionsRetryCountRef.current >= MAX_AUTO_RETRIES) return;
+
+    if (positionsRetryTimerRef.current) clearTimeout(positionsRetryTimerRef.current);
+
+    positionsRetryTimerRef.current = setTimeout(() => {
+      positionsRetryCountRef.current += 1;
+      refetchPositions();
+      positionsRetryTimerRef.current = null;
+    }, AUTO_RETRY_DELAY_MS);
+
+    return () => {
+      if (positionsRetryTimerRef.current) {
+        clearTimeout(positionsRetryTimerRef.current);
+        positionsRetryTimerRef.current = null;
+      }
+    };
+  }, [positionsError, refetchPositions]);
+
+  // Auto-retry on orders REST error
+  useEffect(() => {
+    if (!ordersError) return;
+    if (ordersRetryCountRef.current >= MAX_AUTO_RETRIES) return;
+
+    if (ordersRetryTimerRef.current) clearTimeout(ordersRetryTimerRef.current);
+
+    ordersRetryTimerRef.current = setTimeout(() => {
+      ordersRetryCountRef.current += 1;
+      refetchOrders();
+      ordersRetryTimerRef.current = null;
+    }, AUTO_RETRY_DELAY_MS);
+
+    return () => {
+      if (ordersRetryTimerRef.current) {
+        clearTimeout(ordersRetryTimerRef.current);
+        ordersRetryTimerRef.current = null;
+      }
+    };
+  }, [ordersError, refetchOrders]);
+
+  // Reset retry counters on successful load
+  useEffect(() => {
+    if (restPositions.length > 0 && !positionsError) positionsRetryCountRef.current = 0;
+  }, [restPositions.length, positionsError]);
+
+  useEffect(() => {
+    if (restOrders.length > 0 && !ordersError) ordersRetryCountRef.current = 0;
+  }, [restOrders.length, ordersError]);
+
+  // Manual retry handlers — reset counters so the user gets fresh retries
+  const handleRefetchPositions = useCallback(() => {
+    positionsRetryCountRef.current = 0;
+    if (positionsRetryTimerRef.current) {
+      clearTimeout(positionsRetryTimerRef.current);
+      positionsRetryTimerRef.current = null;
+    }
+    refetchPositions();
+  }, [refetchPositions]);
+
+  const handleRefetchOrders = useCallback(() => {
+    ordersRetryCountRef.current = 0;
+    if (ordersRetryTimerRef.current) {
+      clearTimeout(ordersRetryTimerRef.current);
+      ordersRetryTimerRef.current = null;
+    }
+    refetchOrders();
+  }, [refetchOrders]);
 
   // Combined loading state (only show loading on initial load)
   const isLoading = positionsLoading && restPositions.length === 0;
@@ -316,7 +403,7 @@ const PositionsPanel = () => {
             isLoading={isLoading}
             error={error}
             onClosePosition={handleClosePosition}
-            onRefresh={refetchPositions}
+            onRefresh={handleRefetchPositions}
             closingMarket={closingMarket}
             closeError={closeError}
             onClearError={() => setCloseError(null)}
@@ -329,7 +416,7 @@ const PositionsPanel = () => {
             error={
               ordersError || (ordersWsError ? new Error(ordersWsError) : null)
             }
-            onRefresh={refetchOrders}
+            onRefresh={handleRefetchOrders}
           />
         )}
         {activeTab === 2 && (

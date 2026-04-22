@@ -25,7 +25,7 @@ import {
   MobileChartTabs,
 } from "@/components/perp/mobile";
 
-const BOKUTO_CHAIN_ID = 737373;
+const KATANA_CHAIN_ID = 747474;
 
 // Desktop layout widths (in pixels)
 const ORDERBOOK_WIDTH = 266;
@@ -35,7 +35,7 @@ const PerpPage = () => {
   const { isConnected: isWalletConnected } = useAccount();
   const chainId = useChainId();
   const [selectedMarket, setSelectedMarket] = useState<string>("BTC-USD");
-  const { isConnected, tickerData } = useKumaWebSocket(selectedMarket);
+  const { isConnected, tickerData, error: tickerError, isLoading: isTickerLoading, retryCount: tickerRetryCount } = useKumaWebSocket(selectedMarket);
   const { balance: accountBalance, isLoading: isBalanceLoading } =
     useKumaBalance();
   const setAccountBalance = usePerpBalanceStore(
@@ -56,9 +56,8 @@ const PerpPage = () => {
     ? parseFloat(tickerData.close)
     : undefined;
 
-  // Check if wallet is on correct chain for perp trading (Bokuto testnet during development)
-  const isOnBokuto = chainId === BOKUTO_CHAIN_ID;
-  const needsChainSwitch = isWalletConnected && !isOnBokuto;
+  const isOnKatana = chainId === KATANA_CHAIN_ID;
+  const needsChainSwitch = isWalletConnected && !isOnKatana;
 
   // Mobile Layout
   if (isMobile) {
@@ -189,6 +188,9 @@ const PerpPage = () => {
               <MarketHeader
                 tickerData={tickerData}
                 isConnected={isConnected}
+                isLoading={isTickerLoading}
+                error={tickerError}
+                retryCount={tickerRetryCount}
                 selectedMarket={selectedMarket}
                 onMarketChange={setSelectedMarket}
               />

@@ -7,9 +7,10 @@ import {
   Chip,
   Slide,
   ClickAwayListener,
+  CircularProgress,
 } from "@mui/material";
 import { KatanaPerpsTicker } from "@katanaperps/katana-perps-sdk";
-import { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import Image from "next/image";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 
@@ -48,13 +49,22 @@ const MARKETS: Market[] = [
 interface MarketHeaderProps {
   tickerData: KatanaPerpsTicker | null;
   isConnected: boolean;
+  isLoading?: boolean;
+  error?: string | null;
+  retryCount?: number;
   selectedMarket?: string;
   onMarketChange?: (market: string) => void;
 }
 
+const MAX_RETRIES = 3;
+
+
 export default function MarketHeader({
   tickerData,
   isConnected,
+  isLoading = false,
+  error = null,
+  retryCount = 0,
   selectedMarket = "BTC-USD",
   onMarketChange,
 }: MarketHeaderProps) {
@@ -126,6 +136,22 @@ export default function MarketHeader({
     if (!percent) return "#999";
     const num = parseFloat(percent);
     return num >= 0 ? "#00F5E0" : "#FF4444";
+  };
+
+  const noData = !tickerData;
+
+  const statValue = (content: React.ReactNode) => {
+    if (noData && error) {
+      return (
+        <Typography
+          variant="body2"
+          sx={{ color: "#FF4444", fontSize: { xs: "10px", lg: "11px" }, whiteSpace: "nowrap" }}
+        >
+          Reconnecting… ({retryCount}/{MAX_RETRIES})
+        </Typography>
+      );
+    }
+    return content;
   };
 
   return (
@@ -381,205 +407,194 @@ export default function MarketHeader({
           </Box>
         </Slide>
 
-        {/* Price */}
-        <Stack spacing={{ xs: 0, lg: 0.5 }} sx={{ minWidth: 0, flexShrink: 1 }}>
-          <Typography
-            variant="caption"
-            sx={{
-              color: "#666",
-              fontSize: { xs: "10px", lg: "10px" },
-              textTransform: "uppercase",
-              whiteSpace: "nowrap",
-              lineHeight: 1.2,
-            }}
-          >
-            Price
-          </Typography>
-          <Typography
-            variant="body1"
-            sx={{
-              color: "#fff",
-              fontWeight: 500,
-              fontSize: { xs: "12px", lg: "13px" },
-              whiteSpace: "nowrap",
-              lineHeight: 1.3,
-            }}
-          >
-            {formatPrice(tickerData?.close)}
-          </Typography>
-        </Stack>
+        {/* Stats section with single loading overlay */}
+        <Box sx={{ position: "relative", display: "flex", flex: 1, alignItems: "center", justifyContent: "space-between", minWidth: 0 }}>
 
-        {/* Index Price */}
-        <Stack spacing={{ xs: 0, lg: 0.5 }} sx={{ minWidth: 0, flexShrink: 1 }}>
-          <Typography
-            variant="caption"
-            sx={{
-              color: "#666",
-              fontSize: { xs: "10px", lg: "10px" },
-              textTransform: "uppercase",
-              whiteSpace: "nowrap",
-              lineHeight: 1.2,
-            }}
-          >
-            Index
-          </Typography>
-          <Typography
-            variant="body1"
-            sx={{
-              color: "#fff",
-              fontWeight: 500,
-              fontSize: { xs: "12px", lg: "13px" },
-              whiteSpace: "nowrap",
-              lineHeight: 1.3,
-            }}
-          >
-            {formatPrice(tickerData?.indexPrice)}
-          </Typography>
-        </Stack>
-
-        {/* 24h Change */}
-        <Stack spacing={{ xs: 0, lg: 0.5 }} sx={{ minWidth: 0, flexShrink: 1 }}>
-          <Typography
-            variant="caption"
-            sx={{
-              color: "#666",
-              fontSize: { xs: "10px", lg: "10px" },
-              textTransform: "uppercase",
-              whiteSpace: "nowrap",
-              lineHeight: 1.2,
-            }}
-          >
-            24h Change
-          </Typography>
-          <Typography
-            variant="body1"
-            sx={{
-              color: getChangeColor(tickerData?.percentChange),
-              fontWeight: 500,
-              fontSize: { xs: "12px", lg: "13px" },
-              whiteSpace: "nowrap",
-              lineHeight: 1.3,
-            }}
-          >
-            {formatPercentage(tickerData?.percentChange)}
-          </Typography>
-        </Stack>
-
-        {/* Funding / Countdown */}
-        <Stack spacing={{ xs: 0, lg: 0.5 }} sx={{ minWidth: 0, flexShrink: 1 }}>
-          <Typography
-            variant="caption"
-            sx={{
-              color: "#666",
-              fontSize: { xs: "10px", lg: "10px" },
-              textTransform: "uppercase",
-              whiteSpace: "nowrap",
-              lineHeight: 1.2,
-            }}
-          >
-            <Box
-              component="span"
-              sx={{ display: { xs: "none", sm: "inline" } }}
-            >
-              Funding
-            </Box>
-            <Box
-              component="span"
-              sx={{ display: { xs: "inline", sm: "none" } }}
-            >
-              Fund.
-            </Box>
-            {" / "}Countdown
-          </Typography>
-          <Stack
-            direction="row"
-            spacing={{ xs: 0.5, lg: 1 }}
-            alignItems="center"
-            sx={{ flexWrap: "nowrap" }}
-          >
+          {/* Price */}
+          <Stack spacing={{ xs: 0, lg: 0.5 }} sx={{ minWidth: 0, flexShrink: 1 }}>
             <Typography
-              variant="body1"
+              variant="caption"
               sx={{
-                color: getChangeColor(tickerData?.currentFundingRate),
-                fontWeight: 500,
-                fontSize: { xs: "12px", lg: "14px" },
+                color: "#666",
+                fontSize: { xs: "10px", lg: "10px" },
+                textTransform: "uppercase",
                 whiteSpace: "nowrap",
-                lineHeight: 1.3,
+                lineHeight: 1.2,
               }}
             >
-              {tickerData?.currentFundingRate
-                ? `${(parseFloat(tickerData.currentFundingRate) * 100).toFixed(4)}%`
-                : "--"}
+              Price
             </Typography>
-            <Typography
-              variant="body2"
-              sx={{
-                color: "#00F5E0",
-                fontSize: { xs: "12px", lg: "14px" },
-                whiteSpace: "nowrap",
-                lineHeight: 1.3,
-              }}
-            >
-              / {countdown}
-            </Typography>
+            <Box sx={{ lineHeight: 1.3, display: "flex", alignItems: "center", minHeight: "19px" }}>
+              {statValue(
+                <Typography
+                  variant="body1"
+                  sx={{ color: "#fff", fontWeight: 500, fontSize: { xs: "12px", lg: "13px" }, whiteSpace: "nowrap", lineHeight: 1.3 }}
+                >
+                  {formatPrice(tickerData?.close)}
+                </Typography>
+              )}
+            </Box>
           </Stack>
-        </Stack>
 
-        {/* Open Interest */}
-        <Stack spacing={{ xs: 0, lg: 0.5 }} sx={{ minWidth: 0, flexShrink: 1 }}>
-          <Typography
-            variant="caption"
-            sx={{
-              color: "#666",
-              fontSize: { xs: "10px", lg: "10px" },
-              textTransform: "uppercase",
-              whiteSpace: "nowrap",
-              lineHeight: 1.2,
-            }}
-          >
-            Open Interest
-          </Typography>
-          <Typography
-            variant="body1"
-            sx={{
-              color: "#fff",
-              fontWeight: 500,
-              fontSize: { xs: "12px", lg: "13px" },
-              whiteSpace: "nowrap",
-              lineHeight: 1.3,
-            }}
-          >
-            {formatVolume(tickerData?.openInterest)}
-          </Typography>
-        </Stack>
+          {/* Index Price */}
+          <Stack spacing={{ xs: 0, lg: 0.5 }} sx={{ minWidth: 0, flexShrink: 1 }}>
+            <Typography
+              variant="caption"
+              sx={{
+                color: "#666",
+                fontSize: { xs: "10px", lg: "10px" },
+                textTransform: "uppercase",
+                whiteSpace: "nowrap",
+                lineHeight: 1.2,
+              }}
+            >
+              Index
+            </Typography>
+            <Box sx={{ lineHeight: 1.3, display: "flex", alignItems: "center", minHeight: "19px" }}>
+              {statValue(
+                <Typography
+                  variant="body1"
+                  sx={{ color: "#fff", fontWeight: 500, fontSize: { xs: "12px", lg: "13px" }, whiteSpace: "nowrap", lineHeight: 1.3 }}
+                >
+                  {formatPrice(tickerData?.indexPrice)}
+                </Typography>
+              )}
+            </Box>
+          </Stack>
 
-        {/* 24h Volume */}
-        <Stack spacing={{ xs: 0, lg: 0.5 }} sx={{ minWidth: 0, flexShrink: 1 }}>
-          <Typography
-            variant="caption"
-            sx={{
-              color: "#666",
-              fontSize: { xs: "10px", lg: "10px" },
-              textTransform: "uppercase",
-              whiteSpace: "nowrap",
-              lineHeight: 1.2,
-            }}
-          >
-            24h Volume
-          </Typography>
-          <Typography
-            variant="body1"
-            sx={{
-              color: "#fff",
-              fontWeight: 500,
-              fontSize: { xs: "12px", lg: "13px" },
-              whiteSpace: "nowrap",
-              lineHeight: 1.3,
-            }}
-          >
-            {formatVolume(tickerData?.quoteVolume)}
-          </Typography>
-        </Stack>
+          {/* 24h Change */}
+          <Stack spacing={{ xs: 0, lg: 0.5 }} sx={{ minWidth: 0, flexShrink: 1 }}>
+            <Typography
+              variant="caption"
+              sx={{
+                color: "#666",
+                fontSize: { xs: "10px", lg: "10px" },
+                textTransform: "uppercase",
+                whiteSpace: "nowrap",
+                lineHeight: 1.2,
+              }}
+            >
+              24h Change
+            </Typography>
+            <Box sx={{ lineHeight: 1.3, display: "flex", alignItems: "center", minHeight: "19px" }}>
+              {statValue(
+                <Typography
+                  variant="body1"
+                  sx={{ color: getChangeColor(tickerData?.percentChange), fontWeight: 500, fontSize: { xs: "12px", lg: "13px" }, whiteSpace: "nowrap", lineHeight: 1.3 }}
+                >
+                  {formatPercentage(tickerData?.percentChange)}
+                </Typography>
+              )}
+            </Box>
+          </Stack>
+
+          {/* Funding / Countdown */}
+          <Stack spacing={{ xs: 0, lg: 0.5 }} sx={{ minWidth: 0, flexShrink: 1 }}>
+            <Typography
+              variant="caption"
+              sx={{
+                color: "#666",
+                fontSize: { xs: "10px", lg: "10px" },
+                textTransform: "uppercase",
+                whiteSpace: "nowrap",
+                lineHeight: 1.2,
+              }}
+            >
+              <Box
+                component="span"
+                sx={{ display: { xs: "none", sm: "inline" } }}
+              >
+                Funding
+              </Box>
+              <Box
+                component="span"
+                sx={{ display: { xs: "inline", sm: "none" } }}
+              >
+                Fund.
+              </Box>
+              {" / "}Countdown
+            </Typography>
+            <Box sx={{ display: "flex", alignItems: "center", minHeight: "21px" }}>
+              {statValue(
+                <Stack direction="row" spacing={{ xs: 0.5, lg: 1 }} alignItems="center" sx={{ flexWrap: "nowrap" }}>
+                  <Typography
+                    variant="body1"
+                    sx={{ color: getChangeColor(tickerData?.currentFundingRate), fontWeight: 500, fontSize: { xs: "12px", lg: "14px" }, whiteSpace: "nowrap", lineHeight: 1.3 }}
+                  >
+                    {tickerData?.currentFundingRate
+                      ? `${(parseFloat(tickerData.currentFundingRate) * 100).toFixed(4)}%`
+                      : "--"}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{ color: "#00F5E0", fontSize: { xs: "12px", lg: "14px" }, whiteSpace: "nowrap", lineHeight: 1.3 }}
+                  >
+                    / {countdown}
+                  </Typography>
+                </Stack>
+              )}
+            </Box>
+          </Stack>
+
+          {/* Open Interest */}
+          <Stack spacing={{ xs: 0, lg: 0.5 }} sx={{ minWidth: 0, flexShrink: 1 }}>
+            <Typography
+              variant="caption"
+              sx={{
+                color: "#666",
+                fontSize: { xs: "10px", lg: "10px" },
+                textTransform: "uppercase",
+                whiteSpace: "nowrap",
+                lineHeight: 1.2,
+              }}
+            >
+              Open Interest
+            </Typography>
+            <Box sx={{ lineHeight: 1.3, display: "flex", alignItems: "center", minHeight: "19px" }}>
+              {statValue(
+                <Typography
+                  variant="body1"
+                  sx={{ color: "#fff", fontWeight: 500, fontSize: { xs: "12px", lg: "13px" }, whiteSpace: "nowrap", lineHeight: 1.3 }}
+                >
+                  {formatVolume(tickerData?.openInterest)}
+                </Typography>
+              )}
+            </Box>
+          </Stack>
+
+          {/* 24h Volume */}
+          <Stack spacing={{ xs: 0, lg: 0.5 }} sx={{ minWidth: 0, flexShrink: 1 }}>
+            <Typography
+              variant="caption"
+              sx={{
+                color: "#666",
+                fontSize: { xs: "10px", lg: "10px" },
+                textTransform: "uppercase",
+                whiteSpace: "nowrap",
+                lineHeight: 1.2,
+              }}
+            >
+              24h Volume
+            </Typography>
+            <Box sx={{ lineHeight: 1.3, display: "flex", alignItems: "center", minHeight: "19px" }}>
+              {statValue(
+                <Typography
+                  variant="body1"
+                  sx={{ color: "#fff", fontWeight: 500, fontSize: { xs: "12px", lg: "13px" }, whiteSpace: "nowrap", lineHeight: 1.3 }}
+                >
+                  {formatVolume(tickerData?.quoteVolume)}
+                </Typography>
+              )}
+            </Box>
+          </Stack>
+
+          {/* Single centered loading spinner */}
+          {noData && isLoading && (
+            <Box sx={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <CircularProgress size={20} thickness={4} sx={{ color: "#00F5E0" }} />
+            </Box>
+          )}
+        </Box>
       </Box>
     </ClickAwayListener>
   );

@@ -13,6 +13,8 @@ export const usePerpBalanceStore = create<PerpBalanceStore>((set, get) => ({
   isAssociated: false,
   setAccountBalance: (balance) => {
     const current = get().accountBalance;
+    console.log("BALANCE DEBUG", current, balance);
+
     // Only update if equity value actually changed (main indicator of balance change)
     if (current?.equity === balance?.equity) {
       return;

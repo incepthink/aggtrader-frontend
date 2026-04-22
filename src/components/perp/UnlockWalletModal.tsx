@@ -20,7 +20,7 @@ import { useKatanaPerpsAuth } from '@/hooks/perp/useKumaAuth';
 import { useState, useRef } from 'react';
 import { createSessionKey } from '@/utils/perp/sessionKeyStorage';
 
-const BOKUTO_CHAIN_ID = 737373;
+const KATANA_CHAIN_ID = 747474;
 
 interface UnlockWalletModalProps {
   open: boolean;
@@ -33,7 +33,7 @@ interface UnlockWalletModalProps {
  *
  * This modal handles the Katana Perps wallet association flow:
  * 1. If wallet is not connected, shows RainbowKit connection options
- * 2. If wallet is connected but on wrong chain, triggers chain switch to Bokuto
+ * 2. If wallet is connected but on wrong chain, triggers chain switch to Katana
  * 3. If wallet is connected on correct chain, prompts for signature
  * 4. Optionally keeps user logged in for 30 days (stores in session)
  */
@@ -59,8 +59,8 @@ const UnlockWalletModal = ({
   const stayLoggedInRef = useRef(stayLoggedIn);
   stayLoggedInRef.current = stayLoggedIn;
 
-  const isOnBokuto = chainId === BOKUTO_CHAIN_ID;
-  const needsChainSwitch = isConnected && !isOnBokuto;
+  const isOnKatana = chainId === KATANA_CHAIN_ID;
+  const needsChainSwitch = isConnected && !isOnKatana;
 
   const handleConnect = async () => {
     // Clear any previous chain switch error
@@ -70,10 +70,10 @@ const UnlockWalletModal = ({
       // Step 1: Open RainbowKit modal to connect wallet
       openConnectModal?.();
     } else if (needsChainSwitch) {
-      // Step 2: Switch to Bokuto network
+      // Step 2: Switch to Katana network
       try {
         switchChain(
-          { chainId: BOKUTO_CHAIN_ID },
+          { chainId: KATANA_CHAIN_ID },
           {
             onError: (err) => {
               console.error('Failed to switch chain:', err);
@@ -145,7 +145,7 @@ const UnlockWalletModal = ({
       return 'Connect Wallet';
     }
     if (needsChainSwitch) {
-      return 'Switch to Bokuto Testnet';
+      return 'Switch to Katana Network';
     }
     return 'Sign to Unlock';
   };
@@ -155,7 +155,7 @@ const UnlockWalletModal = ({
       return 'Connect your wallet to start trading on Katana Perps';
     }
     if (needsChainSwitch) {
-      return 'Switch to Bokuto testnet to continue';
+      return 'Switch to Katana network to continue';
     }
     return 'Sign a message to unlock your wallet for trading';
   };
