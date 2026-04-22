@@ -35,7 +35,13 @@ const PerpPage = () => {
   const { isConnected: isWalletConnected } = useAccount();
   const chainId = useChainId();
   const [selectedMarket, setSelectedMarket] = useState<string>("BTC-USD");
-  const { isConnected, tickerData, error: tickerError, isLoading: isTickerLoading, retryCount: tickerRetryCount } = useKumaWebSocket(selectedMarket);
+  const {
+    isConnected,
+    tickerData,
+    error: tickerError,
+    isLoading: isTickerLoading,
+    retryCount: tickerRetryCount,
+  } = useKumaWebSocket(selectedMarket);
   const { balance: accountBalance, isLoading: isBalanceLoading } =
     useKumaBalance();
   const setAccountBalance = usePerpBalanceStore(
@@ -181,7 +187,7 @@ const PerpPage = () => {
                 height: "100%",
                 background: "rgba(5, 12, 25, 0.8)",
                 spread: 22,
-                overflow: "hidden",
+                // overflow: "hidden",
               }}
               spread={15}
             >

@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { Box, Typography, Stack } from '@mui/material';
-import { KatanaPerpsTicker } from '@katanaperps/katana-perps-sdk';
-import { useState, useEffect } from 'react';
-import Image from 'next/image';
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import { Box, Typography, Stack } from "@mui/material";
+import { KatanaPerpsTicker } from "@katanaperps/katana-perps-sdk";
+import { useState, useEffect } from "react";
+import Image from "next/image";
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 
 interface Market {
   id: string;
@@ -14,9 +14,24 @@ interface Market {
 }
 
 const MARKETS: Market[] = [
-  { id: 'BTC-USD', name: 'BTC', symbol: 'BTC-USD', icon: '/logos/perp/btc.png' },
-  { id: 'ETH-USD', name: 'ETH', symbol: 'ETH-USD', icon: '/logos/perp/eth.png' },
-  { id: 'SOL-USD', name: 'SOL', symbol: 'SOL-USD', icon: '/logos/perp/sol.svg' },
+  {
+    id: "BTC-USD",
+    name: "BTC",
+    symbol: "BTC-USD",
+    icon: "/logos/perp/btc.png",
+  },
+  {
+    id: "ETH-USD",
+    name: "ETH",
+    symbol: "ETH-USD",
+    icon: "/logos/perp/eth.png",
+  },
+  {
+    id: "SOL-USD",
+    name: "SOL",
+    symbol: "SOL-USD",
+    icon: "/logos/perp/sol.svg",
+  },
 ];
 
 interface MobileMarketHeaderProps {
@@ -28,13 +43,17 @@ interface MobileMarketHeaderProps {
 
 export default function MobileMarketHeader({
   tickerData,
-  selectedMarket = 'BTC-USD',
+  selectedMarket = "BTC-USD",
   onMarketChange,
 }: MobileMarketHeaderProps) {
-  const [countdown, setCountdown] = useState<string>('--:--:--');
+  const [countdown, setCountdown] = useState<string>("--:--:--");
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
-  const currentMarket = MARKETS.find((m) => m.id === selectedMarket) || MARKETS[0];
+  const currentMarket =
+    MARKETS.find((m) => m.id === selectedMarket) || MARKETS[0];
+
+  const effectiveTicker =
+    tickerData && tickerData.market === selectedMarket ? tickerData : null;
 
   const handleMarketSelect = (marketId: string) => {
     onMarketChange?.(marketId);
@@ -43,14 +62,14 @@ export default function MobileMarketHeader({
 
   // Calculate countdown to next funding time
   useEffect(() => {
-    if (!tickerData?.nextFundingTime) return;
+    if (!effectiveTicker?.nextFundingTime) return;
 
     const interval = setInterval(() => {
       const now = Date.now();
-      const timeLeft = tickerData.nextFundingTime - now;
+      const timeLeft = effectiveTicker.nextFundingTime - now;
 
       if (timeLeft <= 0) {
-        setCountdown('00:00:00');
+        setCountdown("00:00:00");
         return;
       }
 
@@ -59,42 +78,42 @@ export default function MobileMarketHeader({
       const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
 
       setCountdown(
-        `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+        `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`,
       );
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [tickerData?.nextFundingTime]);
+  }, [effectiveTicker?.nextFundingTime]);
 
   const formatPrice = (price: string | null | undefined): string => {
-    if (!price) return '--';
+    if (!price) return "--";
     const num = parseFloat(price);
-    return num.toLocaleString('en-US', {
+    return num.toLocaleString("en-US", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     });
   };
 
   const formatPercentage = (percent: string | null | undefined): string => {
-    if (!percent) return '--';
+    if (!percent) return "--";
     const num = parseFloat(percent);
-    return `${num >= 0 ? '+' : ''}${num.toFixed(2)}%`;
+    return `${num >= 0 ? "+" : ""}${num.toFixed(2)}%`;
   };
 
   const getChangeColor = (percent: string | null | undefined): string => {
-    if (!percent) return '#999';
+    if (!percent) return "#999";
     const num = parseFloat(percent);
-    return num >= 0 ? '#00F5E0' : '#FF4444';
+    return num >= 0 ? "#00F5E0" : "#FF4444";
   };
 
   return (
-    <Box sx={{ width: '100%', position: 'relative' }}>
+    <Box sx={{ width: "100%", position: "relative" }}>
       {/* Market Selector Row */}
       <Box
         sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
           px: 2,
           py: 1,
         }}
@@ -103,14 +122,16 @@ export default function MobileMarketHeader({
         <Box
           onClick={() => setDropdownOpen(!dropdownOpen)}
           sx={{
-            display: 'flex',
-            alignItems: 'center',
+            display: "flex",
+            alignItems: "center",
             gap: 1,
-            cursor: 'pointer',
-            padding: '6px 10px',
-            borderRadius: '8px',
-            backgroundColor: dropdownOpen ? 'rgba(255,255,255,0.05)' : 'transparent',
-            '&:hover': { backgroundColor: 'rgba(255,255,255,0.05)' },
+            cursor: "pointer",
+            padding: "6px 10px",
+            borderRadius: "8px",
+            backgroundColor: dropdownOpen
+              ? "rgba(255,255,255,0.05)"
+              : "transparent",
+            "&:hover": { backgroundColor: "rgba(255,255,255,0.05)" },
           }}
         >
           <Image
@@ -118,23 +139,23 @@ export default function MobileMarketHeader({
             alt={currentMarket.name}
             width={20}
             height={20}
-            style={{ borderRadius: '50%' }}
+            style={{ borderRadius: "50%" }}
           />
           <Typography
             sx={{
-              color: '#fff',
+              color: "#fff",
               fontWeight: 600,
-              fontSize: '16px',
+              fontSize: "16px",
             }}
           >
             {currentMarket.symbol}
           </Typography>
           <KeyboardArrowDownIcon
             sx={{
-              color: '#999',
-              fontSize: '18px',
-              transform: dropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-              transition: 'transform 0.2s ease',
+              color: "#999",
+              fontSize: "18px",
+              transform: dropdownOpen ? "rotate(180deg)" : "rotate(0deg)",
+              transition: "transform 0.2s ease",
             }}
           />
         </Box>
@@ -144,15 +165,15 @@ export default function MobileMarketHeader({
       {dropdownOpen && (
         <Box
           sx={{
-            position: 'absolute',
-            top: '100%',
+            position: "absolute",
+            top: "100%",
             left: 0,
             right: 0,
-            backgroundColor: '#0a1628',
-            border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: '8px',
+            backgroundColor: "#0a1628",
+            border: "1px solid rgba(255,255,255,0.1)",
+            borderRadius: "8px",
             zIndex: 1000,
-            overflow: 'hidden',
+            overflow: "hidden",
             mx: 2,
           }}
         >
@@ -161,14 +182,16 @@ export default function MobileMarketHeader({
               key={market.id}
               onClick={() => handleMarketSelect(market.id)}
               sx={{
-                display: 'flex',
-                alignItems: 'center',
+                display: "flex",
+                alignItems: "center",
                 gap: 1.5,
-                padding: '12px 16px',
-                cursor: 'pointer',
+                padding: "12px 16px",
+                cursor: "pointer",
                 backgroundColor:
-                  selectedMarket === market.id ? 'rgba(0,245,224,0.05)' : 'transparent',
-                '&:hover': { backgroundColor: 'rgba(255,255,255,0.05)' },
+                  selectedMarket === market.id
+                    ? "rgba(0,245,224,0.05)"
+                    : "transparent",
+                "&:hover": { backgroundColor: "rgba(255,255,255,0.05)" },
               }}
             >
               <Image
@@ -176,9 +199,11 @@ export default function MobileMarketHeader({
                 alt={market.name}
                 width={24}
                 height={24}
-                style={{ borderRadius: '50%' }}
+                style={{ borderRadius: "50%" }}
               />
-              <Typography sx={{ color: '#fff', fontSize: '14px', fontWeight: 500 }}>
+              <Typography
+                sx={{ color: "#fff", fontSize: "14px", fontWeight: 500 }}
+              >
                 {market.symbol}
               </Typography>
             </Box>
@@ -189,33 +214,33 @@ export default function MobileMarketHeader({
       {/* Stats Row */}
       <Box
         sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
           px: 2,
           py: 1.5,
-          borderBottom: '1px solid rgba(255,255,255,0.05)',
+          borderBottom: "1px solid rgba(255,255,255,0.05)",
         }}
       >
         {/* Price */}
         <Stack spacing={0.25}>
           <Typography
             sx={{
-              color: '#999',
-              fontSize: '10px',
-              textTransform: 'uppercase',
+              color: "#999",
+              fontSize: "10px",
+              textTransform: "uppercase",
             }}
           >
             Price
           </Typography>
           <Typography
             sx={{
-              color: '#fff',
+              color: "#fff",
               fontWeight: 600,
-              fontSize: '14px',
+              fontSize: "14px",
             }}
           >
-            {formatPrice(tickerData?.close)}
+            {formatPrice(effectiveTicker?.close)}
           </Typography>
         </Stack>
 
@@ -223,9 +248,9 @@ export default function MobileMarketHeader({
         <Stack spacing={0.25} alignItems="center">
           <Typography
             sx={{
-              color: '#999',
-              fontSize: '10px',
-              textTransform: 'uppercase',
+              color: "#999",
+              fontSize: "10px",
+              textTransform: "uppercase",
             }}
           >
             Funding / Countdown
@@ -233,19 +258,19 @@ export default function MobileMarketHeader({
           <Stack direction="row" spacing={0.5} alignItems="center">
             <Typography
               sx={{
-                color: getChangeColor(tickerData?.currentFundingRate),
+                color: getChangeColor(effectiveTicker?.currentFundingRate),
                 fontWeight: 600,
-                fontSize: '12px',
+                fontSize: "12px",
               }}
             >
-              {tickerData?.currentFundingRate
-                ? `${(parseFloat(tickerData.currentFundingRate) * 100).toFixed(4)}%`
-                : '--'}
+              {effectiveTicker?.currentFundingRate
+                ? `${(parseFloat(effectiveTicker.currentFundingRate) * 100).toFixed(4)}%`
+                : "--"}
             </Typography>
             <Typography
               sx={{
-                color: '#00F5E0',
-                fontSize: '12px',
+                color: "#00F5E0",
+                fontSize: "12px",
               }}
             >
               / {countdown}
@@ -257,21 +282,21 @@ export default function MobileMarketHeader({
         <Stack spacing={0.25} alignItems="flex-end">
           <Typography
             sx={{
-              color: '#999',
-              fontSize: '10px',
-              textTransform: 'uppercase',
+              color: "#999",
+              fontSize: "10px",
+              textTransform: "uppercase",
             }}
           >
             24h Change
           </Typography>
           <Typography
             sx={{
-              color: getChangeColor(tickerData?.percentChange),
+              color: getChangeColor(effectiveTicker?.percentChange),
               fontWeight: 600,
-              fontSize: '14px',
+              fontSize: "14px",
             }}
           >
-            {formatPercentage(tickerData?.percentChange)}
+            {formatPercentage(effectiveTicker?.percentChange)}
           </Typography>
         </Stack>
       </Box>
