@@ -300,3 +300,5 @@ const MobileMarketHeader = ({
     </Box>
   );
 }
+
+export default MobileMarketHeader;
