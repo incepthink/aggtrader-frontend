@@ -81,10 +81,11 @@ const MarketHeader = ({
   // Calculate countdown to next funding time
   useEffect(() => {
     if (!ticker?.nextFundingTime) return;
+    const nextFundingTime = ticker.nextFundingTime;
 
     const interval = setInterval(() => {
       const now = Date.now();
-      const timeLeft = ticker.nextFundingTime - now;
+      const timeLeft = nextFundingTime - now;
 
       if (timeLeft <= 0) {
         setCountdown("00:00:00");
@@ -112,7 +113,7 @@ const MarketHeader = ({
     });
   };
 
-  const formatVolume = (volume: string | undefined): string => {
+  const formatVolume = (volume: string | null | undefined): string => {
     if (!volume) return "--";
     const num = parseFloat(volume);
     if (num >= 1_000_000) {
