@@ -39,8 +39,6 @@ const PerpPage = () => {
     isConnected,
     tickerData,
     error: tickerError,
-    isLoading: isTickerLoading,
-    retryCount: tickerRetryCount,
   } = useKumaWebSocket(selectedMarket);
   const { balance: accountBalance, isLoading: isBalanceLoading } =
     useKumaBalance();
@@ -194,9 +192,7 @@ const PerpPage = () => {
               <MarketHeader
                 tickerData={tickerData}
                 isConnected={isConnected}
-                isLoading={isTickerLoading}
                 error={tickerError}
-                retryCount={tickerRetryCount}
                 selectedMarket={selectedMarket}
                 onMarketChange={setSelectedMarket}
               />
