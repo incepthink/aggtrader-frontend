@@ -14,6 +14,8 @@ const navItems = [
     label: "SPOT",
   },
   { href: ["/earn/lend", "/earn/borrow", "/earn/vault"], label: "EARN" },
+  // { href: ["/points"], label: "POINTS" },
+  { href: ["/perp"], label: "PERP" },
   { href: ["/profile"], label: "ACCOUNT" },
   {
     href: [
@@ -21,7 +23,6 @@ const navItems = [
     ],
     label: "BRIDGE",
   },
-  // { href: ["/points"], label: "POINTS" },
   { href: ["/referral"], label: "REFERRAL" },
 ];
 
@@ -99,12 +100,19 @@ export function GradientConnectButton({
         // Show wrong network button if:
         // 1. Chain is unsupported (not Katana or Bokuto), OR
         // 2. Chain doesn't match required chain for current route
-        const isWrongNetwork = chain?.unsupported || (connected && isChainMismatch);
+        const isWrongNetwork =
+          chain?.unsupported || (connected && isChainMismatch);
 
         if (isWrongNetwork) {
           return (
-            <button onClick={openChainModal} type="button" className={finalStyles}>
-              <span className={variant === "form" ? "block" : "hidden sm:inline"}>
+            <button
+              onClick={openChainModal}
+              type="button"
+              className={finalStyles}
+            >
+              <span
+                className={variant === "form" ? "block" : "hidden sm:inline"}
+              >
                 Switch to {chainName}
               </span>
               <span className={variant === "form" ? "hidden" : "sm:hidden"}>
