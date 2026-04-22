@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button, Tabs, Tab } from "@mui/material";
+import { usePerpTickerStore } from "@/store/perpTickerStore";
 import GenericModal from "@/components/common/ui/GenericModal";
 import { TpSlModalProps, PositionSide, TriggerType } from "./types";
 import { tabsSx, confirmButtonSx } from "./styles";
@@ -13,7 +14,7 @@ import {
 } from "./components";
 import { useTpSlState, useTpSlCalculations, useTpSlValidation } from "./hooks";
 
-const TpSlModal = ({ market, tickerData }: TpSlModalProps) => {
+const TpSlModal = ({ market }: TpSlModalProps) => {
   const [positionSide, setPositionSide] = useState<PositionSide>(0);
 
   const {
@@ -43,9 +44,10 @@ const TpSlModal = ({ market, tickerData }: TpSlModalProps) => {
     setShortStopLossTriggerType,
   } = useTpSlState();
 
-  // Get prices from ticker data
-  const lastPrice = tickerData?.close ? parseFloat(tickerData.close) : 0;
-  const indexPrice = tickerData?.indexPrice ? parseFloat(tickerData.indexPrice) : 0;
+  const closeStr = usePerpTickerStore((s) => s.tickers[market]?.close ?? null);
+  const indexPriceStr = usePerpTickerStore((s) => s.tickers[market]?.indexPrice ?? null);
+  const lastPrice = closeStr ? parseFloat(closeStr) : 0;
+  const indexPrice = indexPriceStr ? parseFloat(indexPriceStr) : 0;
 
   // Calculate prices based on percentages
   useTpSlCalculations({

@@ -1,8 +1,5 @@
-import { KatanaPerpsTicker } from "@katanaperps/katana-perps-sdk";
-
 export interface TpSlModalProps {
   market: string;
-  tickerData: KatanaPerpsTicker | null;
 }
 
 export interface TabPanelProps {

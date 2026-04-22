@@ -9,8 +9,8 @@ import {
   ClickAwayListener,
   CircularProgress,
 } from "@mui/material";
-import { KatanaPerpsTicker } from "@katanaperps/katana-perps-sdk";
 import React, { useEffect, useState, useRef } from "react";
+import { usePerpTickerStore } from "@/store/perpTickerStore";
 import Image from "next/image";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 
@@ -47,7 +47,6 @@ const MARKETS: Market[] = [
 ];
 
 interface MarketHeaderProps {
-  tickerData: KatanaPerpsTicker | null;
   isConnected: boolean;
   isLoading?: boolean;
   error?: string | null;
@@ -58,24 +57,21 @@ interface MarketHeaderProps {
 
 const MAX_RETRIES = 3;
 
-export default function MarketHeader({
-  tickerData,
+const MarketHeader = ({
   isConnected,
   isLoading = false,
   error = null,
   retryCount = 0,
   selectedMarket = "BTC-USD",
   onMarketChange,
-}: MarketHeaderProps) {
+}: MarketHeaderProps) => {
+  const ticker = usePerpTickerStore((s) => s.tickers[selectedMarket ?? "BTC-USD"]);
   const [countdown, setCountdown] = useState<string>("--:--:--");
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const currentMarket =
     MARKETS.find((m) => m.id === selectedMarket) || MARKETS[0];
-
-  const effectiveTicker =
-    tickerData && tickerData.market === selectedMarket ? tickerData : null;
 
   const handleMarketSelect = (marketId: string) => {
     onMarketChange?.(marketId);
@@ -84,11 +80,11 @@ export default function MarketHeader({
 
   // Calculate countdown to next funding time
   useEffect(() => {
-    if (!effectiveTicker?.nextFundingTime) return;
+    if (!ticker?.nextFundingTime) return;
 
     const interval = setInterval(() => {
       const now = Date.now();
-      const timeLeft = effectiveTicker.nextFundingTime - now;
+      const timeLeft = ticker.nextFundingTime - now;
 
       if (timeLeft <= 0) {
         setCountdown("00:00:00");
@@ -105,7 +101,7 @@ export default function MarketHeader({
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [effectiveTicker?.nextFundingTime]);
+  }, [ticker?.nextFundingTime]);
 
   const formatPrice = (price: string | null | undefined): string => {
     if (!price) return "--";
@@ -140,7 +136,7 @@ export default function MarketHeader({
     return num >= 0 ? "#00F5E0" : "#FF4444";
   };
 
-  const noData = !effectiveTicker;
+  const noData = !ticker;
 
   const statValue = (content: React.ReactNode) => {
     if (noData && error) {
@@ -360,7 +356,7 @@ export default function MarketHeader({
                 {/* Price */}
                 <Typography sx={{ color: "#fff", fontSize: "14px" }}>
                   {market.id === selectedMarket
-                    ? formatPrice(effectiveTicker?.close)
+                    ? formatPrice(ticker?.close)
                     : "--"}
                 </Typography>
 
@@ -369,13 +365,13 @@ export default function MarketHeader({
                   sx={{
                     color:
                       market.id === selectedMarket
-                        ? getChangeColor(effectiveTicker?.percentChange)
+                        ? getChangeColor(ticker?.percentChange)
                         : "#00F5E0",
                     fontSize: "14px",
                   }}
                 >
                   {market.id === selectedMarket
-                    ? formatPercentage(effectiveTicker?.percentChange)
+                    ? formatPercentage(ticker?.percentChange)
                     : "+0.00%"}
                 </Typography>
 
@@ -384,28 +380,28 @@ export default function MarketHeader({
                   sx={{
                     color:
                       market.id === selectedMarket
-                        ? getChangeColor(effectiveTicker?.currentFundingRate)
+                        ? getChangeColor(ticker?.currentFundingRate)
                         : "#fff",
                     fontSize: "14px",
                   }}
                 >
                   {market.id === selectedMarket &&
-                  effectiveTicker?.currentFundingRate
-                    ? `${(parseFloat(effectiveTicker.currentFundingRate) * 100).toFixed(4)}%`
+                  ticker?.currentFundingRate
+                    ? `${(parseFloat(ticker.currentFundingRate) * 100).toFixed(4)}%`
                     : "0.0000%"}
                 </Typography>
 
                 {/* 24h Volume */}
                 <Typography sx={{ color: "#fff", fontSize: "14px" }}>
                   {market.id === selectedMarket
-                    ? formatVolume(effectiveTicker?.quoteVolume)
+                    ? formatVolume(ticker?.quoteVolume)
                     : "$0.00"}
                 </Typography>
 
                 {/* Open Interest */}
                 <Typography sx={{ color: "#fff", fontSize: "14px" }}>
                   {market.id === selectedMarket
-                    ? formatVolume(effectiveTicker?.openInterest)
+                    ? formatVolume(ticker?.openInterest)
                     : "$0.00"}
                 </Typography>
               </Box>
@@ -461,7 +457,7 @@ export default function MarketHeader({
                     lineHeight: 1.3,
                   }}
                 >
-                  {formatPrice(effectiveTicker?.close)}
+                  {formatPrice(ticker?.close)}
                 </Typography>,
               )}
             </Box>
@@ -503,7 +499,7 @@ export default function MarketHeader({
                     lineHeight: 1.3,
                   }}
                 >
-                  {formatPrice(effectiveTicker?.indexPrice)}
+                  {formatPrice(ticker?.indexPrice)}
                 </Typography>,
               )}
             </Box>
@@ -538,14 +534,14 @@ export default function MarketHeader({
                 <Typography
                   variant="body1"
                   sx={{
-                    color: getChangeColor(effectiveTicker?.percentChange),
+                    color: getChangeColor(ticker?.percentChange),
                     fontWeight: 500,
                     fontSize: { xs: "12px", lg: "13px" },
                     whiteSpace: "nowrap",
                     lineHeight: 1.3,
                   }}
                 >
-                  {formatPercentage(effectiveTicker?.percentChange)}
+                  {formatPercentage(ticker?.percentChange)}
                 </Typography>,
               )}
             </Box>
@@ -594,7 +590,7 @@ export default function MarketHeader({
                     variant="body1"
                     sx={{
                       color: getChangeColor(
-                        effectiveTicker?.currentFundingRate,
+                        ticker?.currentFundingRate,
                       ),
                       fontWeight: 500,
                       fontSize: { xs: "12px", lg: "14px" },
@@ -602,8 +598,8 @@ export default function MarketHeader({
                       lineHeight: 1.3,
                     }}
                   >
-                    {effectiveTicker?.currentFundingRate
-                      ? `${(parseFloat(effectiveTicker.currentFundingRate) * 100).toFixed(4)}%`
+                    {ticker?.currentFundingRate
+                      ? `${(parseFloat(ticker.currentFundingRate) * 100).toFixed(4)}%`
                       : "--"}
                   </Typography>
                   <Typography
@@ -658,7 +654,7 @@ export default function MarketHeader({
                     lineHeight: 1.3,
                   }}
                 >
-                  {formatVolume(effectiveTicker?.openInterest)}
+                  {formatVolume(ticker?.openInterest)}
                 </Typography>,
               )}
             </Box>
@@ -700,7 +696,7 @@ export default function MarketHeader({
                     lineHeight: 1.3,
                   }}
                 >
-                  {formatVolume(effectiveTicker?.quoteVolume)}
+                  {formatVolume(ticker?.quoteVolume)}
                 </Typography>,
               )}
             </Box>
@@ -728,4 +724,6 @@ export default function MarketHeader({
       </Box>
     </ClickAwayListener>
   );
-}
+};
+
+export default React.memo(MarketHeader);

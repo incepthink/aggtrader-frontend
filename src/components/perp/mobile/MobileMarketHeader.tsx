@@ -1,8 +1,8 @@
 "use client";
 
 import { Box, Typography, Stack } from "@mui/material";
-import { KatanaPerpsTicker } from "@katanaperps/katana-perps-sdk";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
+import { usePerpTickerStore } from "@/store/perpTickerStore";
 import Image from "next/image";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 
@@ -35,25 +35,21 @@ const MARKETS: Market[] = [
 ];
 
 interface MobileMarketHeaderProps {
-  tickerData: KatanaPerpsTicker | null;
   isConnected: boolean;
   selectedMarket?: string;
   onMarketChange?: (market: string) => void;
 }
 
-export default function MobileMarketHeader({
-  tickerData,
+const MobileMarketHeader = ({
   selectedMarket = "BTC-USD",
   onMarketChange,
-}: MobileMarketHeaderProps) {
+}: MobileMarketHeaderProps) => {
+  const ticker = usePerpTickerStore((s) => s.tickers[selectedMarket ?? "BTC-USD"]);
   const [countdown, setCountdown] = useState<string>("--:--:--");
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const currentMarket =
     MARKETS.find((m) => m.id === selectedMarket) || MARKETS[0];
-
-  const effectiveTicker =
-    tickerData && tickerData.market === selectedMarket ? tickerData : null;
 
   const handleMarketSelect = (marketId: string) => {
     onMarketChange?.(marketId);
@@ -62,11 +58,12 @@ export default function MobileMarketHeader({
 
   // Calculate countdown to next funding time
   useEffect(() => {
-    if (!effectiveTicker?.nextFundingTime) return;
+    const nextFundingTime = ticker?.nextFundingTime;
+    if (!nextFundingTime) return;
 
     const interval = setInterval(() => {
       const now = Date.now();
-      const timeLeft = effectiveTicker.nextFundingTime - now;
+      const timeLeft = nextFundingTime - now;
 
       if (timeLeft <= 0) {
         setCountdown("00:00:00");
@@ -83,7 +80,7 @@ export default function MobileMarketHeader({
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [effectiveTicker?.nextFundingTime]);
+  }, [ticker?.nextFundingTime]);
 
   const formatPrice = (price: string | null | undefined): string => {
     if (!price) return "--";
@@ -240,7 +237,7 @@ export default function MobileMarketHeader({
               fontSize: "14px",
             }}
           >
-            {formatPrice(effectiveTicker?.close)}
+            {formatPrice(ticker?.close)}
           </Typography>
         </Stack>
 
@@ -258,13 +255,13 @@ export default function MobileMarketHeader({
           <Stack direction="row" spacing={0.5} alignItems="center">
             <Typography
               sx={{
-                color: getChangeColor(effectiveTicker?.currentFundingRate),
+                color: getChangeColor(ticker?.currentFundingRate),
                 fontWeight: 600,
                 fontSize: "12px",
               }}
             >
-              {effectiveTicker?.currentFundingRate
-                ? `${(parseFloat(effectiveTicker.currentFundingRate) * 100).toFixed(4)}%`
+              {ticker?.currentFundingRate
+                ? `${(parseFloat(ticker.currentFundingRate) * 100).toFixed(4)}%`
                 : "--"}
             </Typography>
             <Typography
@@ -291,12 +288,12 @@ export default function MobileMarketHeader({
           </Typography>
           <Typography
             sx={{
-              color: getChangeColor(effectiveTicker?.percentChange),
+              color: getChangeColor(ticker?.percentChange),
               fontWeight: 600,
               fontSize: "14px",
             }}
           >
-            {formatPercentage(effectiveTicker?.percentChange)}
+            {formatPercentage(ticker?.percentChange)}
           </Typography>
         </Stack>
       </Box>

@@ -35,11 +35,7 @@ const PerpPage = () => {
   const { isConnected: isWalletConnected } = useAccount();
   const chainId = useChainId();
   const [selectedMarket, setSelectedMarket] = useState<string>("BTC-USD");
-  const {
-    isConnected,
-    tickerData,
-    error: tickerError,
-  } = useKumaWebSocket(selectedMarket);
+  const { isConnected } = useKumaWebSocket(selectedMarket);
   const { balance: accountBalance, isLoading: isBalanceLoading } =
     useKumaBalance();
   const setAccountBalance = usePerpBalanceStore(
@@ -54,11 +50,6 @@ const PerpPage = () => {
   useEffect(() => {
     setAccountBalance(accountBalance);
   }, [accountBalance, setAccountBalance]);
-
-  // Extract current price from ticker data
-  const currentPrice = tickerData?.close
-    ? parseFloat(tickerData.close)
-    : undefined;
 
   const isOnKatana = chainId === KATANA_CHAIN_ID;
   const needsChainSwitch = isWalletConnected && !isOnKatana;
@@ -85,7 +76,6 @@ const PerpPage = () => {
 
           {/* Mobile Market Header */}
           <MobileMarketHeader
-            tickerData={tickerData}
             isConnected={isConnected}
             selectedMarket={selectedMarket}
             onMarketChange={setSelectedMarket}
@@ -190,9 +180,7 @@ const PerpPage = () => {
               spread={15}
             >
               <MarketHeader
-                tickerData={tickerData}
                 isConnected={isConnected}
-                error={tickerError}
                 selectedMarket={selectedMarket}
                 onMarketChange={setSelectedMarket}
               />
@@ -260,8 +248,6 @@ const PerpPage = () => {
             >
               <OrderForm
                 market={selectedMarket}
-                currentPrice={currentPrice}
-                tickerData={tickerData}
               />
             </GlowBox>
           </Box>

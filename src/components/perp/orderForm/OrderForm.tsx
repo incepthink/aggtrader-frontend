@@ -3,13 +3,13 @@
 import { Box, Snackbar, Alert, IconButton } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { useAccount } from "wagmi";
-import { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { usePerpStore } from "@/store/perpStore";
 import { useKumaAuth } from "@/hooks/perp/useKumaAuth";
 import { useKumaBalance } from "@/hooks/perp/useKumaBalance";
 import { useCreateOrder } from "@/hooks/perp/createOrder/useCreateOrder";
 import { useOrderbookSnapshot } from "@/hooks/perp/useOrderbookTrades";
-import { KatanaPerpsTicker } from "@katanaperps/katana-perps-sdk";
+import { usePerpTickerStore } from "@/store/perpTickerStore";
 import {
   calculateMarketMetrics,
   formatDualDisplay,
@@ -28,11 +28,11 @@ import QuantityDisplay from "./QuantityDisplay";
 
 interface OrderFormProps {
   market: string;
-  currentPrice?: number;
-  tickerData: KatanaPerpsTicker | null;
 }
 
-const OrderForm = ({ market, currentPrice, tickerData }: OrderFormProps) => {
+const OrderForm = ({ market }: OrderFormProps) => {
+  const closeStr = usePerpTickerStore((s) => s.tickers[market]?.close ?? null);
+  const currentPrice = closeStr ? parseFloat(closeStr) : undefined;
   const { isConnected } = useAccount();
   const { isAssociated } = useKumaAuth();
   const { balance: accountBalance } = useKumaBalance();
@@ -417,7 +417,7 @@ const OrderForm = ({ market, currentPrice, tickerData }: OrderFormProps) => {
         />
 
         <LeverageModal />
-        <TpSlModal market={market} tickerData={tickerData} />
+        <TpSlModal market={market} />
       </div>
 
       <Snackbar
@@ -449,4 +449,4 @@ const OrderForm = ({ market, currentPrice, tickerData }: OrderFormProps) => {
   );
 };
 
-export default OrderForm;
+export default React.memo(OrderForm);
