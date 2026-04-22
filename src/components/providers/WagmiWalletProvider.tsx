@@ -6,14 +6,7 @@ import {
   RainbowKitProvider,
   connectorsForWallets,
 } from "@rainbow-me/rainbowkit";
-import {
-  phantomWallet,
-  metaMaskWallet,
-  rainbowWallet,
-  coinbaseWallet,
-  walletConnectWallet,
-  injectedWallet,
-} from "@rainbow-me/rainbowkit/wallets";
+import { metaMaskWallet } from "@rainbow-me/rainbowkit/wallets";
 import { WagmiProvider } from "wagmi";
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 import { createConfig, http } from "wagmi";
@@ -67,32 +60,11 @@ export const bokuto = {
     },
   },
 } as const;
-// Custom mobile phantom wallet connector
-const customPhantomWallet = () => ({
-  ...phantomWallet(),
-  mobile: {
-    getUri: () => {
-      // Custom mobile deep link for Phantom
-      return "https://phantom.app/ul/v1/connect";
-    },
-  },
-});
-
 const connectors = connectorsForWallets(
   [
     {
       groupName: "Recommended",
-      wallets: [
-        metaMaskWallet,
-        rainbowWallet,
-        coinbaseWallet,
-        // Use custom phantom wallet for better mobile support
-        customPhantomWallet,
-      ],
-    },
-    {
-      groupName: "Other",
-      wallets: [walletConnectWallet, injectedWallet],
+      wallets: [metaMaskWallet],
     },
   ],
   {
@@ -103,11 +75,9 @@ const connectors = connectorsForWallets(
 
 export const config = createConfig({
   connectors,
-  // Support both Katana (spot/lending) and Bokuto testnet (perp trading development)
-  chains: [katana, bokuto],
+  chains: [katana],
   transports: {
     [katana.id]: http(),
-    [bokuto.id]: http(),
   },
   ssr: false, // Disabled for injected provider compatibility
 });
