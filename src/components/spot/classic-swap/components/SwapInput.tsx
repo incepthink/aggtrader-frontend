@@ -22,6 +22,7 @@ interface SwapInputProps {
   inputMode?: InputMode;
   onToggleMode?: () => void;
   token: Token;
+  hasInsufficientBalance?: boolean;
 }
 
 export const SwapInput: React.FC<SwapInputProps> = ({
@@ -36,6 +37,7 @@ export const SwapInput: React.FC<SwapInputProps> = ({
   inputMode = "token",
   onToggleMode,
   token,
+  hasInsufficientBalance = false,
 }) => {
   const getPlaceholder = () => {
     if (placeholder) return placeholder;
@@ -58,7 +60,10 @@ export const SwapInput: React.FC<SwapInputProps> = ({
   };
 
   return (
-    <div className="input-container">
+    <div
+      className="input-container"
+      style={hasInsufficientBalance ? { border: "1px solid #EF4444" } : undefined}
+    >
       {inputMode === "usd" && (
         <span
           className="absolute left-[12px] text-white pointer-events-none z-10"

@@ -117,11 +117,7 @@ export const DepositForm: React.FC<DepositFormProps> = ({
     error: depositError,
     txHash: depositTxHash,
     reset: resetDeposit,
-  } = useMorphoDeposit(
-    vault.address,
-    vault.asset.address,
-    tokenDecimals,
-  );
+  } = useMorphoDeposit(vault.address, vault.asset.address, tokenDecimals);
 
   // Pass userPosition from API to withdraw hook (handles undefined)
   const {
@@ -541,7 +537,7 @@ export const DepositForm: React.FC<DepositFormProps> = ({
         }
       />
 
-      <Divider sx={{ borderColor: "#2d3748", mb: 3 }} />
+      {/* <Divider sx={{ borderColor: "#2d3748", mb: 3 }} /> */}
 
       <PositionDisplay
         symbol={vault.asset.symbol}
@@ -562,7 +558,7 @@ export const DepositForm: React.FC<DepositFormProps> = ({
         mode={activeTab}
       />
 
-      <Divider sx={{ borderColor: "#2d3748", mb: 3 }} />
+      {/* <Divider sx={{ borderColor: "#2d3748", mb: 3 }} /> */}
 
       {/* Action Button - Different for Deposit vs Withdraw */}
       {activeTab === "deposit" ? (

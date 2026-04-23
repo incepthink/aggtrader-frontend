@@ -65,7 +65,9 @@ const MarketHeader = ({
   selectedMarket = "BTC-USD",
   onMarketChange,
 }: MarketHeaderProps) => {
-  const ticker = usePerpTickerStore((s) => s.tickers[selectedMarket ?? "BTC-USD"]);
+  const ticker = usePerpTickerStore(
+    (s) => s.tickers[selectedMarket ?? "BTC-USD"],
+  );
   const [countdown, setCountdown] = useState<string>("--:--:--");
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -386,8 +388,7 @@ const MarketHeader = ({
                     fontSize: "14px",
                   }}
                 >
-                  {market.id === selectedMarket &&
-                  ticker?.currentFundingRate
+                  {market.id === selectedMarket && ticker?.currentFundingRate
                     ? `${(parseFloat(ticker.currentFundingRate) * 100).toFixed(4)}%`
                     : "0.0000%"}
                 </Typography>
@@ -590,9 +591,7 @@ const MarketHeader = ({
                   <Typography
                     variant="body1"
                     sx={{
-                      color: getChangeColor(
-                        ticker?.currentFundingRate,
-                      ),
+                      color: getChangeColor(ticker?.currentFundingRate),
                       fontWeight: 500,
                       fontSize: { xs: "12px", lg: "14px" },
                       whiteSpace: "nowrap",

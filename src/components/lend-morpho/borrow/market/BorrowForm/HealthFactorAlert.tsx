@@ -2,7 +2,10 @@
 "use client";
 
 import React from "react";
-import { Alert, Typography, Box } from "@mui/material";
+import { Typography, Box } from "@mui/material";
+import TrendingUpIcon from "@mui/icons-material/TrendingUp";
+import TrendingDownIcon from "@mui/icons-material/TrendingDown";
+import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 
 interface HealthFactorAlertProps {
   healthFactor: number;
@@ -19,58 +22,109 @@ export const HealthFactorAlert: React.FC<HealthFactorAlertProps> = ({
   borrowAmount,
   riskLevel,
 }) => {
-  const getHealthFactorText = () => {
-    if (healthFactor === Infinity) return "∞";
-    return healthFactor.toFixed(2);
+  const getRiskColor = () => {
+    if (healthFactor === Infinity || healthFactor > 2) return "#4caf50";
+    if (healthFactor > 1.5) return "#f59e0b";
+    if (healthFactor > 1) return "#ef4444";
+    return "#dc2626";
   };
 
   const getDescription = () => {
-    if (healthFactor === Infinity || healthFactor > 2) {
-      return "Safe position - Low liquidation risk";
-    } else if (healthFactor > 1.5) {
-      return "Moderate risk - Monitor your position";
-    } else if (healthFactor > 1) {
-      return "High risk - Consider reducing borrow amount";
-    } else {
-      return "Liquidation risk - This position will be liquidated";
-    }
+    if (healthFactor === Infinity || healthFactor > 2) return "Safe — low liquidation risk";
+    if (healthFactor > 1.5) return "Moderate — monitor your position";
+    if (healthFactor > 1) return "High risk — reduce borrow amount";
+    return "Danger — position will be liquidated";
   };
 
-  const getBackgroundColor = () => {
-    switch (riskLevel.severity) {
-      case "info":
-        return "#3b82f6";
-      case "warning":
-        return "#f59e0b";
-      case "error":
-        return "#dc2626";
-      default:
-        return "#3b82f6";
-    }
+  const getTrendIcon = () => {
+    if (healthFactor === Infinity || healthFactor > 2)
+      return <TrendingUpIcon sx={{ fontSize: 14, color: getRiskColor() }} />;
+    if (healthFactor > 1)
+      return <WarningAmberIcon sx={{ fontSize: 14, color: getRiskColor() }} />;
+    return <TrendingDownIcon sx={{ fontSize: 14, color: getRiskColor() }} />;
   };
+
+  const riskColor = getRiskColor();
+  const hfText = healthFactor === Infinity ? "∞" : healthFactor.toFixed(2);
 
   return (
-    <Alert
-      severity={riskLevel.severity}
+    <Box
       sx={{
-        mb: 3,
-        backgroundColor: getBackgroundColor(),
-        color: "white",
-        "& .MuiAlert-icon": { color: "white" },
+        border: `1px solid ${riskColor}26`,
+        borderRadius: 2,
+        backgroundColor: `${riskColor}0f`,
+        p: 1.5,
+        mb: 2,
+        display: "flex",
+        alignItems: "center",
+        gap: 1.5,
       }}
     >
+      {/* Indicator dot */}
+      <Box
+        sx={{
+          width: 8,
+          height: 8,
+          borderRadius: "50%",
+          backgroundColor: riskColor,
+          flexShrink: 0,
+        }}
+      />
+
+      {/* Label */}
+      <Typography
+        variant="caption"
+        sx={{
+          color: "#8b949e",
+          textTransform: "uppercase",
+          letterSpacing: "0.06em",
+          fontSize: "10px",
+          flexShrink: 0,
+        }}
+      >
+        Health Factor
+      </Typography>
+
       {borrowAmount > 0 ? (
-        <Box>
-          <Typography variant="body2" fontWeight="600">
-            Health Factor: {getHealthFactorText()}
+        <>
+          {/* Value */}
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 0.5,
+              ml: "auto",
+            }}
+          >
+            <Typography
+              variant="body2"
+              sx={{ color: riskColor, fontWeight: "bold", fontSize: "15px" }}
+            >
+              {hfText}
+            </Typography>
+            {getTrendIcon()}
+          </Box>
+
+          {/* Description */}
+          <Typography
+            variant="caption"
+            sx={{
+              color: "#8b949e",
+              fontSize: "11px",
+              flexShrink: 0,
+            }}
+          >
+            {getDescription()}
           </Typography>
-          <Typography variant="body2">{getDescription()}</Typography>
-        </Box>
+        </>
       ) : (
-        <Typography variant="body2">
-          Enter collateral and borrow amounts to see your health factor.
+        <Typography
+          variant="caption"
+          sx={{ color: "#8b949e", fontSize: "11px", ml: "auto" }}
+        >
+          Enter amounts to calculate
         </Typography>
       )}
-    </Alert>
+    </Box>
   );
 };

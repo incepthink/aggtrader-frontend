@@ -13,6 +13,7 @@ interface SwapButtonProps {
   isApproving: boolean; // NEW
   isConfirmingApproval: boolean; // NEW
   tokenOneTicker: string; // NEW
+  hasInsufficientBalance: boolean;
   onSwap: () => void;
   onApprove: () => void; // NEW
 }
@@ -30,6 +31,7 @@ export const SwapButton = memo(
     isApproving,
     isConfirmingApproval,
     tokenOneTicker,
+    hasInsufficientBalance,
     onSwap,
     onApprove,
   }: SwapButtonProps) => {
@@ -39,6 +41,7 @@ export const SwapButton = memo(
 
     const getButtonText = () => {
       if (isLoadingPrices) return "Loading prices…";
+      if (hasInsufficientBalance) return "Insufficient Balance";
       if (needsApproval) {
         if (isApproving) return "Approving in wallet…";
         if (isConfirmingApproval) return "Approving…";
@@ -62,6 +65,7 @@ export const SwapButton = memo(
     // Disable button during any transaction state
     const isButtonDisabled =
       isDisabled ||
+      hasInsufficientBalance ||
       isApproving ||
       isConfirmingApproval ||
       isSending ||

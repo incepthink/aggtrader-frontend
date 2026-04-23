@@ -1,6 +1,7 @@
-import React from 'react';
-import { Button, CircularProgress } from '@mui/material';
-import { Refresh } from '@mui/icons-material';
+import React from "react";
+import { Box, Button, CircularProgress } from "@mui/material";
+import { Refresh } from "@mui/icons-material";
+import GlowBox from "@/components/common/ui/GlowBox";
 
 interface ChartErrorBoundaryProps {
   chainId: number;
@@ -42,7 +43,7 @@ const ChartErrorBoundary: React.FC<ChartErrorBoundaryProps> = ({
             Katana charts are only available on Katana network
           </div>
           <div className="text-xs text-gray-500">
-            Current chain: {chainId === 1 ? 'Ethereum' : `Chain ${chainId}`}
+            Current chain: {chainId === 1 ? "Ethereum" : `Chain ${chainId}`}
           </div>
         </div>
       </div>
@@ -68,7 +69,7 @@ const ChartErrorBoundary: React.FC<ChartErrorBoundaryProps> = ({
             onClick={onRetry}
             size="small"
             startIcon={<Refresh />}
-            sx={{ color: '#00b4ff' }}
+            sx={{ color: "#00b4ff" }}
           >
             Retry
           </Button>
@@ -83,13 +84,13 @@ const ChartErrorBoundary: React.FC<ChartErrorBoundaryProps> = ({
       <div className="w-full h-full flex justify-center items-center">
         <div className="text-center">
           <div className="text-red-400 mb-2">
-            {error || 'No trading data available on Katana'}
+            {error || "No trading data available on Katana"}
           </div>
           <Button
             onClick={onRefetch}
             size="small"
             startIcon={<Refresh />}
-            sx={{ color: '#00b4ff' }}
+            sx={{ color: "#00b4ff" }}
           >
             Retry
           </Button>
@@ -101,14 +102,45 @@ const ChartErrorBoundary: React.FC<ChartErrorBoundaryProps> = ({
   // Loading state
   if ((isLoading || priceLoading) && chartDataLength === 0) {
     return (
-      <div className="w-full h-full flex justify-center items-center">
-        <div className="flex flex-col items-center gap-3">
-          <CircularProgress size={40} sx={{ color: '#00b4ff' }} />
-          <div className="text-gray-400 text-sm">
-            Loading {isLoading ? 'chart' : 'price'} data...
+      <Box
+        sx={{
+          width: "100%",
+          maxWidth: "100%",
+          height: {
+            xs: "400px",
+            sm: "450px",
+            md: "500px",
+            lg: "550px",
+            xl: "600px",
+          },
+          minHeight: {
+            xs: "350px",
+            sm: "400px",
+          },
+          overflow: "hidden",
+        }}
+      >
+        <GlowBox
+          sx={{
+            width: "100%",
+            height: "100%",
+            maxWidth: "100%",
+            position: "relative",
+            overflow: "hidden",
+            p: { xs: 1, md: 2 },
+            boxSizing: "border-box",
+          }}
+        >
+          <div className="w-full h-full flex justify-center items-center">
+            <div className="flex flex-col items-center gap-3">
+              <CircularProgress size={40} sx={{ color: "#00b4ff" }} />
+              <div className="text-gray-400 text-sm">
+                Loading {isLoading ? "chart" : "price"} data...
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
+        </GlowBox>
+      </Box>
     );
   }
 
@@ -126,7 +158,7 @@ const ChartErrorBoundary: React.FC<ChartErrorBoundaryProps> = ({
           <Button
             onClick={onForceRefresh}
             size="small"
-            sx={{ color: '#00b4ff', mt: 1 }}
+            sx={{ color: "#00b4ff", mt: 1 }}
           >
             Force Refresh
           </Button>

@@ -167,9 +167,7 @@ const PerpPage = () => {
           }}
         >
           {/* ========== ROW 1: CHART HEADER ========== */}
-          <Box
-            sx={{ gridColumn: "1 / 2", gridRow: "1 / 2", overflow: "hidden" }}
-          >
+          <Box sx={{ gridColumn: "1 / 2", gridRow: "1 / 2" }}>
             <GlowBox
               sx={{
                 height: "100%",
@@ -246,9 +244,7 @@ const PerpPage = () => {
               }}
               spread={15}
             >
-              <OrderForm
-                market={selectedMarket}
-              />
+              <OrderForm market={selectedMarket} />
             </GlowBox>
           </Box>
 

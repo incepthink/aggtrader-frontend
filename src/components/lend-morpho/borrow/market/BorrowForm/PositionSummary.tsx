@@ -293,7 +293,7 @@ export const PositionSummary: React.FC<PositionSummaryProps> = ({
         </Box>
       </Box>
 
-      <Divider sx={{ borderColor: "#30363d", my: 1 }} />
+      <Divider sx={{ borderColor: "rgba(0, 245, 224, 0.08)", my: 1 }} />
 
       {/* Health Factor:
           - borrow mode already had arrow logic (keep)
@@ -353,16 +353,31 @@ export const PositionSummary: React.FC<PositionSummaryProps> = ({
   if (hideContainer) return <>{content}</>;
 
   return (
-    <Box
-      sx={{
-        backgroundColor: "transparent",
-        borderRadius: 2,
-        p: 2,
-        mb: 3,
-        border: "1px solid #30363d",
-      }}
-    >
-      {content}
+    <Box sx={{ mb: 2 }}>
+      <Typography
+        variant="caption"
+        sx={{
+          color: "#8b949e",
+          textTransform: "uppercase",
+          letterSpacing: "0.05em",
+          fontSize: "11px",
+          fontWeight: 500,
+          display: "block",
+          mb: 1.5,
+        }}
+      >
+        Position Overview
+      </Typography>
+      <Box
+        sx={{
+          backgroundColor: "rgba(0, 245, 224, 0.03)",
+          borderRadius: 2,
+          p: 2,
+          border: "1px solid rgba(0, 245, 224, 0.1)",
+        }}
+      >
+        {content}
+      </Box>
     </Box>
   );
 };

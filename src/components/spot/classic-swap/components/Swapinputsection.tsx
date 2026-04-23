@@ -1,4 +1,4 @@
-import React, { memo, useState, useCallback } from "react";
+import React, { memo } from "react";
 import SwapVertIcon from "@mui/icons-material/SwapVert";
 import { SwapInput, type InputMode } from "./SwapInput";
 import { TokenSelector } from "./TokenSelector";
@@ -23,6 +23,7 @@ interface SwapInputSectionProps {
   buyInputMode?: InputMode;
   onToggleSellMode?: () => void;
   onToggleBuyMode?: () => void;
+  hasInsufficientBalance: boolean;
 }
 
 export const SwapInputSection = memo(
@@ -45,6 +46,7 @@ export const SwapInputSection = memo(
     buyInputMode = "token",
     onToggleSellMode,
     onToggleBuyMode,
+    hasInsufficientBalance,
   }: SwapInputSectionProps) => {
     return (
       <div className="inputs">
@@ -60,6 +62,7 @@ export const SwapInputSection = memo(
           isLoadingPrice={isLoadingPrices}
           inputMode={sellInputMode}
           onToggleMode={onToggleSellMode}
+          hasInsufficientBalance={hasInsufficientBalance}
         />
 
         {/* Switch Button */}

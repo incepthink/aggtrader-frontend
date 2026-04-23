@@ -1,12 +1,12 @@
 "use client";
 
 import React from "react";
-import { Box, Typography, LinearProgress, Skeleton } from "@mui/material";
+import { Box, Typography, Chip, Skeleton } from "@mui/material";
+import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import GlowBox from "@/components/common/ui/GlowBox";
 import { useUserVaultPositions } from "@/hooks/lend-morpho/useUserVaultPosition";
 import { useAccount } from "wagmi";
 
-// Helper function to format large numbers
 const formatNumber = (num: number): string => {
   if (num >= 1e9) return `${(num / 1e9).toFixed(2)}B`;
   if (num >= 1e6) return `${(num / 1e6).toFixed(2)}M`;
@@ -14,234 +14,191 @@ const formatNumber = (num: number): string => {
   return num.toFixed(2);
 };
 
-// Helper function to format currency
 const formatCurrency = (amount: number): string => {
   if (amount === 0) return "$0.00";
   if (amount < 0.01) return "<$0.01";
   return `$${formatNumber(amount)}`;
 };
 
+const segmentSx = {
+  flex: 1,
+  p: { xs: 2, sm: 3 },
+  display: "flex",
+  flexDirection: "column" as const,
+  justifyContent: "center",
+  alignItems: "center",
+};
+
+const labelSx = {
+  color: "#8b949e",
+  fontSize: { xs: "0.75rem", sm: "0.875rem" },
+  mb: 1,
+  textTransform: "uppercase" as const,
+  letterSpacing: "0.05em",
+};
+
+const LoadingSkeleton = () => (
+  <GlowBox sx={{ marginBottom: 2 }} padding={0}>
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: { xs: "column", sm: "row" },
+        alignItems: "stretch",
+      }}
+    >
+      {[0, 1, 2].map((i) => (
+        <React.Fragment key={i}>
+          {i > 0 && (
+            <Box sx={{ display: { xs: "none", sm: "flex" }, alignSelf: "stretch", alignItems: "center" }}>
+              <Box sx={{ width: 2, my: 2, bgcolor: "rgba(0, 245, 224, 0.15)", borderRadius: "4px", alignSelf: "stretch" }} />
+            </Box>
+          )}
+          <Box sx={segmentSx}>
+            <Skeleton
+              variant="text"
+              width={90}
+              height={16}
+              sx={{ bgcolor: "rgba(55, 65, 81, 0.4)", mb: 1 }}
+            />
+            <Skeleton
+              variant="text"
+              width={140}
+              height={44}
+              sx={{ bgcolor: "rgba(55, 65, 81, 0.4)" }}
+            />
+            <Skeleton
+              variant="text"
+              width={70}
+              height={20}
+              sx={{ bgcolor: "rgba(55, 65, 81, 0.3)", mt: 0.5 }}
+            />
+          </Box>
+        </React.Fragment>
+      ))}
+    </Box>
+  </GlowBox>
+);
+
 const DepositSummary = () => {
   const { isConnected } = useAccount();
-  const { data: userPositions, isLoading, error } = useUserVaultPositions(); // Ethereum mainnet
+  const { data: userPositions, isLoading, error } = useUserVaultPositions();
 
-  // Show loading state
-  if (isLoading && isConnected) {
-    return (
-      <GlowBox sx={{ marginBottom: 2 }}>
-        <Box
-          sx={{
-            p: { xs: 2, sm: 3 },
-            backgroundColor: "transparent",
-            color: "white",
-            borderRadius: 0,
-          }}
-        >
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: { xs: "column", md: "row" },
-              justifyContent: "space-between",
-              alignItems: { xs: "flex-start", md: "flex-start" },
-              gap: { xs: 3, md: 0 },
-            }}
-          >
-            <Box>
-              <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-                <Typography variant="body2" sx={{ color: "#9CA3AF", mr: 1 }}>
-                  Your deposits
-                </Typography>
-                <Box
-                  sx={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: "50%",
-                    backgroundColor: "#10B981",
-                  }}
-                />
-              </Box>
-              <Box sx={{ width: { xs: 140, sm: 180 }, height: { xs: 56, sm: 72 } }}>
-                <Skeleton
-                  variant="text"
-                  width="100%"
-                  height="100%"
-                  sx={{ bgcolor: "rgba(55, 65, 81, 0.3)" }}
-                />
-              </Box>
-            </Box>
+  if (isLoading && isConnected) return <LoadingSkeleton />;
 
-            <Box sx={{ textAlign: { xs: "left", md: "right" }, width: { xs: "100%", md: "auto" } }}>
-              <Typography variant="body2" sx={{ color: "#9CA3AF", mb: 1 }}>
-                Net APY
-              </Typography>
-              <Box sx={{ width: { xs: 60, sm: 80 }, height: { xs: 28, sm: 32 }, mb: 2 }}>
-                <Skeleton
-                  variant="text"
-                  width="100%"
-                  height="100%"
-                  sx={{ bgcolor: "rgba(55, 65, 81, 0.3)" }}
-                />
-              </Box>
-              <Box sx={{ width: { xs: "100%", sm: "200px" }, maxWidth: "100%" }}>
-                <LinearProgress
-                  variant="indeterminate"
-                  sx={{
-                    height: 8,
-                    borderRadius: 4,
-                    backgroundColor: "rgba(55, 65, 81, 0.6)",
-                    "& .MuiLinearProgress-bar": {
-                      backgroundColor: "#06B6D4",
-                    },
-                  }}
-                />
-              </Box>
-            </Box>
-          </Box>
-        </Box>
-      </GlowBox>
-    );
-  }
-
-  // Get data or use defaults
   const totalDeposits = userPositions?.totalDepositsUsd || 0;
   const netApy = userPositions?.weightedNetApy || 0;
   const positionCount = userPositions?.positionCount || 0;
-
-  // Calculate progress bar value (capped at 100 for display)
-  const progressValue = Math.min(netApy * 100, 100);
+  const hasPositions = isConnected && totalDeposits > 0;
 
   return (
-    <GlowBox sx={{ marginBottom: 2 }}>
+    <GlowBox sx={{ marginBottom: 2 }} padding={0}>
       <Box
         sx={{
-          p: { xs: 2, sm: 3 },
-          backgroundColor: "transparent",
-          color: "white",
-          borderRadius: 0,
+          display: "flex",
+          flexDirection: { xs: "column", sm: "row" },
+          alignItems: "stretch",
         }}
       >
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: { xs: "column", md: "row" },
-            justifyContent: "space-between",
-            alignItems: { xs: "flex-start", md: "center" },
-            gap: { xs: 3, md: 0 },
-          }}
-        >
-          <Box>
-            <Box sx={{ display: "flex", alignItems: "center", mb: 1, flexWrap: "wrap", gap: 0.5 }}>
-              <Typography variant="body2" sx={{ color: "#9CA3AF", mr: 1 }}>
-                Your deposits
+        {/* Segment 1: Main metric */}
+        <Box sx={segmentSx}>
+          <Typography sx={labelSx}>Your deposits</Typography>
+
+          <Typography
+            sx={{
+              fontWeight: "bold",
+              fontSize: { xs: "2rem", sm: "2.5rem" },
+              color: "#ffffff",
+              lineHeight: 1.1,
+            }}
+          >
+            {isConnected ? formatCurrency(totalDeposits) : "—"}
+          </Typography>
+
+          <Box sx={{ mt: 1 }}>
+            {!isConnected ? (
+              <Typography sx={{ color: "#8b949e", fontSize: "0.8rem" }}>
+                Connect wallet to view
               </Typography>
-              <Box
+            ) : error ? (
+              <Typography sx={{ color: "#EF4444", fontSize: "0.8rem" }}>
+                Failed to load
+              </Typography>
+            ) : (
+              <Chip
+                size="small"
+                label={hasPositions ? "Active" : "No positions"}
                 sx={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: "50%",
-                  backgroundColor:
-                    isConnected && totalDeposits > 0 ? "#10B981" : "#6B7280",
+                  height: 20,
+                  fontSize: "0.7rem",
+                  backgroundColor: hasPositions
+                    ? "rgba(16, 185, 129, 0.15)"
+                    : "rgba(107, 114, 128, 0.15)",
+                  color: hasPositions ? "#10B981" : "#6B7280",
+                  border: `1px solid ${hasPositions ? "rgba(16, 185, 129, 0.3)" : "rgba(107, 114, 128, 0.3)"}`,
+                  "& .MuiChip-label": { px: 1 },
                 }}
               />
-              {positionCount > 0 && (
-                <Typography
-                  variant="caption"
-                  sx={{
-                    color: "#9CA3AF",
-                    ml: 1,
-                    fontSize: { xs: "0.7rem", sm: "0.75rem" },
-                  }}
-                >
-                  {positionCount} vault{positionCount !== 1 ? "s" : ""}
-                </Typography>
-              )}
-            </Box>
-
-            <Typography
-              variant="h3"
-              sx={{
-                fontWeight: "bold",
-                fontSize: { xs: "2rem", sm: "2.5rem", md: "3rem" },
-                color: "#ffffff",
-              }}
-            >
-              {formatCurrency(totalDeposits)}
-            </Typography>
-
-            {/* Show connection prompt if not connected */}
-            {!isConnected && (
-              <Typography
-                variant="caption"
-                sx={{
-                  color: "#9CA3AF",
-                  fontSize: "0.8rem",
-                  mt: 1,
-                  display: "block",
-                }}
-              >
-                Connect wallet to view your positions
-              </Typography>
-            )}
-
-            {/* Show error if any */}
-            {error && isConnected && (
-              <Typography
-                variant="caption"
-                sx={{
-                  color: "#EF4444",
-                  fontSize: "0.8rem",
-                  mt: 1,
-                  display: "block",
-                }}
-              >
-                Failed to load positions
-              </Typography>
             )}
           </Box>
+        </Box>
 
-          <Box sx={{ textAlign: { xs: "left", md: "right" }, width: { xs: "100%", md: "auto" } }}>
-            <Typography variant="body2" sx={{ color: "#9CA3AF", mb: 0.5 }}>
-              Net APY
-            </Typography>
+        <Box sx={{ display: { xs: "none", sm: "flex" }, alignSelf: "stretch", alignItems: "center" }}>
+          <Box sx={{ width: 2, my: 2, bgcolor: "rgba(0, 245, 224, 0.15)", borderRadius: "4px", alignSelf: "stretch" }} />
+        </Box>
+
+        {/* Segment 2: Net APY */}
+        <Box sx={segmentSx}>
+          <Typography sx={labelSx}>Net APY</Typography>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <Typography
-              variant="h6"
               sx={{
                 fontWeight: "bold",
-                fontSize: { xs: "1.25rem", sm: "1.5rem" },
-                color: netApy > 0 ? "#10B981" : "#ffffff",
+                fontSize: { xs: "1.75rem", sm: "2rem" },
+                color: isConnected && netApy > 0 ? "#10B981" : "#8b949e",
+                lineHeight: 1.1,
               }}
             >
-              {netApy > 0 ? `${(netApy * 100).toFixed(2)}%` : "0%"}
+              {isConnected && netApy > 0
+                ? `${(netApy * 100).toFixed(2)}%`
+                : "—"}
             </Typography>
-
-            <Box sx={{ width: { xs: "100%", sm: "200px" }, maxWidth: "100%", mt: 1 }}>
-              <LinearProgress
-                variant="determinate"
-                value={progressValue}
-                sx={{
-                  height: 8,
-                  borderRadius: 4,
-                  backgroundColor: "rgba(55, 65, 81, 0.6)",
-                  "& .MuiLinearProgress-bar": {
-                    backgroundColor: netApy > 0 ? "#10B981" : "#06B6D4",
-                  },
-                }}
-              />
-              {netApy > 0 && (
-                <Typography
-                  sx={{
-                    color: "#9CA3AF",
-                    fontSize: { xs: "0.7rem", sm: "0.75rem" },
-                    mt: 2,
-                    display: "block",
-                  }}
-                >
-                  Weighted average across {positionCount} position
-                  {positionCount !== 1 ? "s" : ""}
-                </Typography>
-              )}
-            </Box>
+            {isConnected && netApy > 0 && (
+              <TrendingUpIcon sx={{ color: "#10B981", fontSize: 22 }} />
+            )}
           </Box>
+          {isConnected && positionCount > 0 && (
+            <Typography
+              sx={{ color: "#8b949e", fontSize: "0.75rem", mt: 0.5 }}
+            >
+              weighted avg
+            </Typography>
+          )}
+        </Box>
+
+        <Box sx={{ display: { xs: "none", sm: "flex" }, alignSelf: "stretch", alignItems: "center" }}>
+          <Box sx={{ width: 2, my: 2, bgcolor: "rgba(0, 245, 224, 0.15)", borderRadius: "4px", alignSelf: "stretch" }} />
+        </Box>
+
+        {/* Segment 3: Positions */}
+        <Box sx={segmentSx}>
+          <Typography sx={labelSx}>Positions</Typography>
+          <Typography
+            sx={{
+              fontWeight: "bold",
+              fontSize: { xs: "1.75rem", sm: "2rem" },
+              color: positionCount > 0 ? "#ffffff" : "#8b949e",
+              lineHeight: 1.1,
+            }}
+          >
+            {isConnected ? positionCount : "—"}
+          </Typography>
+          <Typography sx={{ color: "#8b949e", fontSize: "0.75rem", mt: 0.5 }}>
+            {isConnected
+              ? positionCount > 0
+                ? `vault${positionCount !== 1 ? "s" : ""}`
+                : "No vaults yet"
+              : ""}
+          </Typography>
         </Box>
       </Box>
     </GlowBox>

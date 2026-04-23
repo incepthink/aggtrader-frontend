@@ -2,7 +2,8 @@
 
 import SwapVertIcon from "@mui/icons-material/SwapVert";
 import React, { useState, useCallback, memo, useMemo } from "react";
-import { useAccount } from "wagmi";
+import { useAccount, useBalance } from "wagmi";
+import { formatUnits } from "viem";
 
 import { useSpotStore } from "@/store/spotStore";
 import { GradientConnectButton } from "@/components/common/navbar/Navbar";
@@ -256,6 +257,23 @@ const SushiClassicSwap = memo(() => {
     }
   }, [buyInputMode, tokenTwoAmount, tokenTwoPrice, setTokenTwoAmount]);
 
+  const NATIVE_ETH = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
+  const isNative = tokenOne.address.toLowerCase() === NATIVE_ETH;
+  const { data: tokenOneBalance } = useBalance({
+    address,
+    token: isNative ? undefined : (tokenOne.address as `0x${string}`),
+    chainId: 747474,
+  });
+  const hasInsufficientBalance = (() => {
+    if (!tokenOneAmount || !tokenOneBalance) return false;
+    const amount = parseFloat(tokenOneAmount);
+    if (isNaN(amount) || amount <= 0) return false;
+    const balance = parseFloat(
+      formatUnits(tokenOneBalance.value, tokenOneBalance.decimals)
+    );
+    return amount > balance;
+  })();
+
   // UPDATED: Don't disable if needsApproval (user needs to click to approve)
   const isSwapDisabled =
     !tokenOneAmount ||
@@ -298,6 +316,7 @@ const SushiClassicSwap = memo(() => {
           buyInputMode={buyInputMode}
           onToggleSellMode={handleToggleSellMode}
           onToggleBuyMode={handleToggleBuyMode}
+          hasInsufficientBalance={hasInsufficientBalance}
         />
 
         {quote && tokenOneAmount && (
@@ -338,6 +357,7 @@ const SushiClassicSwap = memo(() => {
           isApproving={isApproving}
           isConfirmingApproval={isConfirmingApproval}
           tokenOneTicker={tokenOne.ticker}
+          hasInsufficientBalance={hasInsufficientBalance}
           onSwap={handleSwap}
           onApprove={handleApprove}
         />
