@@ -11,6 +11,7 @@ import {
   validateWalletConnection,
   validatePrice,
 } from './utils';
+import { BACKEND_URL } from '@/utils/constants';
 
 export const useStopLimitOrder = () => {
   const { address } = useAccount();
@@ -96,6 +97,33 @@ export const useStopLimitOrder = () => {
       });
 
       console.log('Stop limit order created successfully:', result);
+
+      try {
+        await fetch(`${BACKEND_URL}/api/tracking/perp-position`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            walletAddress: address!,
+            market: params.market,
+            side: params.side === 'buy' ? 'LONG' : 'SHORT',
+            orderType: 'STOP_LIMIT',
+            leverage: params.leverage,
+            quantity: formattedQuantity,
+            openOrderId: result?.id ?? result?.orderId ?? '',
+            openFillId: result?.fillId ?? '',
+            openTxHash: result?.txHash ?? result?.hash ?? '',
+            status: 'OPEN',
+            entryPrice: result?.price ?? result?.entryPrice ?? null,
+            reduceOnly: params.reduceOnly ?? false,
+            triggerPrice: params.triggerPrice,
+            limitPrice: params.price,
+            openedAt: new Date().toISOString(),
+          }),
+        });
+      } catch (trackingErr) {
+        console.error('Failed to track perp position:', trackingErr);
+      }
+
       setState({ isSubmitting: false, error: null, orderResult: result });
 
       return result;

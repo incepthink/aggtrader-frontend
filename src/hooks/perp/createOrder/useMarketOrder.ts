@@ -10,6 +10,7 @@ import {
   formatQuantity,
   validateWalletConnection,
 } from './utils';
+import { BACKEND_URL } from '@/utils/constants';
 
 export const useMarketOrder = () => {
   const { address } = useAccount();
@@ -80,6 +81,33 @@ export const useMarketOrder = () => {
       });
 
       console.log('Order created successfully:', result);
+
+      try {
+        await fetch(`${BACKEND_URL}/api/tracking/perp-position`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            walletAddress: address!,
+            market: params.market,
+            side: params.side === 'buy' ? 'LONG' : 'SHORT',
+            orderType: 'MARKET',
+            leverage: params.leverage,
+            quantity: formattedQuantity,
+            openOrderId: result?.id ?? result?.orderId ?? '',
+            openFillId: result?.fillId ?? '',
+            openTxHash: result?.txHash ?? result?.hash ?? '',
+            status: 'OPEN',
+            entryPrice: result?.price ?? result?.entryPrice ?? null,
+            reduceOnly: params.reduceOnly ?? false,
+            triggerPrice: null,
+            limitPrice: null,
+            openedAt: new Date().toISOString(),
+          }),
+        });
+      } catch (trackingErr) {
+        console.error('Failed to track perp position:', trackingErr);
+      }
+
       setState({ isSubmitting: false, error: null, orderResult: result });
 
       return result;
