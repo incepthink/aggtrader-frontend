@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useAccount } from 'wagmi';
 import { KatanaPerpsAccountBalance } from './useKumaAuth';
 import { usePerpBalanceStore } from '@/store/perpBalanceStore';
+import { hasValidSessionKey } from '@/utils/perp/sessionKeyStorage';
 
 interface UseKatanaPerpsBalanceReturn {
   balance: KatanaPerpsAccountBalance | null;
@@ -43,7 +44,8 @@ export const useKatanaPerpsBalance = (): UseKatanaPerpsBalanceReturn => {
     const katanaValue = sessionStorage.getItem(katanaKey);
     const kumaValue = sessionStorage.getItem(kumaKey);
 
-    const associated = katanaValue === 'true' || kumaValue === 'true';
+    const hasLocalStorageKey = hasValidSessionKey(address);
+    const associated = katanaValue === 'true' || kumaValue === 'true' || hasLocalStorageKey;
     setIsAssociated(associated);
 
     // Set up storage event listener to detect changes from other tabs/windows

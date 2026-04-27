@@ -3,7 +3,7 @@
 import { Box, Snackbar, Alert, IconButton } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { useAccount } from "wagmi";
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, useRef, useCallback } from "react";
 import { usePerpStore } from "@/store/perpStore";
 import { useKumaAuth } from "@/hooks/perp/useKumaAuth";
 import { useKumaBalance } from "@/hooks/perp/useKumaBalance";
@@ -103,7 +103,13 @@ const OrderForm = ({ market }: OrderFormProps) => {
   const isWalletUnlocked = isConnected && isAssociated;
   // console.log(isConnected, isAssociated);
 
-  const handleBuy = async () => {
+  // Refs hold the latest handler logic so stableHandleBuy/stableHandleSell
+  // never change identity — keeps React.memo(OrderSideButtons) from re-rendering
+  // on every orderbook tick.
+  const handleBuyRef = useRef<() => Promise<void>>(async () => {});
+  const handleSellRef = useRef<() => Promise<void>>(async () => {});
+
+  handleBuyRef.current = async () => {
     if (!isWalletUnlocked) {
       console.warn("Wallet not unlocked for trading");
       return;
@@ -205,7 +211,7 @@ const OrderForm = ({ market }: OrderFormProps) => {
     }
   };
 
-  const handleSell = async () => {
+  handleSellRef.current = async () => {
     if (!isWalletUnlocked) {
       console.warn("Wallet not unlocked for trading");
       return;
@@ -307,6 +313,9 @@ const OrderForm = ({ market }: OrderFormProps) => {
     }
   };
 
+  const stableHandleBuy = useCallback(() => handleBuyRef.current(), []);
+  const stableHandleSell = useCallback(() => handleSellRef.current(), []);
+
   const isLimitOrderMissingPrice =
     activeOrderType === "limit" &&
     (!limitPrice || parseFloat(limitPrice) === 0);
@@ -366,11 +375,13 @@ const OrderForm = ({ market }: OrderFormProps) => {
     orderPrice,
   ]);
 
+  const baseAsset = market.split("-")[0];
+
   const displayQuantity = (): string => {
     return formatDualDisplay(
       marketMetrics.buyQtyBtc,
       marketMetrics.sellQtyBtc,
-      (qty) => `${formatBtcQuantity(qty)} BTC`,
+      (qty) => `${formatBtcQuantity(qty)} ${baseAsset}`,
     );
   };
 
@@ -404,8 +415,8 @@ const OrderForm = ({ market }: OrderFormProps) => {
 
       <div>
         <OrderSideButtons
-          onBuy={handleBuy}
-          onSell={handleSell}
+          onBuy={stableHandleBuy}
+          onSell={stableHandleSell}
           disabled={isOrderDisabled}
           loading={isSubmitting}
         />

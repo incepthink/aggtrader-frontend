@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { Stack, Button, CircularProgress } from "@mui/material";
 import { usePerpStore } from "@/store/perpStore";
 
@@ -93,4 +94,4 @@ const OrderSideButtons = ({
   );
 };
 
-export default OrderSideButtons;
+export default React.memo(OrderSideButtons);

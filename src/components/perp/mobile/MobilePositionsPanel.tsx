@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import { Box, Typography, Tabs, Tab, Switch, Button } from '@mui/material';
 import { useKatanaPerpsPositions, KatanaPerpsPosition, isLongPosition, calculateUnrealizedPnLPercentage } from '@/hooks/perp/useKatanaPerpsPositions';
 import { useKatanaPerpsOrders, KatanaPerpsOrder, formatOrderType } from '@/hooks/perp/useKatanaPerpsOrders';
+import { useKatanaPerpsFills, KatanaPerpsFill, formatFillForDisplay } from '@/hooks/perp/useKatanaPerpsFills';
 import { usePositionsWebSocket, mergePositions } from '@/hooks/perp/usePositionsWebSocket';
 import { useOrdersWebSocket, mergeOrders } from '@/hooks/perp/useOrdersWebSocket';
 import { usePerpStore } from '@/store/perpStore';
@@ -20,6 +21,12 @@ const MobilePositionsPanel = () => {
   // WebSocket hooks for real-time updates
   const { positionsMap: wsPositionsMap } = usePositionsWebSocket({ enabled: true });
   const { ordersMap: wsOrdersMap } = useOrdersWebSocket({ enabled: true });
+
+  // Trade history fills
+  const { data: fills = [], isLoading: fillsLoading } = useKatanaPerpsFills({
+    market: hideOtherMarkets ? selectedMarket : undefined,
+    limit: 100,
+  });
 
   // Merge REST data with WebSocket updates
   const positions = useMemo(
@@ -341,18 +348,63 @@ const MobilePositionsPanel = () => {
           )
         )}
         {activeTab === 2 && (
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              py: 4,
-            }}
-          >
-            <Typography sx={{ color: 'rgba(255, 255, 255, 0.3)', fontSize: '0.875rem' }}>
-              No trade history
-            </Typography>
-          </Box>
+          fillsLoading ? (
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 4 }}>
+              <Typography sx={{ color: 'rgba(255, 255, 255, 0.3)', fontSize: '0.875rem' }}>
+                Loading...
+              </Typography>
+            </Box>
+          ) : fills.length === 0 ? (
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 4 }}>
+              <Typography sx={{ color: 'rgba(255, 255, 255, 0.3)', fontSize: '0.875rem' }}>
+                No trade history
+              </Typography>
+            </Box>
+          ) : (
+            fills.map((fill: KatanaPerpsFill) => {
+              const formatted = formatFillForDisplay(fill);
+              const isBuy = fill.side === 'buy';
+              return (
+                <Box
+                  key={fill.fillId}
+                  sx={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr 1fr',
+                    px: 2,
+                    py: 1.5,
+                    borderBottom: '1px solid rgba(255, 255, 255, 0.03)',
+                  }}
+                >
+                  <Box>
+                    <Typography sx={{ color: '#fff', fontSize: '0.75rem', fontWeight: 500 }}>
+                      {fill.market}
+                    </Typography>
+                    <Typography
+                      sx={{ color: isBuy ? '#00FF88' : '#FF4444', fontSize: '0.7rem' }}
+                    >
+                      {isBuy ? 'Buy' : 'Sell'} · {formatted.type}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ textAlign: 'center' }}>
+                    <Typography sx={{ color: '#fff', fontSize: '0.75rem' }}>
+                      ${formatted.price}
+                    </Typography>
+                    <Typography sx={{ color: '#999', fontSize: '0.7rem' }}>
+                      {formatted.date}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ textAlign: 'right' }}>
+                    <Typography sx={{ color: '#fff', fontSize: '0.75rem' }}>
+                      {formatted.quantity}
+                    </Typography>
+                    <Typography sx={{ color: '#999', fontSize: '0.7rem' }}>
+                      {formatted.value}
+                    </Typography>
+                  </Box>
+                </Box>
+              );
+            })
+          )
         )}
       </Box>
 

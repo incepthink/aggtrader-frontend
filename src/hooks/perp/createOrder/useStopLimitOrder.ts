@@ -1,8 +1,12 @@
-import { useState } from 'react';
-import { useAccount, useWalletClient } from 'wagmi';
-import { OrderType, OrderSide } from '@katanaperps/katana-perps-sdk';
-import { CreateStopLimitOrderParams, OrderState } from './types';
-import { OrderTypeToNumber, OrderSideToNumber, TriggerTypeToNumber } from './constants';
+import { useState } from "react";
+import { useAccount, useWalletClient } from "wagmi";
+import { OrderType, OrderSide } from "@katanaperps/katana-perps-sdk";
+import { CreateStopLimitOrderParams, OrderState } from "./types";
+import {
+  OrderTypeToNumber,
+  OrderSideToNumber,
+  TriggerTypeToNumber,
+} from "./constants";
 import {
   parseOrderError,
   fetchTypedData,
@@ -10,12 +14,14 @@ import {
   formatQuantity,
   validateWalletConnection,
   validatePrice,
-} from './utils';
-import { BACKEND_URL } from '@/utils/constants';
+} from "./utils";
+import { BACKEND_URL } from "@/utils/constants";
+import { useNotify } from "@/components/common/NotificationProvider";
 
 export const useStopLimitOrder = () => {
   const { address } = useAccount();
   const { data: walletClient } = useWalletClient();
+  const notify = useNotify();
 
   const [state, setState] = useState<OrderState>({
     isSubmitting: false,
@@ -27,18 +33,18 @@ export const useStopLimitOrder = () => {
     setState({ isSubmitting: true, error: null, orderResult: null });
 
     try {
-      console.log('Creating stop limit order:', params);
+      console.log("Creating stop limit order:", params);
 
       validateWalletConnection(address, walletClient);
-      validatePrice(params.triggerPrice, 'trigger price');
-      validatePrice(params.price, 'limit price');
+      validatePrice(params.triggerPrice, "trigger price");
+      validatePrice(params.price, "limit price");
 
-      const sideEnum = params.side === 'buy' ? OrderSide.buy : OrderSide.sell;
+      const sideEnum = params.side === "buy" ? OrderSide.buy : OrderSide.sell;
       const typeNumber = OrderTypeToNumber[OrderType.stopLossLimit];
       const sideNumber = OrderSideToNumber[sideEnum];
       const triggerTypeNumber = TriggerTypeToNumber[params.triggerType];
 
-      console.log('Stop limit order parameters:', {
+      console.log("Stop limit order parameters:", {
         typeForSignature: typeNumber,
         typeForAPI: OrderType.stopLossLimit,
         sideForSignature: sideNumber,
@@ -64,13 +70,13 @@ export const useStopLimitOrder = () => {
         reduceOnly: params.reduceOnly,
       });
 
-      console.log('Quantity adjusted for market rules:', {
+      console.log("Quantity adjusted for market rules:", {
         requested: params.quantity,
         willUse: formattedQuantity,
       });
 
       // Step 2: Sign typed data
-      console.log('Requesting order signature from wallet...');
+      console.log("Requesting order signature from wallet...");
       const signature = await walletClient!.signTypedData({
         domain: typedData.domain,
         types: typedData.types,
@@ -78,7 +84,9 @@ export const useStopLimitOrder = () => {
         message: typedData.message,
       });
 
-      console.log('Signature received, submitting stop limit order to Katana Perps API...');
+      console.log(
+        "Signature received, submitting stop limit order to Katana Perps API...",
+      );
 
       // Step 3: Submit order
       const result = await submitOrder({
@@ -96,23 +104,23 @@ export const useStopLimitOrder = () => {
         postOnly: params.postOnly,
       });
 
-      console.log('Stop limit order created successfully:', result);
+      console.log("Stop limit order created successfully:", result);
 
       try {
-        await fetch(`${BACKEND_URL}/api/tracking/perp-position`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        await fetch(`${BACKEND_URL}/tracking/perp-position`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             walletAddress: address!,
             market: params.market,
-            side: params.side === 'buy' ? 'LONG' : 'SHORT',
-            orderType: 'STOP_LIMIT',
+            side: params.side === "buy" ? "LONG" : "SHORT",
+            orderType: "STOP_LIMIT",
             leverage: params.leverage,
             quantity: formattedQuantity,
-            openOrderId: result?.id ?? result?.orderId ?? '',
-            openFillId: result?.fillId ?? '',
-            openTxHash: result?.txHash ?? result?.hash ?? '',
-            status: 'OPEN',
+            openOrderId: result?.id ?? result?.orderId ?? "",
+            openFillId: result?.fillId ?? "",
+            openTxHash: result?.txHash ?? result?.hash ?? "",
+            status: "OPEN",
             entryPrice: result?.price ?? result?.entryPrice ?? null,
             reduceOnly: params.reduceOnly ?? false,
             triggerPrice: params.triggerPrice,
@@ -121,15 +129,24 @@ export const useStopLimitOrder = () => {
           }),
         });
       } catch (trackingErr) {
-        console.error('Failed to track perp position:', trackingErr);
+        console.error("Failed to track perp position:", trackingErr);
       }
 
       setState({ isSubmitting: false, error: null, orderResult: result });
+      notify.show({
+        id: `order-success-${Date.now()}`,
+        type: "success",
+        message: "Stop limit order placed successfully",
+        duration: 3000,
+      });
 
       return result;
     } catch (err: any) {
-      console.error('Error creating stop limit order:', err);
-      const errorMessage = parseOrderError(err, 'Failed to create stop limit order');
+      console.error("Error creating stop limit order:", err);
+      const errorMessage = parseOrderError(
+        err,
+        "Failed to create stop limit order",
+      );
       setState({ isSubmitting: false, error: errorMessage, orderResult: null });
       throw err;
     }

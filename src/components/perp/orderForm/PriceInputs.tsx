@@ -1,6 +1,7 @@
 "use client";
 
 import { usePerpStore } from "@/store/perpStore";
+import { useMidPrice } from "@/hooks/perp/useMidPrice";
 
 const PriceInputs = () => {
   const activeOrderType = usePerpStore((s) => s.activeOrderType);
@@ -15,12 +16,23 @@ const PriceInputs = () => {
   const orderPrice = usePerpStore((s) => s.orderPrice);
   const setOrderPrice = usePerpStore((s) => s.setOrderPrice);
 
+  const midPrice = useMidPrice();
+
+  const handleMidPriceSelection = () => {
+    if (!midPrice) return;
+    if (activeOrderType === "limit") {
+      setLimitPrice(midPrice);
+    } else if (activeOrderType === "stopLimit") {
+      setOrderPrice(midPrice);
+    }
+  };
+
   return (
     <>
       {/* Price Input - Only for Limit Orders */}
       {activeOrderType === "limit" && (
         <div className="flex w-full items-center bg-[rgba(255,255,255,0.02)] border-2 border-[rgba(255,255,255,0.1)] mb-3">
-          <p className="p-2 text-sm text-white/80 shrink-0">Price</p>
+          <p className="p-2 text-xs text-white/80 shrink-0">Price (USD)</p>
           <input
             type="text"
             value={limitPrice || ""}
@@ -28,8 +40,11 @@ const PriceInputs = () => {
             className="flex-1 min-w-0 bg-transparent px-3 py-1 text-sm text-white outline-none focus:ring-0 text-right"
             placeholder="0.00"
           />
-          <span className="p-1 text-sm text-white/60 shrink-0 border-l border-[rgba(255,255,255,0.1)]">
-            USD
+          <span
+            onClick={handleMidPriceSelection}
+            className="p-1 px-1.5 cursor-pointer text-sm shrink-0 border-l border-[rgba(255,255,255,0.1)] text-cyan-400"
+          >
+            MID
           </span>
         </div>
       )}
@@ -62,7 +77,7 @@ const PriceInputs = () => {
       {/* Order Price Input - Only for Stop Limit Orders */}
       {activeOrderType === "stopLimit" && (
         <div className="flex w-full items-center bg-[rgba(255,255,255,0.02)] border-2 border-[rgba(255,255,255,0.1)] mb-3">
-          <p className="p-2 text-sm text-white/80 shrink-0">Order Price</p>
+          <p className="p-2 text-xs text-white/80 shrink-0">Price (USD)</p>
           <input
             type="text"
             value={orderPrice || ""}
@@ -70,8 +85,11 @@ const PriceInputs = () => {
             className="flex-1 min-w-0 bg-transparent px-3 py-1 text-sm text-white outline-none focus:ring-0 text-right"
             placeholder="0.00"
           />
-          <span className="p-1 text-sm text-white/60 shrink-0 border-l border-[rgba(255,255,255,0.1)]">
-            USD
+          <span
+            onClick={handleMidPriceSelection}
+            className="p-1 px-1.5 cursor-pointer text-sm text-cyan-400 shrink-0 border-l border-[rgba(255,255,255,0.1)]"
+          >
+            MID
           </span>
         </div>
       )}

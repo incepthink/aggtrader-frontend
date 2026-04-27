@@ -1,7 +1,11 @@
-'use client';
+"use client";
 
-import { Box, Typography } from '@mui/material';
-import { MarketCalcOutput, formatDualDisplay, formatUsdValue, formatFeeRate } from '@/utils/perp/marketCalc';
+import { Box, Typography } from "@mui/material";
+import {
+  MarketCalcOutput,
+  formatUsdValue,
+  formatFeeRate,
+} from "@/utils/perp/marketCalc";
 
 interface OrderSummaryProps {
   marketMetrics: MarketCalcOutput;
@@ -9,72 +13,72 @@ interface OrderSummaryProps {
   makerFeeRate?: string;
 }
 
-const OrderSummary = ({ marketMetrics, takerFeeRate, makerFeeRate }: OrderSummaryProps) => {
-  /**
-   * Format cost display (buy / sell)
-   * Both modes use orderbook-based buy/sell metrics
-   */
-  const displayCost = (): string => {
-    return formatDualDisplay(
-      marketMetrics.buyCostUsd,
-      marketMetrics.sellCostUsd,
-      formatUsdValue
-    );
-  };
-
-  /**
-   * Format value display (buy / sell)
-   * Both modes use orderbook-based buy/sell metrics
-   */
-  const displayValue = (): string => {
-    return formatDualDisplay(
-      marketMetrics.buyValueUsd,
-      marketMetrics.sellValueUsd,
-      formatUsdValue
-    );
-  };
-
+const OrderSummary = ({
+  marketMetrics,
+  takerFeeRate,
+  makerFeeRate,
+}: OrderSummaryProps) => {
   return (
     <Box
       sx={{
-        display: 'flex',
-        flexDirection: 'column',
+        display: "flex",
+        flexDirection: "column",
         gap: 1,
         p: 2,
-        background: 'rgba(255, 255, 255, 0.02)',
+        background: "rgba(255, 255, 255, 0.02)",
         borderRadius: 1,
       }}
     >
       {/* Cost */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
         <Typography
           variant="caption"
           sx={{
-            color: 'rgba(255, 255, 255, 0.6)',
-            fontSize: '0.75rem',
+            color: "rgba(255, 255, 255, 0.6)",
+            fontSize: "0.72rem",
           }}
         >
-          Cost
+          Margin
         </Typography>
         <Typography
           variant="caption"
           sx={{
-            color: '#fff',
-            fontSize: '0.75rem',
+            color: "#fff",
+            fontSize: "0.72rem",
             fontWeight: 500,
           }}
         >
-          {displayCost()}
+          {marketMetrics.buyCostUsd === 0 && marketMetrics.sellCostUsd === 0 ? (
+              "- / -"
+            ) : (
+              <>
+                <span style={{ color: "#00C076" }}>{formatUsdValue(marketMetrics.buyCostUsd)}</span>
+                {" / "}
+                <span style={{ color: "#EF4444" }}>{formatUsdValue(marketMetrics.sellCostUsd)}</span>
+              </>
+            )}
         </Typography>
       </Box>
 
       {/* Value */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
         <Typography
           variant="caption"
           sx={{
-            color: 'rgba(255, 255, 255, 0.6)',
-            fontSize: '0.75rem',
+            color: "rgba(255, 255, 255, 0.6)",
+            fontSize: "0.72rem",
           }}
         >
           Value
@@ -82,22 +86,36 @@ const OrderSummary = ({ marketMetrics, takerFeeRate, makerFeeRate }: OrderSummar
         <Typography
           variant="caption"
           sx={{
-            color: '#fff',
-            fontSize: '0.75rem',
+            color: "#fff",
+            fontSize: "0.72rem",
             fontWeight: 500,
           }}
         >
-          {displayValue()}
+          {marketMetrics.buyValueUsd === 0 && marketMetrics.sellValueUsd === 0 ? (
+              "- / -"
+            ) : (
+              <>
+                <span style={{ color: "#00C076" }}>{formatUsdValue(marketMetrics.buyValueUsd)}</span>
+                {" / "}
+                <span style={{ color: "#EF4444" }}>{formatUsdValue(marketMetrics.sellValueUsd)}</span>
+              </>
+            )}
         </Typography>
       </Box>
 
       {/* Taker/Maker Fees */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
         <Typography
           variant="caption"
           sx={{
-            color: 'rgba(255, 255, 255, 0.6)',
-            fontSize: '0.75rem',
+            color: "rgba(255, 255, 255, 0.6)",
+            fontSize: "0.72rem",
           }}
         >
           Taker / Maker Fee
@@ -105,12 +123,13 @@ const OrderSummary = ({ marketMetrics, takerFeeRate, makerFeeRate }: OrderSummar
         <Typography
           variant="caption"
           sx={{
-            color: '#fff',
-            fontSize: '0.75rem',
+            color: "#fff",
+            fontSize: "0.72rem",
             fontWeight: 500,
           }}
         >
-          {formatFeeRate(takerFeeRate || '0')} / {formatFeeRate(makerFeeRate || '0')}
+          {formatFeeRate(takerFeeRate || "0")} /{" "}
+          {formatFeeRate(makerFeeRate || "0")}
         </Typography>
       </Box>
     </Box>
