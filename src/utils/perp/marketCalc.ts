@@ -47,8 +47,22 @@ export interface MarketCalcOutput {
 /**
  * Calculate market order metrics for both buy and sell sides
  */
-export function calculateMarketMetrics(input: MarketCalcInput): MarketCalcOutput {
-  const { quantity, quantityUnit, leverage, asks, bids, fallbackPrice, freeCollateral, orderType, limitPrice, stopPrice, orderPrice } = input;
+export function calculateMarketMetrics(
+  input: MarketCalcInput,
+): MarketCalcOutput {
+  const {
+    quantity,
+    quantityUnit,
+    leverage,
+    asks,
+    bids,
+    fallbackPrice,
+    freeCollateral,
+    orderType,
+    limitPrice,
+    stopPrice,
+    orderPrice,
+  } = input;
 
   // Parse quantity
   const qtyValue = parseFloat(quantity);
@@ -168,21 +182,37 @@ export function calculateMarketMetrics(input: MarketCalcInput): MarketCalcOutput
     if (buyResult.value > maxValueByCollateral) {
       // Re-simulate with clamped USD budget
       if (quantityUnit === "USD") {
-        buyResult = simulateMarketOrderUsd(maxValueByCollateral, asks, fallbackPrice);
+        buyResult = simulateMarketOrderUsd(
+          maxValueByCollateral,
+          asks,
+          fallbackPrice,
+        );
       } else {
         // For BTC mode, reduce quantity proportionally
         const clampRatio = maxValueByCollateral / buyResult.value;
-        buyResult = simulateMarketOrderBtc(qtyValue * clampRatio, asks, fallbackPrice);
+        buyResult = simulateMarketOrderBtc(
+          qtyValue * clampRatio,
+          asks,
+          fallbackPrice,
+        );
       }
     }
 
     // Clamp sell side
     if (sellResult.value > maxValueByCollateral) {
       if (quantityUnit === "USD") {
-        sellResult = simulateMarketOrderUsd(maxValueByCollateral, bids, fallbackPrice);
+        sellResult = simulateMarketOrderUsd(
+          maxValueByCollateral,
+          bids,
+          fallbackPrice,
+        );
       } else {
         const clampRatio = maxValueByCollateral / sellResult.value;
-        sellResult = simulateMarketOrderBtc(qtyValue * clampRatio, bids, fallbackPrice);
+        sellResult = simulateMarketOrderBtc(
+          qtyValue * clampRatio,
+          bids,
+          fallbackPrice,
+        );
       }
     }
   }
@@ -204,7 +234,7 @@ export function calculateMarketMetrics(input: MarketCalcInput): MarketCalcOutput
 function simulateMarketOrderUsd(
   targetUsd: number,
   levels: OrderBookLevel[],
-  fallbackPrice?: number
+  fallbackPrice?: number,
 ): { qty: number; value: number } {
   if (!levels || levels.length === 0) {
     if (!fallbackPrice || fallbackPrice <= 0) {
@@ -239,7 +269,7 @@ function simulateMarketOrderUsd(
 function simulateMarketOrderBtc(
   targetBtc: number,
   levels: OrderBookLevel[],
-  fallbackPrice?: number
+  fallbackPrice?: number,
 ): { qty: number; value: number } {
   if (!levels || levels.length === 0) {
     if (!fallbackPrice || fallbackPrice <= 0) {
@@ -279,7 +309,7 @@ export function formatBtcQuantity(qty: number): string {
  */
 export function formatUsdValue(value: number): string {
   if (value === 0) return "-";
-  return `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return `$${value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 /**
@@ -287,11 +317,11 @@ export function formatUsdValue(value: number): string {
  * Example: 0.0004 -> "0.04%", -0.00005 -> "-0.005%"
  */
 export function formatFeeRate(rate: string | number): string {
-  const numRate = typeof rate === 'string' ? parseFloat(rate) : rate;
+  const numRate = typeof rate === "string" ? parseFloat(rate) : rate;
   if (isNaN(numRate)) return "-";
   const percentage = numRate * 100;
   // Use up to 3 decimal places for very small fees, remove trailing zeros
-  return `${percentage.toFixed(3).replace(/\.?0+$/, '')}%`;
+  return `${percentage.toFixed(3).replace(/\.?0+$/, "")}%`;
 }
 
 /**
@@ -300,7 +330,7 @@ export function formatFeeRate(rate: string | number): string {
 export function formatDualDisplay(
   buyValue: number,
   sellValue: number,
-  formatter: (val: number) => string
+  formatter: (val: number) => string,
 ): string {
   if (buyValue === 0 && sellValue === 0) {
     return "- / -";
@@ -328,16 +358,27 @@ interface LimitOrderCalcInput {
   fallbackPrice?: number;
 }
 
-function calculateLimitOrderMetrics(input: LimitOrderCalcInput): MarketCalcOutput {
-  const { quantity, quantityUnit, leverage, limitPrice, asks, bids, fallbackPrice } = input;
+function calculateLimitOrderMetrics(
+  input: LimitOrderCalcInput,
+): MarketCalcOutput {
+  const {
+    quantity,
+    quantityUnit,
+    leverage,
+    limitPrice,
+    asks,
+    bids,
+    fallbackPrice,
+  } = input;
 
   // Determine the market price from orderbook (best ask/bid) or fallback
   const bestAsk = asks && asks.length > 0 ? asks[0].price : fallbackPrice || 0;
   const bestBid = bids && bids.length > 0 ? bids[0].price : fallbackPrice || 0;
   // Use midpoint of best bid/ask as the market reference price, or fallback
-  const marketPrice = bestAsk > 0 && bestBid > 0
-    ? (bestAsk + bestBid) / 2
-    : (bestAsk || bestBid || fallbackPrice || 0);
+  const marketPrice =
+    bestAsk > 0 && bestBid > 0
+      ? (bestAsk + bestBid) / 2
+      : bestAsk || bestBid || fallbackPrice || 0;
 
   // Calculate quantity in BTC based on unit
   let qtyBtc: number;
@@ -367,4 +408,3 @@ function calculateLimitOrderMetrics(input: LimitOrderCalcInput): MarketCalcOutpu
     sellCostUsd: marketCost,
   };
 }
-

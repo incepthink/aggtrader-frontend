@@ -103,6 +103,7 @@ export function useKatanaPerpsFills(options: UseKatanaPerpsFillsOptions = {}) {
     staleTime: 30000, // 30 seconds
     gcTime: 300000, // 5 minutes
     refetchInterval: 60000, // Refetch every minute
+    select: (data) => [...data].sort((a, b) => b.time - a.time),
   });
 }
 

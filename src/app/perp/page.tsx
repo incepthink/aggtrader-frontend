@@ -16,6 +16,7 @@ import { CandleInterval } from "@katanaperps/katana-perps-sdk";
 import GlowBox from "@/components/common/ui/GlowBox";
 import { useAccount, useChainId } from "wagmi";
 import { usePerpBalanceStore } from "@/store/perpBalanceStore";
+import { usePerpStore } from "@/store/perpStore";
 import { usePerpMobile } from "@/hooks/perp/usePerpResponsive";
 import {
   MobileMarketHeader,
@@ -46,10 +47,23 @@ const PerpPage = () => {
     "chart" | "depth" | "orderbook" | "trades"
   >("chart");
 
+  const setStoreMarket = usePerpStore((s) => s.setSelectedMarket);
+  const setLimitPrice = usePerpStore((s) => s.setLimitPrice);
+  const setStopPrice = usePerpStore((s) => s.setStopPrice);
+  const setOrderPrice = usePerpStore((s) => s.setOrderPrice);
+
   // Sync balance to global store
   useEffect(() => {
     setAccountBalance(accountBalance);
   }, [accountBalance, setAccountBalance]);
+
+  // Sync selectedMarket to perpStore so useMidPrice and other hooks read the correct market
+  useEffect(() => {
+    setStoreMarket(selectedMarket);
+    setLimitPrice("");
+    setStopPrice("");
+    setOrderPrice("");
+  }, [selectedMarket]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const isOnKatana = chainId === KATANA_CHAIN_ID;
   const needsChainSwitch = isWalletConnected && !isOnKatana;
