@@ -46,8 +46,8 @@ export async function POST(request: NextRequest) {
     // Sandbox (Bokuto Testnet): chainId 737373, contract 0xcE3765616b9e354E64530875f492dc4DfddF2118
     // Production (Katana Mainnet): chainId 747474, contract 0x835Ba5b1B202773A94Daaa07168b26B22584637a
     const exchangeContractAddress = sandbox
-      ? '0xcE3765616b9e354E64530875f492dc4DfddF2118' // Sandbox (Bokuto Testnet)
-      : '0x835Ba5b1B202773A94Daaa07168b26B22584637a'; // Production (Katana Mainnet)
+      ? '0x92d3072dDe1aD3e9B7895500F504aA5e664E71d3' // Sandbox (Bokuto Testnet)
+      : '0x62230CeA619F734cc215bB8074bbF07bE4Eb633e'; // Production (Katana Mainnet)
 
     const chainId = sandbox ? 737373 : 747474;
 
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
     const typedData = {
       domain: {
         name: 'KatanaPerps',
-        version: sandbox ? '1.0.0-sandbox' : '1.0.0',
+        version: sandbox ? '2.0.0-sandbox' : '1.0.0',
         chainId,
         verifyingContract: exchangeContractAddress,
       },

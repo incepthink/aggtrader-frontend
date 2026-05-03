@@ -2,7 +2,9 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { useAccount, useWalletClient } from "wagmi";
+import { v1 as uuidv1 } from "uuid";
 import { RestAuthenticatedClient } from "@katanaperps/katana-perps-sdk/clients";
+import { getWalletAssociationSignatureTypedData } from "@katanaperps/katana-perps-sdk";
 import { usePerpBalanceStore } from "@/store/perpBalanceStore";
 import {
   hasValidSessionKey,
@@ -129,32 +131,30 @@ export const useKatanaPerpsAuth = (): UseKatanaPerpsAuthReturn => {
     }));
 
     try {
-      // Step 1: Get the typed data structure from our API
-      // This ensures we sign exactly what Katana Perps expects
-      const typedDataResponse = await fetch("/api/kuma/get-typed-data", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          wallet: address,
-        }),
-      });
+      // Step 1: Generate UUID v1 nonce and build EIP-712 typed data via SDK
+      const nonce = uuidv1();
 
-      if (!typedDataResponse.ok) {
-        const error = await typedDataResponse.json();
-        throw new Error(error.error || "Failed to get typed data");
-      }
+      const sandbox = process.env.NEXT_PUBLIC_KATANA_PERPS_SANDBOX === "true";
+      const chainId = sandbox ? 737373 : 747474;
+      const verifyingContract = sandbox
+        ? "0x92d3072dDe1aD3e9B7895500F504aA5e664E71d3"
+        : "0x62230CeA619F734cc215bB8074bbF07bE4Eb633e";
 
-      const { nonce, typedData } = await typedDataResponse.json();
+      const [domain, types, message] = getWalletAssociationSignatureTypedData(
+        { nonce, wallet: address.toLowerCase() },
+        verifyingContract,
+        chainId,
+        sandbox,
+      );
 
       // Step 2: Request signature from user's wallet
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const signature = await walletClient.signTypedData({
-        domain: typedData.domain,
-        types: typedData.types,
-        primaryType: typedData.primaryType,
-        message: typedData.message,
-      });
+        domain,
+        types,
+        primaryType: "WalletAssociation",
+        message,
+      } as any);
 
       // Step 3: Submit signature to our Next.js API route (server-side proxy to avoid CORS)
       const response = await fetch("/api/kuma/associate-wallet", {
@@ -180,9 +180,6 @@ export const useKatanaPerpsAuth = (): UseKatanaPerpsAuthReturn => {
       // Store session key in localStorage (session key will be created by the modal based on user preference)
       // For now just sync to global store - the actual session key is created in UnlockWalletModal
       setGlobalIsAssociated(true);
-
-      // Determine if using sandbox (Bokuto testnet) or mainnet
-      const sandbox = process.env.NEXT_PUBLIC_KATANA_PERPS_SANDBOX === "true";
 
       // Create client instance for future use (optional, if needed)
       const client = new RestAuthenticatedClient({
