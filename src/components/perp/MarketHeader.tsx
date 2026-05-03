@@ -57,6 +57,24 @@ interface MarketHeaderProps {
 
 const MAX_RETRIES = 3;
 
+const SkeletonValue = ({ width = 64 }: { width?: number }) => (
+  <Box
+    sx={{
+      height: "14px",
+      width: `${width}px`,
+      borderRadius: "4px",
+      background:
+        "linear-gradient(90deg, rgba(255,255,255,0.06) 25%, rgba(255,255,255,0.14) 50%, rgba(255,255,255,0.06) 75%)",
+      backgroundSize: "200% 100%",
+      animation: "shimmer 1.5s infinite linear",
+      "@keyframes shimmer": {
+        "0%": { backgroundPosition: "200% 0" },
+        "100%": { backgroundPosition: "-200% 0" },
+      },
+    }}
+  />
+);
+
 const MarketHeader = ({
   isConnected,
   isLoading = false,
@@ -141,7 +159,7 @@ const MarketHeader = ({
 
   const noData = !ticker;
 
-  const statValue = (content: React.ReactNode) => {
+  const statValue = (content: React.ReactNode, skeletonWidth = 64) => {
     if (noData && error) {
       return (
         <Typography
@@ -156,6 +174,7 @@ const MarketHeader = ({
         </Typography>
       );
     }
+    if (noData) return <SkeletonValue width={skeletonWidth} />;
     return content;
   };
 
@@ -461,6 +480,7 @@ const MarketHeader = ({
                 >
                   {formatPrice(ticker?.close)}
                 </Typography>,
+                72,
               )}
             </Box>
           </Stack>
@@ -503,6 +523,7 @@ const MarketHeader = ({
                 >
                   {formatPrice(ticker?.indexPrice)}
                 </Typography>,
+                72,
               )}
             </Box>
           </Stack>
@@ -545,6 +566,7 @@ const MarketHeader = ({
                 >
                   {formatPercentage(ticker?.percentChange)}
                 </Typography>,
+                52,
               )}
             </Box>
           </Stack>
@@ -614,6 +636,7 @@ const MarketHeader = ({
                     / {countdown}
                   </Typography>
                 </Stack>,
+                120,
               )}
             </Box>
           </Stack>
@@ -656,6 +679,7 @@ const MarketHeader = ({
                 >
                   {formatVolume(ticker?.openInterest)}
                 </Typography>,
+                72,
               )}
             </Box>
           </Stack>
@@ -698,6 +722,7 @@ const MarketHeader = ({
                 >
                   {formatVolume(ticker?.quoteVolume)}
                 </Typography>,
+                72,
               )}
             </Box>
           </Stack>

@@ -82,8 +82,10 @@ const PositionsPanel = () => {
   // Cleanup timers on unmount
   useEffect(() => {
     return () => {
-      if (positionsRetryTimerRef.current) clearTimeout(positionsRetryTimerRef.current);
-      if (ordersRetryTimerRef.current) clearTimeout(ordersRetryTimerRef.current);
+      if (positionsRetryTimerRef.current)
+        clearTimeout(positionsRetryTimerRef.current);
+      if (ordersRetryTimerRef.current)
+        clearTimeout(ordersRetryTimerRef.current);
     };
   }, []);
 
@@ -92,7 +94,8 @@ const PositionsPanel = () => {
     if (!positionsError) return;
     if (positionsRetryCountRef.current >= MAX_AUTO_RETRIES) return;
 
-    if (positionsRetryTimerRef.current) clearTimeout(positionsRetryTimerRef.current);
+    if (positionsRetryTimerRef.current)
+      clearTimeout(positionsRetryTimerRef.current);
 
     positionsRetryTimerRef.current = setTimeout(() => {
       positionsRetryCountRef.current += 1;
@@ -131,7 +134,8 @@ const PositionsPanel = () => {
 
   // Reset retry counters on successful load
   useEffect(() => {
-    if (restPositions.length > 0 && !positionsError) positionsRetryCountRef.current = 0;
+    if (restPositions.length > 0 && !positionsError)
+      positionsRetryCountRef.current = 0;
   }, [restPositions.length, positionsError]);
 
   useEffect(() => {
@@ -160,9 +164,8 @@ const PositionsPanel = () => {
   // Combined loading state (only show loading on initial load)
   const isLoading = positionsLoading && restPositions.length === 0;
 
-  // Combined error state (prefer REST error, fallback to WS error)
-  const error =
-    positionsError || (positionsWsError ? new Error(positionsWsError) : null);
+  // Combined error state — only REST error blocks the table; WS error is shown via the status dot
+  const error = positionsError;
 
   // WebSocket connection status
   const wsConnected = positionsWsConnected || ordersWsConnected;
