@@ -42,6 +42,7 @@ const PositionsPanel = () => {
   const {
     data: restOrders = [],
     isLoading: ordersLoading,
+    isFetching: ordersFetching,
     error: ordersError,
     refetch: refetchOrders,
   } = useKatanaPerpsOrders();
@@ -416,9 +417,8 @@ const PositionsPanel = () => {
           <OrdersTable
             orders={filteredOrders}
             isLoading={ordersLoading && restOrders.length === 0}
-            error={
-              ordersError || (ordersWsError ? new Error(ordersWsError) : null)
-            }
+            isFetching={ordersFetching}
+            error={ordersError}
             onRefresh={handleRefetchOrders}
           />
         )}

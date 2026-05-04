@@ -19,15 +19,15 @@ export const KatanaPerpsAuthWrapper = () => {
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
   const { isAssociated, isAssociating } = useKatanaPerpsAuth();
-  const [hasAttempted, setHasAttempted] = useState(false);
+  const [attemptedAddress, setAttemptedAddress] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
 
   const isOnKatana = chainId === KATANA_CHAIN_ID;
 
   useEffect(() => {
-    // Reset attempt tracker when wallet changes or disconnects
+    // Reset attempt tracker when wallet disconnects
     if (!isConnected || !address) {
-      setHasAttempted(false);
+      setAttemptedAddress(null);
       setShowModal(false);
       return;
     }
@@ -39,18 +39,19 @@ export const KatanaPerpsAuthWrapper = () => {
     }
 
     // Only trigger once per wallet address per page visit
-    if (hasAttempted || isAssociated || isAssociating) {
+    // Using the address itself as the key so switching wallets re-triggers the modal
+    if (attemptedAddress === address || isAssociated || isAssociating) {
       return;
     }
 
     // Small delay to ensure wallet client is fully ready
     const timer = setTimeout(() => {
-      setHasAttempted(true);
+      setAttemptedAddress(address);
       setShowModal(true);
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [isConnected, address, isAssociated, isAssociating, hasAttempted, isOnKatana]);
+  }, [isConnected, address, isAssociated, isAssociating, attemptedAddress, isOnKatana]);
 
   // Auto-close modal when association succeeds
   useEffect(() => {
@@ -58,13 +59,6 @@ export const KatanaPerpsAuthWrapper = () => {
       setShowModal(false);
     }
   }, [isAssociated, showModal]);
-
-  // Reset hasAttempted when switching TO Katana (to allow modal to show after chain switch)
-  useEffect(() => {
-    if (isOnKatana && isConnected && !isAssociated) {
-      setHasAttempted(false);
-    }
-  }, [isOnKatana, isConnected, isAssociated]);
 
   return (
     <UnlockWalletModal

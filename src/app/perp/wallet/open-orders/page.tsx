@@ -52,6 +52,7 @@ export default function OpenOrdersPage() {
   const {
     data: orders = [],
     isLoading,
+    isFetching,
     error,
     refetch,
   } = useKatanaPerpsOrders();
@@ -188,17 +189,26 @@ export default function OpenOrdersPage() {
           <Typography sx={{ color: "#FF4444", fontSize: "0.875rem" }}>
             Failed to load orders
           </Typography>
-          <Typography
-            sx={{
-              color: "#00F5E0",
-              fontSize: "0.75rem",
-              cursor: "pointer",
-              "&:hover": { textDecoration: "underline" },
-            }}
-            onClick={() => refetch()}
-          >
-            Click to retry
-          </Typography>
+          {isFetching ? (
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <CircularProgress size={14} sx={{ color: "#00F5E0" }} />
+              <Typography sx={{ color: "rgba(255, 255, 255, 0.5)", fontSize: "0.75rem" }}>
+                Retrying...
+              </Typography>
+            </Box>
+          ) : (
+            <Typography
+              sx={{
+                color: "#00F5E0",
+                fontSize: "0.75rem",
+                cursor: "pointer",
+                "&:hover": { textDecoration: "underline" },
+              }}
+              onClick={() => refetch()}
+            >
+              Click to retry
+            </Typography>
+          )}
         </Box>
       )}
 

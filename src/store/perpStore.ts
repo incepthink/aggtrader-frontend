@@ -129,7 +129,7 @@ interface PerpStore {
 
 // Default values
 const DEFAULT_MARKET = "BTC-USD";
-const DEFAULT_LEVERAGE = 1;
+const DEFAULT_LEVERAGE = 50;
 const DEFAULT_ORDER_TYPE: OrderType = "market";
 const DEFAULT_ORDER_SIDE: OrderSide = "buy";
 

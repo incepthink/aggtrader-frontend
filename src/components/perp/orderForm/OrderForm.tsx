@@ -5,7 +5,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import { useAccount } from "wagmi";
 import React, { useMemo, useState, useEffect, useRef, useCallback } from "react";
 import { usePerpStore } from "@/store/perpStore";
-import { useKumaAuth } from "@/hooks/perp/useKumaAuth";
+import { usePerpBalanceStore } from "@/store/perpBalanceStore";
 import { useKumaBalance } from "@/hooks/perp/useKumaBalance";
 import { useCreateOrder } from "@/hooks/perp/createOrder/useCreateOrder";
 import { useOrderbookSnapshot } from "@/hooks/perp/useOrderbookTrades";
@@ -34,7 +34,7 @@ const OrderForm = ({ market }: OrderFormProps) => {
   const closeStr = usePerpTickerStore((s) => s.tickers[market]?.close ?? null);
   const currentPrice = closeStr ? parseFloat(closeStr) : undefined;
   const { isConnected } = useAccount();
-  const { isAssociated } = useKumaAuth();
+  const isAssociated = usePerpBalanceStore((s) => s.isAssociated);
   const { balance: accountBalance } = useKumaBalance();
   const {
     createMarketOrder,
@@ -329,6 +329,7 @@ const OrderForm = ({ market }: OrderFormProps) => {
       !orderPrice ||
       parseFloat(orderPrice) === 0);
   const isOrderDisabled =
+    !isWalletUnlocked ||
     !quantity ||
     parseFloat(quantity) === 0 ||
     isSubmitting ||
