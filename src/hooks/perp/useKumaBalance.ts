@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useAccount } from 'wagmi';
 import { KatanaPerpsAccountBalance } from './useKumaAuth';
 import { usePerpBalanceStore } from '@/store/perpBalanceStore';
-import { hasValidSessionKey } from '@/utils/perp/sessionKeyStorage';
+import { hasValidSessionKey, removeSessionKeysForWallet } from '@/utils/perp/sessionKeyStorage';
 
 interface UseKatanaPerpsBalanceReturn {
   balance: KatanaPerpsAccountBalance | null;
@@ -78,7 +78,16 @@ export const useKatanaPerpsBalance = (): UseKatanaPerpsBalanceReturn => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to fetch balance');
+        const msg = errorData.error || 'Failed to fetch balance';
+
+        if (response.status === 401 && msg.includes('not been associated')) {
+          setIsAssociated(false);
+          sessionStorage.removeItem(`katana_perps_associated_${address}`);
+          sessionStorage.removeItem(`kuma_associated_${address}`);
+          removeSessionKeysForWallet(address);
+        }
+
+        throw new Error(msg);
       }
 
       const data = await response.json();
@@ -102,7 +111,10 @@ export const useKatanaPerpsBalance = (): UseKatanaPerpsBalanceReturn => {
     enabled: queryEnabled,
     refetchInterval: 5000, // Refresh every 5 seconds
     staleTime: 3000, // Consider data stale after 3 seconds
-    retry: 3,
+    retry: (failureCount, error) => {
+      if (error.message?.includes('not been associated')) return false;
+      return failureCount < 3;
+    },
     retryDelay: 1000,
   });
 

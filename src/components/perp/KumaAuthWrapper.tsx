@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAccount, useChainId } from 'wagmi';
 import { useKatanaPerpsAuth } from '@/hooks/perp/useKumaAuth';
+import { usePerpBalanceStore } from '@/store/perpBalanceStore';
 import UnlockWalletModal from './UnlockWalletModal';
 
 const KATANA_CHAIN_ID = 747474;
@@ -18,9 +19,11 @@ const KATANA_CHAIN_ID = 747474;
 export const KatanaPerpsAuthWrapper = () => {
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
-  const { isAssociated, isAssociating } = useKatanaPerpsAuth();
+  const { isAssociating } = useKatanaPerpsAuth();
+  const isAssociated = usePerpBalanceStore((state) => state.isAssociated);
   const [attemptedAddress, setAttemptedAddress] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const wasAssociatedRef = useRef(false);
 
   const isOnKatana = chainId === KATANA_CHAIN_ID;
 
@@ -59,6 +62,16 @@ export const KatanaPerpsAuthWrapper = () => {
       setShowModal(false);
     }
   }, [isAssociated, showModal]);
+
+  // Re-allow modal when a previously-valid session is revoked (e.g. 401 from balance API)
+  useEffect(() => {
+    if (isAssociated) {
+      wasAssociatedRef.current = true;
+    } else if (wasAssociatedRef.current && attemptedAddress === address) {
+      wasAssociatedRef.current = false;
+      setAttemptedAddress(null);
+    }
+  }, [isAssociated, address, attemptedAddress]);
 
   return (
     <UnlockWalletModal
