@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { generateUUID, getKumaConfig } from '../utils';
+import { NextRequest, NextResponse } from "next/server";
+import { generateUUID, getKumaConfig } from "../utils";
 
 // Use Edge Runtime for better global distribution and non-US deployment
-export const runtime = 'edge';
-export const preferredRegion = 'bom1';
+export const runtime = "edge";
+export const preferredRegion = "bom1";
 
 /**
  * API Route: POST /api/kuma/get-cancel-order-typed-data
@@ -19,7 +19,7 @@ export const preferredRegion = 'bom1';
  * Based on Katana Perps SDK implementation
  */
 function uuidToUint128(uuid: string): string {
-  const hexString = `0x${uuid.replace(/-/g, '')}`;
+  const hexString = `0x${uuid.replace(/-/g, "")}`;
   const uint128 = BigInt.asUintN(128, BigInt(hexString));
   return uint128.toString();
 }
@@ -31,13 +31,18 @@ export async function POST(request: NextRequest) {
 
     // Validate required fields
     if (!wallet) {
-      return NextResponse.json({ error: 'Missing required field: wallet' }, { status: 400 });
+      return NextResponse.json(
+        { error: "Missing required field: wallet" },
+        { status: 400 },
+      );
     }
 
     if (!orderIds || !Array.isArray(orderIds) || orderIds.length === 0) {
       return NextResponse.json(
-        { error: 'Missing required field: orderIds (must be a non-empty array)' },
-        { status: 400 }
+        {
+          error: "Missing required field: orderIds (must be a non-empty array)",
+        },
+        { status: 400 },
       );
     }
 
@@ -49,8 +54,8 @@ export async function POST(request: NextRequest) {
 
     // Katana Perps exchange contract addresses and chain IDs
     const exchangeContractAddress = sandbox
-      ? '0xcE3765616b9e354E64530875f492dc4DfddF2118' // Sandbox (Bokuto Testnet)
-      : '0x835Ba5b1B202773A94Daaa07168b26B22584637a'; // Production (Katana Mainnet)
+      ? "0x92d3072dDe1aD3e9B7895500F504aA5e664E71d3" // Sandbox (Bokuto Testnet)
+      : "0x62230CeA619F734cc215bB8074bbF07bE4Eb633e"; // Production (Katana Mainnet)
 
     const chainId = sandbox ? 737373 : 747474;
 
@@ -58,29 +63,29 @@ export async function POST(request: NextRequest) {
     // Based on SDK's getOrderCancellationByOrderIdSignatureTypedData
     const typedData = {
       domain: {
-        name: 'KatanaPerps',
-        version: sandbox ? '1.0.0-sandbox' : '1.0.0',
+        name: "KatanaPerps",
+        version: sandbox ? "1.0.0-sandbox" : "1.0.0",
         chainId,
         verifyingContract: exchangeContractAddress,
       },
       types: {
         OrderCancellationByOrderId: [
-          { name: 'nonce', type: 'uint128' },
-          { name: 'wallet', type: 'address' },
-          { name: 'delegatedKey', type: 'address' },
-          { name: 'orderIds', type: 'string[]' },
+          { name: "nonce", type: "uint128" },
+          { name: "wallet", type: "address" },
+          { name: "delegatedKey", type: "address" },
+          { name: "orderIds", type: "string[]" },
         ],
       },
-      primaryType: 'OrderCancellationByOrderId',
+      primaryType: "OrderCancellationByOrderId",
       message: {
         nonce: uuidToUint128(nonce),
         wallet: wallet.toLowerCase(),
-        delegatedKey: '0x0000000000000000000000000000000000000000',
+        delegatedKey: "0x0000000000000000000000000000000000000000",
         orderIds: orderIds,
       },
     };
 
-    console.log('Cancel order typed data generated:', {
+    console.log("Cancel order typed data generated:", {
       wallet: wallet.toLowerCase(),
       orderIds,
       nonce,
@@ -92,13 +97,15 @@ export async function POST(request: NextRequest) {
         nonce, // Return original UUID for API submission
         typedData,
       },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error: unknown) {
-    console.error('Error in get-cancel-order-typed-data API route:', error);
+    console.error("Error in get-cancel-order-typed-data API route:", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Internal server error' },
-      { status: 500 }
+      {
+        error: error instanceof Error ? error.message : "Internal server error",
+      },
+      { status: 500 },
     );
   }
 }

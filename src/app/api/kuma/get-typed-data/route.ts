@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { generateUUID } from '../utils';
+import { NextRequest, NextResponse } from "next/server";
+import { generateUUID } from "../utils";
 
 // Use Edge Runtime for better global distribution and non-US deployment
-export const runtime = 'edge';
-export const preferredRegion = 'bom1';
+export const runtime = "edge";
+export const preferredRegion = "bom1";
 
 /**
  * API Route: POST /api/kuma/get-typed-data
@@ -19,7 +19,7 @@ export const preferredRegion = 'bom1';
  * Based on Katana Perps SDK implementation
  */
 function uuidToUint128(uuid: string): string {
-  const hexString = `0x${uuid.replace(/-/g, '')}`;
+  const hexString = `0x${uuid.replace(/-/g, "")}`;
   const uint128 = BigInt.asUintN(128, BigInt(hexString));
   return uint128.toString();
 }
@@ -31,23 +31,23 @@ export async function POST(request: NextRequest) {
 
     if (!wallet) {
       return NextResponse.json(
-        { error: 'Missing required field: wallet' },
-        { status: 400 }
+        { error: "Missing required field: wallet" },
+        { status: 400 },
       );
     }
 
     // Get sandbox mode from environment
-    const sandbox = process.env.NEXT_PUBLIC_KATANA_PERPS_SANDBOX === 'true';
+    const sandbox = process.env.NEXT_PUBLIC_KATANA_PERPS_SANDBOX === "true";
 
     // Generate nonce (UUID v4 - compatible with Edge runtime)
     const nonce = generateUUID();
 
     // Katana Perps exchange contract addresses and chain IDs
-    // Sandbox (Bokuto Testnet): chainId 737373, contract 0xcE3765616b9e354E64530875f492dc4DfddF2118
-    // Production (Katana Mainnet): chainId 747474, contract 0x835Ba5b1B202773A94Daaa07168b26B22584637a
+    // Sandbox (Bokuto Testnet): chainId 737373, contract 0x92d3072dDe1aD3e9B7895500F504aA5e664E71d3
+    // Production (Katana Mainnet): chainId 747474, contract 0x62230CeA619F734cc215bB8074bbF07bE4Eb633e
     const exchangeContractAddress = sandbox
-      ? '0x92d3072dDe1aD3e9B7895500F504aA5e664E71d3' // Sandbox (Bokuto Testnet)
-      : '0x62230CeA619F734cc215bB8074bbF07bE4Eb633e'; // Production (Katana Mainnet)
+      ? "0x92d3072dDe1aD3e9B7895500F504aA5e664E71d3" // Sandbox (Bokuto Testnet)
+      : "0x62230CeA619F734cc215bB8074bbF07bE4Eb633e"; // Production (Katana Mainnet)
 
     const chainId = sandbox ? 737373 : 747474;
 
@@ -55,18 +55,18 @@ export async function POST(request: NextRequest) {
     // Based on Katana Perps SDK constants (EIP_712_DOMAIN_NAME = 'KatanaPerps')
     const typedData = {
       domain: {
-        name: 'KatanaPerps',
-        version: sandbox ? '2.0.0-sandbox' : '1.0.0',
+        name: "KatanaPerps",
+        version: sandbox ? "2.0.0-sandbox" : "1.0.0",
         chainId,
         verifyingContract: exchangeContractAddress,
       },
       types: {
         WalletAssociation: [
-          { name: 'nonce', type: 'uint128' },
-          { name: 'wallet', type: 'address' },
+          { name: "nonce", type: "uint128" },
+          { name: "wallet", type: "address" },
         ],
       },
-      primaryType: 'WalletAssociation',
+      primaryType: "WalletAssociation",
       message: {
         nonce: uuidToUint128(nonce), // Convert UUID to uint128
         wallet: wallet.toLowerCase(),
@@ -78,13 +78,15 @@ export async function POST(request: NextRequest) {
         nonce, // Return original UUID for API submission
         typedData,
       },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error: unknown) {
-    console.error('Error in get-typed-data API route:', error);
+    console.error("Error in get-typed-data API route:", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Internal server error' },
-      { status: 500 }
+      {
+        error: error instanceof Error ? error.message : "Internal server error",
+      },
+      { status: 500 },
     );
   }
 }
