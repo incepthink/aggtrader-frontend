@@ -2,9 +2,11 @@ export const KATANA_PERPS_SANDBOX =
   process.env.NEXT_PUBLIC_KATANA_PERPS_SANDBOX === "true";
 
 // Exchange smart contract addresses from api-docs-v1-perps.katana.network
-export const KATANA_PERPS_EXCHANGE_ADDRESS = (KATANA_PERPS_SANDBOX
-  ? "0x92d3072dDe1aD3e9B7895500F504aA5e664E71d3"
-  : "0x835Ba5b1B202773A94Daaa07168b26B22584637a") as `0x${string}`;
+export const KATANA_PERPS_EXCHANGE_ADDRESS = (
+  KATANA_PERPS_SANDBOX
+    ? "0x92d3072dDe1aD3e9B7895500F504aA5e664E71d3"
+    : "0x62230CeA619F734cc215bB8074bbF07bE4Eb633e"
+) as `0x${string}`;
 
 // vbUSDC on Katana mainnet — see src/utils/katanaTokens.ts
 export const VB_USDC_ADDRESS =

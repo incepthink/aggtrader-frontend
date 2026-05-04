@@ -15,12 +15,11 @@ import {
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import { useConnectModal } from "@rainbow-me/rainbowkit";
-import { useAccount, useChainId, useSwitchChain } from "wagmi";
+import { useAccount, useSwitchChain } from "wagmi";
+import { useChain } from "@/context/ChainContext";
 import { useKatanaPerpsAuth } from "@/hooks/perp/useKumaAuth";
 import { useState, useRef } from "react";
 import { createSessionKey } from "@/utils/perp/sessionKeyStorage";
-
-const KATANA_CHAIN_ID = 747474;
 
 interface UnlockWalletModalProps {
   open: boolean;
@@ -43,7 +42,7 @@ const UnlockWalletModal = ({
   onSuccess,
 }: UnlockWalletModalProps) => {
   const { address, isConnected } = useAccount();
-  const chainId = useChainId();
+  const { isChainMismatch, requiredChainId } = useChain();
   const { openConnectModal } = useConnectModal();
   const { switchChain, isPending: isSwitchingChain } = useSwitchChain();
   const { isAssociated, isAssociating, error, associateWallet, clearError } =
@@ -54,8 +53,7 @@ const UnlockWalletModal = ({
   const stayLoggedInRef = useRef(stayLoggedIn);
   stayLoggedInRef.current = stayLoggedIn;
 
-  const isOnKatana = chainId === KATANA_CHAIN_ID;
-  const needsChainSwitch = isConnected && !isOnKatana;
+  const needsChainSwitch = isConnected && isChainMismatch;
 
   const handleConnect = async () => {
     // Clear any previous chain switch error
@@ -68,7 +66,7 @@ const UnlockWalletModal = ({
       // Step 2: Switch to Katana network
       try {
         switchChain(
-          { chainId: KATANA_CHAIN_ID },
+          { chainId: requiredChainId },
           {
             onError: (err) => {
               console.error("Failed to switch chain:", err);
