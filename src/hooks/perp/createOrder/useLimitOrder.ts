@@ -3,7 +3,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useAccount, useWalletClient } from "wagmi";
 import { OrderType, OrderSide } from "@katanaperps/katana-perps-sdk";
 import { CreateLimitOrderParams, OrderState } from "./types";
-import { OrderTypeToNumber, OrderSideToNumber } from "./constants";
 import {
   parseOrderError,
   fetchTypedData,
@@ -37,25 +36,13 @@ export const useLimitOrder = () => {
       validatePrice(params.price, "limit price");
 
       const sideEnum = params.side === "buy" ? OrderSide.buy : OrderSide.sell;
-      const typeNumber = OrderTypeToNumber[OrderType.limit];
-      const sideNumber = OrderSideToNumber[sideEnum];
 
-      console.log("Limit order parameters:", {
-        typeForSignature: typeNumber,
-        typeForAPI: OrderType.limit,
-        sideForSignature: sideNumber,
-        sideForAPI: params.side,
-        quantity: formatQuantity(params.quantity),
-        price: params.price,
-        postOnly: params.postOnly,
-      });
-
-      // Step 1: Get typed data
+      // Step 1: Get typed data (signed client-side via SDK)
       const { nonce, typedData, formattedQuantity } = await fetchTypedData({
         wallet: address!,
         market: params.market,
-        type: typeNumber,
-        side: sideNumber,
+        type: OrderType.limit,
+        side: sideEnum,
         quantity: formatQuantity(params.quantity),
         price: params.price,
         reduceOnly: params.reduceOnly,
@@ -73,11 +60,9 @@ export const useLimitOrder = () => {
         types: typedData.types,
         primaryType: typedData.primaryType,
         message: typedData.message,
-      });
+      } as any);
 
-      console.log(
-        "Signature received, submitting limit order to Katana Perps API...",
-      );
+      console.log("Signature received, submitting limit order to Katana Perps API...");
 
       // Step 3: Submit order
       const result = await submitOrder({

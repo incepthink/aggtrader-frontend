@@ -3,7 +3,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useAccount, useWalletClient } from "wagmi";
 import { OrderType, OrderSide } from "@katanaperps/katana-perps-sdk";
 import { CreateOrderParams, OrderState } from "./types";
-import { OrderTypeToNumber, OrderSideToNumber } from "./constants";
 import {
   parseOrderError,
   fetchTypedData,
@@ -35,23 +34,13 @@ export const useMarketOrder = () => {
       validateWalletConnection(address, walletClient);
 
       const sideEnum = params.side === "buy" ? OrderSide.buy : OrderSide.sell;
-      const typeNumber = OrderTypeToNumber[OrderType.market];
-      const sideNumber = OrderSideToNumber[sideEnum];
 
-      console.log("Order parameters:", {
-        typeForSignature: typeNumber,
-        typeForAPI: OrderType.market,
-        sideForSignature: sideNumber,
-        sideForAPI: params.side,
-        quantity: formatQuantity(params.quantity),
-      });
-
-      // Step 1: Get typed data
+      // Step 1: Get typed data (signed client-side via SDK)
       const { nonce, typedData, formattedQuantity } = await fetchTypedData({
         wallet: address!,
         market: params.market,
-        type: typeNumber,
-        side: sideNumber,
+        type: OrderType.market,
+        side: sideEnum,
         quantity: formatQuantity(params.quantity),
         reduceOnly: params.reduceOnly,
       });
@@ -68,11 +57,9 @@ export const useMarketOrder = () => {
         types: typedData.types,
         primaryType: typedData.primaryType,
         message: typedData.message,
-      });
+      } as any);
 
-      console.log(
-        "Signature received, submitting order to Katana Perps API...",
-      );
+      console.log("Signature received, submitting order to Katana Perps API...");
 
       // Step 3: Submit order
       const result = await submitOrder({

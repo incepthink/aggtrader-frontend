@@ -3,11 +3,6 @@ import { useAccount, useWalletClient } from "wagmi";
 import { OrderType, OrderSide } from "@katanaperps/katana-perps-sdk";
 import { CreateStopLimitOrderParams, OrderState } from "./types";
 import {
-  OrderTypeToNumber,
-  OrderSideToNumber,
-  TriggerTypeToNumber,
-} from "./constants";
-import {
   parseOrderError,
   fetchTypedData,
   submitOrder,
@@ -40,32 +35,16 @@ export const useStopLimitOrder = () => {
       validatePrice(params.price, "limit price");
 
       const sideEnum = params.side === "buy" ? OrderSide.buy : OrderSide.sell;
-      const typeNumber = OrderTypeToNumber[OrderType.stopLossLimit];
-      const sideNumber = OrderSideToNumber[sideEnum];
-      const triggerTypeNumber = TriggerTypeToNumber[params.triggerType];
 
-      console.log("Stop limit order parameters:", {
-        typeForSignature: typeNumber,
-        typeForAPI: OrderType.stopLossLimit,
-        sideForSignature: sideNumber,
-        sideForAPI: params.side,
-        triggerTypeForSignature: triggerTypeNumber,
-        triggerTypeForAPI: params.triggerType,
-        quantity: formatQuantity(params.quantity),
-        triggerPrice: params.triggerPrice,
-        price: params.price,
-        postOnly: params.postOnly,
-      });
-
-      // Step 1: Get typed data
+      // Step 1: Get typed data (signed client-side via SDK)
       const { nonce, typedData, formattedQuantity } = await fetchTypedData({
         wallet: address!,
         market: params.market,
-        type: typeNumber,
-        side: sideNumber,
+        type: OrderType.stopLossLimit,
+        side: sideEnum,
         quantity: formatQuantity(params.quantity),
         triggerPrice: params.triggerPrice,
-        triggerType: triggerTypeNumber,
+        triggerType: params.triggerType,
         price: params.price,
         reduceOnly: params.reduceOnly,
       });
@@ -82,11 +61,9 @@ export const useStopLimitOrder = () => {
         types: typedData.types,
         primaryType: typedData.primaryType,
         message: typedData.message,
-      });
+      } as any);
 
-      console.log(
-        "Signature received, submitting stop limit order to Katana Perps API...",
-      );
+      console.log("Signature received, submitting stop limit order to Katana Perps API...");
 
       // Step 3: Submit order
       const result = await submitOrder({
@@ -143,10 +120,7 @@ export const useStopLimitOrder = () => {
       return result;
     } catch (err: any) {
       console.error("Error creating stop limit order:", err);
-      const errorMessage = parseOrderError(
-        err,
-        "Failed to create stop limit order",
-      );
+      const errorMessage = parseOrderError(err, "Failed to create stop limit order");
       setState({ isSubmitting: false, error: errorMessage, orderResult: null });
       throw err;
     }

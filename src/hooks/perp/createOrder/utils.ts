@@ -1,8 +1,7 @@
+import { getOrderSignatureTypedData } from '@katanaperps/katana-perps-sdk';
+import { v1 as uuidv1 } from 'uuid';
 import { TypedDataResponse } from './types';
 
-/**
- * Parse error message and return user-friendly message
- */
 export const parseOrderError = (err: any, defaultMessage: string): string => {
   let errorMessage = defaultMessage;
 
@@ -10,7 +9,6 @@ export const parseOrderError = (err: any, defaultMessage: string): string => {
     errorMessage = err.message;
   }
 
-  // Check for specific error cases
   if (errorMessage.includes('User rejected') || errorMessage.includes('User denied')) {
     return 'Order signature was rejected. Please try again.';
   }
@@ -22,39 +20,73 @@ export const parseOrderError = (err: any, defaultMessage: string): string => {
   return errorMessage;
 };
 
-/**
- * Fetch typed data for order signing
- */
 export const fetchTypedData = async (params: {
   wallet: string;
   market: string;
-  type: number;
-  side: number;
+  type: string;
+  side: string;
   quantity: string;
   price?: string;
   triggerPrice?: string;
-  triggerType?: number;
+  triggerType?: string;
   reduceOnly?: boolean;
 }): Promise<TypedDataResponse> => {
   const response = await fetch('/api/kuma/get-order-typed-data', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(params),
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      market: params.market,
+      quantity: params.quantity,
+      price: params.price,
+      triggerPrice: params.triggerPrice,
+    }),
   });
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.error || 'Failed to get order typed data');
+    throw new Error(error.error || 'Failed to get market info');
   }
 
-  return response.json();
+  const { formattedQuantity, formattedPrice, formattedTriggerPrice } = await response.json();
+
+  const nonce = uuidv1();
+
+  const sandbox = process.env.NEXT_PUBLIC_KATANA_PERPS_SANDBOX === 'true';
+  const chainId = sandbox ? 737373 : 747474;
+  const verifyingContract = sandbox
+    ? '0x92d3072dDe1aD3e9B7895500F504aA5e664E71d3'
+    : '0x62230CeA619F734cc215bB8074bbF07bE4Eb633e';
+
+  const [domain, types, message] = getOrderSignatureTypedData(
+    {
+      nonce,
+      wallet: params.wallet.toLowerCase(),
+      market: params.market,
+      type: params.type as any,
+      side: params.side as any,
+      quantity: formattedQuantity,
+      price: formattedPrice,
+      triggerPrice: formattedTriggerPrice,
+      triggerType: params.triggerType as any,
+      reduceOnly: params.reduceOnly,
+    },
+    verifyingContract,
+    chainId,
+    sandbox,
+  );
+
+  return {
+    nonce,
+    typedData: {
+      domain,
+      types,
+      primaryType: 'Order',
+      message,
+    },
+    formattedQuantity,
+  };
 };
 
-/**
- * Submit order to API
- */
 export const submitOrder = async (params: {
   nonce: string;
   wallet: string;
@@ -71,9 +103,7 @@ export const submitOrder = async (params: {
 }): Promise<any> => {
   const response = await fetch('/api/kuma/create-order', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(params),
   });
 
@@ -86,25 +116,16 @@ export const submitOrder = async (params: {
   return result;
 };
 
-/**
- * Format quantity to 8 decimal places
- */
 export const formatQuantity = (quantity: string): string => {
   return parseFloat(quantity).toFixed(8);
 };
 
-/**
- * Validate wallet connection
- */
 export const validateWalletConnection = (address: string | undefined, walletClient: any): void => {
   if (!address || !walletClient) {
     throw new Error('Wallet not connected');
   }
 };
 
-/**
- * Validate price value
- */
 export const validatePrice = (price: string | undefined, fieldName: string = 'price'): void => {
   if (!price || parseFloat(price) <= 0) {
     throw new Error(`Invalid ${fieldName}`);
