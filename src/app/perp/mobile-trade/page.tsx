@@ -1,85 +1,181 @@
 'use client';
 
-import { Suspense } from 'react';
-import { Box, Button, Typography, CircularProgress } from '@mui/material';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useState } from 'react';
+import { Box, Button, Typography, CircularProgress, Collapse } from '@mui/material';
+import { useRouter } from 'next/navigation';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import OrderbookTrades from '@/components/perp/OrderbookTrades';
+import OrderForm from '@/components/perp/orderForm/OrderForm';
+import DepositWithdraw from '@/components/perp/DepositWithdraw';
+import { KumaAuthWrapper } from '@/components/perp/KumaAuthWrapper';
+import { MobileBottomNavbar, MobilePositionsPanel } from '@/components/perp/mobile';
+import { useKumaBalance } from '@/hooks/perp/useKumaBalance';
+import { useKumaWebSocket } from '@/hooks/perp/useWebsocketClient';
+import { usePerpStore } from '@/store/perpStore';
 
 function MobileTradeContent() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const side = searchParams.get('side') || 'buy';
+  const selectedMarket = usePerpStore((s) => s.selectedMarket) || 'BTC-USD';
+  const { balance: accountBalance, isLoading: isBalanceLoading } = useKumaBalance();
+  useKumaWebSocket(selectedMarket);
+  const [collateralOpen, setCollateralOpen] = useState(false);
 
   const handleBack = () => {
     router.back();
   };
 
-  return (
-    <Box
-      sx={{
-        width: '100%',
-        minHeight: '100vh',
-        backgroundColor: '#050C19',
-        display: 'flex',
-        flexDirection: 'column',
-      }}
-    >
-      {/* Header with Back Button */}
-      <Box
-        sx={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 2,
-          px: 2,
-          py: 2,
-          borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-        }}
-      >
-        <Button
-          onClick={handleBack}
-          startIcon={<ArrowBackIcon />}
-          sx={{
-            color: '#fff',
-            textTransform: 'none',
-            fontSize: '1rem',
-            fontWeight: 500,
-            px: 2,
-            py: 1,
-            borderRadius: '8px',
-            backgroundColor: 'rgba(255, 255, 255, 0.05)',
-            '&:hover': {
-              backgroundColor: 'rgba(255, 255, 255, 0.1)',
-            },
-          }}
-        >
-          Back
-        </Button>
-        <Typography
-          sx={{
-            color: '#fff',
-            fontSize: '1.125rem',
-            fontWeight: 600,
-          }}
-        >
-          {side === 'buy' ? 'Buy / Long' : 'Sell / Short'}
-        </Typography>
-      </Box>
+  const formatCurrency = (value: string | number | undefined) => {
+    if (value === undefined || value === null) return '$0.00';
+    const num = typeof value === 'string' ? parseFloat(value) : value;
+    if (Number.isNaN(num)) return '$0.00';
+    return `$${num.toFixed(2)}`;
+  };
 
-      {/* Content placeholder */}
+  return (
+    <>
+      <KumaAuthWrapper />
       <Box
         sx={{
-          flex: 1,
+          width: '100%',
+          minHeight: '100dvh',
+          backgroundColor: '#050C19',
           display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          p: 4,
+          flexDirection: 'column',
+          pb: '60px',
         }}
       >
-        <Typography sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
-          Trade form will be added here
-        </Typography>
+        {/* Back Button */}
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            px: 1.5,
+            py: 1,
+            borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+          }}
+        >
+          <Button
+            onClick={handleBack}
+            startIcon={<ArrowBackIcon sx={{ fontSize: 18 }} />}
+            sx={{
+              color: '#fff',
+              textTransform: 'none',
+              fontSize: '0.875rem',
+              fontWeight: 500,
+              px: 1.5,
+              py: 0.5,
+              minWidth: 0,
+              borderRadius: '8px',
+              backgroundColor: 'rgba(255, 255, 255, 0.04)',
+              '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.08)' },
+            }}
+          >
+            Back
+          </Button>
+        </Box>
+
+        {/* Available Collateral dropdown */}
+        <Box
+          onClick={() => setCollateralOpen((v) => !v)}
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            px: 2,
+            py: 1.25,
+            borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+            cursor: 'pointer',
+            userSelect: 'none',
+            '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.02)' },
+          }}
+        >
+          <Typography
+            sx={{
+              color: 'rgba(255, 255, 255, 0.6)',
+              fontSize: '0.8125rem',
+            }}
+          >
+            Available Collateral
+          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <Typography sx={{ color: '#fff', fontSize: '0.875rem', fontWeight: 500 }}>
+              {isBalanceLoading && !accountBalance
+                ? '—'
+                : formatCurrency(accountBalance?.availableCollateral)}
+            </Typography>
+            <KeyboardArrowDownIcon
+              sx={{
+                color: 'rgba(255, 255, 255, 0.5)',
+                fontSize: 18,
+                transform: collateralOpen ? 'rotate(180deg)' : 'none',
+                transition: 'transform 0.2s ease',
+              }}
+            />
+          </Box>
+        </Box>
+
+        <Collapse in={collateralOpen} unmountOnExit>
+          <Box
+            sx={{
+              borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+              backgroundColor: 'rgba(255, 255, 255, 0.02)',
+            }}
+          >
+            <DepositWithdraw
+              accountBalance={accountBalance}
+              isLoading={isBalanceLoading}
+              buttonLayout="row"
+            />
+          </Box>
+        </Collapse>
+
+        {/* Two-column trading area: Orderbook | OrderForm */}
+        <Box
+          sx={{
+            display: 'flex',
+            gap: 0.5,
+            px: 0.5,
+            py: 0.5,
+            minHeight: '520px',
+          }}
+        >
+          <Box
+            sx={{
+              flex: 1,
+              minWidth: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+            }}
+          >
+            <OrderbookTrades
+              market={selectedMarket}
+              hideTabBar
+              controlledTab={0}
+            />
+          </Box>
+          <Box
+            sx={{
+              flex: 1,
+              minWidth: 0,
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            <OrderForm market={selectedMarket} />
+          </Box>
+        </Box>
+
+        {/* Positions / Open Orders / Trade History */}
+        <Box sx={{ flexShrink: 0, px: 1.5, py: 1 }}>
+          <MobilePositionsPanel />
+        </Box>
+
+        {/* Mobile Bottom Navbar */}
+        <MobileBottomNavbar />
       </Box>
-    </Box>
+    </>
   );
 }
 

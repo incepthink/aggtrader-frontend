@@ -76,8 +76,7 @@ const PerpPage = () => {
         <Box
           sx={{
             width: "100%",
-            minHeight: "100vh",
-            maxHeight: "100vh",
+            height: "calc(100dvh - 64px)",
             background: "#050C19",
             display: "flex",
             flexDirection: "column",
@@ -112,7 +111,7 @@ const PerpPage = () => {
             }}
           >
             {mobileChartTab === "chart" && (
-              <Box sx={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
+              <Box sx={{ flex: 1, minHeight: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}>
                 <KumaCandlestickChart
                   market={selectedMarket}
                   initialInterval={CandleInterval.FIVE_MINUTES}
@@ -122,8 +121,12 @@ const PerpPage = () => {
             {(mobileChartTab === "orderbook" ||
               mobileChartTab === "trades" ||
               mobileChartTab === "depth") && (
-              <Box sx={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
-                <OrderbookTrades market={selectedMarket} />
+              <Box sx={{ flex: 1, minHeight: 0, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+                <OrderbookTrades
+                  market={selectedMarket}
+                  hideTabBar
+                  controlledTab={mobileChartTab === "trades" ? 1 : 0}
+                />
               </Box>
             )}
           </Box>

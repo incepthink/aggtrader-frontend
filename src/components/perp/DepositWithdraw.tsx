@@ -11,6 +11,7 @@ interface DepositWithdrawProps {
   isLoading?: boolean;
   onDeposit?: () => void;
   onWithdraw?: () => void;
+  buttonLayout?: "stack" | "row";
 }
 
 const LoadingSpinner = () => (
@@ -22,6 +23,7 @@ const DepositWithdraw = ({
   isLoading = false,
   onDeposit,
   onWithdraw,
+  buttonLayout = "stack",
 }: DepositWithdrawProps) => {
   const showLoading = isLoading && !accountBalance;
   const [depositOpen, setDepositOpen] = useState(false);
@@ -241,11 +243,18 @@ const DepositWithdraw = ({
       /> */}
 
       {/* Action Buttons */}
-      <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: buttonLayout === "row" ? "row" : "column",
+          gap: 1.5,
+        }}
+      >
         {/* Deposit Button */}
         <Button
           onClick={handleDeposit}
           sx={{
+            flex: 1,
             width: "100%",
             py: 1.5,
             background: "transparent",
@@ -268,6 +277,7 @@ const DepositWithdraw = ({
         <Button
           onClick={handleWithdraw}
           sx={{
+            flex: 1,
             width: "100%",
             py: 1.5,
             background: "transparent",

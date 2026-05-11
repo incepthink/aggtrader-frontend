@@ -12,16 +12,19 @@ import TradesDisplay from './TradesDisplay';
 
 interface OrderbookTradesProps {
   market?: string;
+  hideTabBar?: boolean;
+  controlledTab?: number;
 }
 
-const OrderbookTrades = ({ market = 'BTC-USD' }: OrderbookTradesProps) => {
-  const [activeTab, setActiveTab] = useState(0);
+const OrderbookTrades = ({ market = 'BTC-USD', hideTabBar, controlledTab }: OrderbookTradesProps) => {
+  const [internalTab, setInternalTab] = useState(0);
+  const activeTab = controlledTab !== undefined ? controlledTab : internalTab;
   const orderbookData = useOrderbookSnapshot(market);
   const trades = useOrderbookTrades(market);
   const { isConnected, error } = useOrderbookConnection(market);
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
-    setActiveTab(newValue);
+    setInternalTab(newValue);
   };
 
   return (
@@ -51,40 +54,42 @@ const OrderbookTrades = ({ market = 'BTC-USD' }: OrderbookTradesProps) => {
       )}
 
       {/* Tabs */}
-      <Box
-        sx={{
-          borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-          bgcolor: 'rgba(0, 0, 0, 0.3)',
-          flexShrink: 0,
-        }}
-      >
-        <Tabs
-          value={activeTab}
-          onChange={handleTabChange}
+      {!hideTabBar && (
+        <Box
           sx={{
-            minHeight: 36,
-            '& .MuiTab-root': {
-              minHeight: 36,
-              py: 1,
-              px: 2,
-              fontSize: '0.8rem',
-              fontWeight: 600,
-              color: '#666',
-              textTransform: 'none',
-              '&.Mui-selected': {
-                color: '#00F5E0',
-              },
-            },
-            '& .MuiTabs-indicator': {
-              backgroundColor: '#00F5E0',
-              height: 2,
-            },
+            borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+            bgcolor: 'rgba(0, 0, 0, 0.3)',
+            flexShrink: 0,
           }}
         >
-          <Tab label="Orderbook" />
-          <Tab label="Trades" />
-        </Tabs>
-      </Box>
+          <Tabs
+            value={activeTab}
+            onChange={handleTabChange}
+            sx={{
+              minHeight: 36,
+              '& .MuiTab-root': {
+                minHeight: 36,
+                py: 1,
+                px: 2,
+                fontSize: '0.8rem',
+                fontWeight: 600,
+                color: '#666',
+                textTransform: 'none',
+                '&.Mui-selected': {
+                  color: '#00F5E0',
+                },
+              },
+              '& .MuiTabs-indicator': {
+                backgroundColor: '#00F5E0',
+                height: 2,
+              },
+            }}
+          >
+            <Tab label="Orderbook" />
+            <Tab label="Trades" />
+          </Tabs>
+        </Box>
+      )}
 
       {/* Connection Status Indicator */}
       {!isConnected && !error && (
