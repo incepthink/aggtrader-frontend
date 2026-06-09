@@ -137,7 +137,7 @@ export const useMorphoPosition = (
                   address
                 }
                 market {
-                  uniqueKey
+                  uniqueKey: marketId
                   loanAsset {
                     address
                     symbol
