@@ -254,6 +254,17 @@ export const useSushiClassic = (callbacks?: UseSushiClassicCallbacks) => {
             fees_usd,
           });
 
+          // Track successful classic swap in PostHog (daily event count)
+          (window as any).posthog?.capture?.("classic_swap", {
+            chainId: 747474,
+            tokenFrom: quote.tokenFrom.symbol,
+            tokenTo: quote.tokenTo.symbol,
+            amountIn: amountInFloat,
+            amountOut: amountOutFloat,
+            usdVolume,
+            txHash: receiptData.transactionHash,
+          });
+
           callbacks?.showSnackbar?.("Transaction successful!", "success");
 
           // Invalidate balance queries
