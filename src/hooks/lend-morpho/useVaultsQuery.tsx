@@ -58,6 +58,7 @@ export interface Allocation {
 
 export interface VaultState {
   curator: string;
+  curators?: Curator[];
   netApy: number;
   dailyApy: number;
   dailyNetApy: number;
@@ -147,7 +148,7 @@ export const useVaultsQuery = (
           address
           name
           symbol
-          whitelisted
+          whitelisted: listed
           asset {
             address
             decimals
@@ -159,22 +160,21 @@ export const useVaultsQuery = (
             description
             forumLink
             image
-            curators {
-              image
-              name
-              url
-            }
           }
           state {
             curator
+            curators {
+              name
+              image
+            }
             netApy
             avgNetApy
             dailyApy
             dailyNetApy
             weeklyApy
             weeklyNetApy
-            monthlyApy
-            monthlyNetApy
+            monthlyApy: weeklyApy
+            monthlyNetApy: weeklyNetApy
             totalAssets
             totalAssetsUsd
             rewards {
@@ -188,7 +188,7 @@ export const useVaultsQuery = (
               supplyAssets
               supplyAssetsUsd
               market {
-                uniqueKey
+                uniqueKey: marketId
                 loanAsset {
                   name
                 }
@@ -220,7 +220,7 @@ export const useVaultsQuery = (
     };
 
     if (whitelistedOnly) {
-      whereConditions.whitelisted = true;
+      whereConditions.listed = true;
     }
 
     return whereConditions;
@@ -258,7 +258,19 @@ export const useVaultsQuery = (
           throw new Error("No vault data received from API");
         }
 
-        return response.data.data.vaults.items;
+        // The API moved curators from `metadata.curators` to `state.curators`.
+        // Remap so downstream consumers can keep reading `metadata.curators`.
+        return response.data.data.vaults.items.map((vault) => ({
+          ...vault,
+          metadata: {
+            ...vault.metadata,
+            curators: (vault.state?.curators ?? []).map((c) => ({
+              name: c.name,
+              image: c.image,
+              url: "",
+            })),
+          },
+        }));
       } catch (error) {
         if (axios.isAxiosError(error)) {
           if (error.response) {

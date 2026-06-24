@@ -27,7 +27,8 @@
       "WebFetch(domain:api-docs-v1-perps.katana.network)",
       "WebFetch(domain:sdk-js-docs-v1-perps.katana.network)",
       "Bash(npm run lint:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(grep -n \"uniqueKey$\\\\|uniqueKey: marketId\\\\|marketByUniqueKey\\\\|marketById\" src/hooks/lend-morpho/useUserMarketPosition.ts src/hooks/lend-morpho/useMorphoPosition.ts)"
     ],
     "deny": [],
     "ask": []

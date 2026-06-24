@@ -91,12 +91,12 @@ const MORPHO_API_BASE = "https://api.morpho.org/graphql";
 
 // Enhanced GraphQL query to get market data by unique key
 const GET_MARKET_QUERY = `
-  query GetMarket($uniqueKey: String!, $chainId: Int!) {
-    marketByUniqueKey(uniqueKey: $uniqueKey, chainId: $chainId) {
-      uniqueKey
+  query GetMarket($marketId: String!, $chainId: Int!) {
+    marketById(marketId: $marketId, chainId: $chainId) {
+      uniqueKey: marketId
       id
       lltv
-      whitelisted
+      whitelisted: listed
       oracleAddress
       irmAddress
       loanAsset {
@@ -169,7 +169,7 @@ async function fetchMarketData(
     },
     body: JSON.stringify({
       query: GET_MARKET_QUERY,
-      variables: { uniqueKey, chainId },
+      variables: { marketId: uniqueKey, chainId },
     }),
   });
 
@@ -184,7 +184,7 @@ async function fetchMarketData(
     throw new Error(data.errors[0]?.message || "GraphQL query failed");
   }
 
-  const market = data.data?.marketByUniqueKey;
+  const market = data.data?.marketById;
 
   if (!market) {
     throw new Error("Market not found");
@@ -265,9 +265,9 @@ export function useMarkets() {
       markets(where: { chainId_in: [$chainId] }, first: 50, orderBy: SupplyAssetsUsd, orderDirection: Desc) {
         items {
           id
-          uniqueKey
+          uniqueKey: marketId
           lltv
-          whitelisted
+          whitelisted: listed
           oracleAddress
           loanAsset {
             address

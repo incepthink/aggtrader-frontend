@@ -47,7 +47,7 @@ export const useUserMarketPositions = () => {
       ) {
         items {
           market {
-            uniqueKey
+            uniqueKey: marketId
             loanAsset {
               symbol
               address
@@ -179,7 +179,7 @@ export const useUserMarketPosition = (
       ) {
         items {
           market {
-            uniqueKey
+            uniqueKey: marketId
             loanAsset {
               symbol
               address

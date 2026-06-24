@@ -135,7 +135,7 @@ export const useMarketsQuery = (
           countTotal
         }
         items {
-          uniqueKey
+          uniqueKey: marketId
           lltv
           loanAsset {
             symbol
@@ -177,9 +177,9 @@ export const useMarketsQuery = (
         };
 
         if (whitelistedOnly) {
-          whereClause.whitelisted = true;
+          whereClause.listed = true;
         } else {
-          whereClause.whitelisted = null;
+          whereClause.listed = null;
         }
 
         const response: AxiosResponse<GraphQLResponse<MarketsQueryResponse>> =

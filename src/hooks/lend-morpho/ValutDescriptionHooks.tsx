@@ -125,6 +125,7 @@ export interface VaultState {
   // Governance
   owner: string;
   curator: string;
+  curators?: Curator[];
   guardian: string;
   timelock: string;
   fee: number;
@@ -259,13 +260,12 @@ export const useVaultDetail = (
         metadata {
           description
           image
-          curators {
-            image
-            name
-            url
-          }
         }
         state {
+          curators {
+            name
+            image
+          }
           totalAssets
           totalAssetsUsd
           totalSupply
@@ -275,7 +275,7 @@ export const useVaultDetail = (
           dailyApy
           dailyNetApy
           weeklyApy
-          monthlyApy
+          monthlyApy: weeklyApy
           curator
           fee
           allocation {
@@ -325,7 +325,20 @@ export const useVaultDetail = (
           throw new Error("Vault not found");
         }
 
-        return response.data.data.vaultByAddress;
+        // The API moved curators from `metadata.curators` to `state.curators`.
+        // Remap so downstream consumers can keep reading `metadata.curators`.
+        const vault = response.data.data.vaultByAddress;
+        return {
+          ...vault,
+          metadata: {
+            ...vault.metadata,
+            curators: (vault.state?.curators ?? []).map((c) => ({
+              name: c.name,
+              image: c.image,
+              url: "",
+            })),
+          },
+        };
       } catch (error) {
         if (axios.isAxiosError(error)) {
           if (error.response) {
